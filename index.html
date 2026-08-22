@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" href="/favicon.jpg" />
+    <meta name="google-site-verification" content="TFrs7AZFCs1UkjVyhyftT4LH2-0R3EDwXEPWqI-r6PA" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arun Pandian | Data Analyst Portfolio</title>
+    <meta name="description" content="Portfolio of Arun Pandian, an experienced Data Analyst specializing in data visualization, SQL, Python, and business intelligence." />
+    <meta name="keywords" content="Arun Pandian, Data Analyst, Data Analytics, Business Intelligence, SQL, Python, Data Visualization, Portfolio" />
+    <meta name="author" content="Arun Pandian" />
+    <meta property="og:title" content="Arun Pandian | Data Analyst Portfolio" />
+    <meta property="og:description" content="Portfolio of Arun Pandian, an experienced Data Analyst specializing in data visualization, SQL, Python, and business intelligence." />
+    <meta property="og:type" content="website" />
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HCXCMGPCMN"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-HCXCMGPCMN');
+    </script>
+
+    <script>
+      window.addEventListener('error', function(e) {
+        const msg = e.message || '';
+        const isDynamicImportError = msg.includes('dynamically imported module') || msg.includes('Failed to fetch dynamically imported module');
+        const isScriptOrLinkError = e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK');
+        
+        if (isDynamicImportError || isScriptOrLinkError) {
+          const lastReload = sessionStorage.getItem('last-chunk-reload');
+          const now = Date.now();
+          if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+            sessionStorage.setItem('last-chunk-reload', now);
+            window.location.reload();
+          }
+        }
+      }, true);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

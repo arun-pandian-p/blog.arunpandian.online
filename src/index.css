@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-primary);
+  --font-display: var(--font-heading);
+
+  --color-bg: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-text);
+  --color-ink-soft: var(--color-muted);
+  --color-line: var(--color-border);
+  --color-accent: var(--color-primary);
+  --color-accent-soft: #DBE7FF;
+  --color-danger: #DC2626;
+
+  --radius-xl: var(--radius-base);
+  --radius-lg: calc(var(--radius-base) * 0.75);
+  --radius-md: calc(var(--radius-base) * 0.5);
+}
+
+:root {
+  --font-primary: 'Space Grotesk', system-ui, sans-serif;
+  --font-heading: 'Archivo', system-ui, sans-serif;
+  --font-size-base: 16px;
+  --font-size-heading: 48px;
+  --font-weight-base: 400;
+  --font-weight-heading: 700;
+
+  --color-background: #FAFAFA;
+  --color-surface: #FFFFFF;
+  --color-text: #09090B;
+  --color-muted: #3F3F46;
+  --color-border: #E4E4E7;
+  --color-primary: #2563EB;
+
+  --radius-base: 1rem;
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-base);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: -0.02em;
+}
+
+/* Subtle film grain overlay for the "hyperrealism" texture */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Marquee for the tech ticker */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 20s linear infinite;
+}
+
+@keyframes marquee-vertical {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+.animate-marquee-vertical {
+  animation: marquee-vertical 15s linear infinite;
+}
+
+.text-transform-lowercase {
+  text-transform: lowercase;
+}
+
+/* Reveal helper baseline (framer-motion handles most reveals) */
+.text-balance { text-wrap: balance; }
+
+/* Hide scrollbar while preserving scroll behavior — used for horizontal/vertical project tracks */
+.hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 999px;
+  border: 2px solid var(--color-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-marquee { animation: none; }
+}
