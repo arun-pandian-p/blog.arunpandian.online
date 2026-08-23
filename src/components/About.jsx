@@ -21,13 +21,13 @@ const About = () => {
   const isVisible = (field) => !hiddenFields.includes(field);
 
   return (
-    <section id="about" data-edit-id="about.section" data-edit-name="About" data-edit-kind="section" className="relative py-24 sm:py-32 bg-surface border-y border-line">
-      <div className="max-w-7xl mx-auto px-5 sm:px-8">
+    <section id="about" data-edit-id="about.section" data-edit-name="About" data-edit-kind="section" className="relative py-16 sm:py-24 lg:py-32 bg-surface border-y border-line">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Header */}
         {isVisible('sectionHeaders') && (
-          <div className="mb-12">
+          <div className="mb-8 sm:mb-12">
             <span data-edit-id="about.label" data-edit-name="About · Eyebrow" data-edit-kind="text" data-edit-path="about.sectionLabel" className="text-xs font-mono tracking-[0.25em] text-accent uppercase">{about.sectionLabel}</span>
-            <h2 data-edit-id="about.title" data-edit-name="About · Title" data-edit-kind="heading" data-edit-path="about.sectionTitle" className="mt-3 font-display font-extrabold text-3xl sm:text-5xl text-ink tracking-tight">
+            <h2 data-edit-id="about.title" data-edit-name="About · Title" data-edit-kind="heading" data-edit-path="about.sectionTitle" className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">
               {about.sectionTitle}
             </h2>
           </div>
@@ -40,16 +40,16 @@ const About = () => {
             <SliceReveal className="lg:col-span-2 h-full">
               <motion.div
                 custom={0} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
-                className="group relative h-full overflow-hidden rounded-3xl border border-line bg-ink"
+                className="group relative h-full overflow-hidden rounded-2xl sm:rounded-3xl border border-line bg-ink"
               >
                 <img loading="lazy"
                   data-edit-id="about.profileImage" data-edit-name="About · Profile image" data-edit-kind="image" data-edit-path="about.profileImage"
                   src={about.profileImage || arunProfile}
                   alt={about.profileCaption || 'Arun Pandian'}
-                  className="h-full w-full min-h-[260px] object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                  className="h-full w-full min-h-[240px] sm:min-h-[260px] object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
                 />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-5 pt-14">
-                  <p data-edit-id="about.profileCaption" data-edit-name="About · Profile caption" data-edit-kind="text" data-edit-path="about.profileCaption" className="font-display font-bold text-white text-lg leading-tight">{about.profileCaption}</p>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 sm:p-5 pt-12">
+                  <p data-edit-id="about.profileCaption" data-edit-name="About · Profile caption" data-edit-kind="text" data-edit-path="about.profileCaption" className="font-display font-bold text-white text-base sm:text-lg leading-tight">{about.profileCaption}</p>
                   <p data-edit-id="about.profileSubCaption" data-edit-name="About · Profile subcaption" data-edit-kind="text" data-edit-path="about.profileSubCaption" className="mt-0.5 text-xs font-mono text-white/70">{about.profileSubCaption}</p>
                 </div>
               </motion.div>
@@ -60,16 +60,16 @@ const About = () => {
           {isVisible('narrative') && (
             <motion.div
               custom={1} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
-              className="lg:col-span-4 group relative overflow-hidden rounded-3xl border border-line bg-bg p-7 sm:p-9"
+              className="lg:col-span-4 group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-line bg-bg p-5 sm:p-8"
             >
               <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-accent/5 blur-2xl transition-opacity duration-700 opacity-0 group-hover:opacity-100" />
               <p data-edit-id="about.narrative" data-edit-name="About · Narrative" data-edit-kind="text" data-edit-path="about.narrative"
-                 className="relative text-xl sm:text-2xl text-ink leading-snug font-medium text-balance"
+                 className="relative text-lg sm:text-2xl text-ink leading-snug font-medium text-balance"
                  dangerouslySetInnerHTML={{ __html: about.narrative }} />
-              <p data-edit-id="about.narrativeExtra" data-edit-name="About · Narrative (extra)" data-edit-kind="text" data-edit-path="about.narrativeExtra" className="relative mt-5 text-ink-soft leading-relaxed">{about.narrativeExtra}</p>
-              <div className="relative mt-6 flex flex-wrap gap-2">
+              <p data-edit-id="about.narrativeExtra" data-edit-name="About · Narrative (extra)" data-edit-kind="text" data-edit-path="about.narrativeExtra" className="relative mt-4 sm:mt-5 text-sm sm:text-base text-ink-soft leading-relaxed">{about.narrativeExtra}</p>
+              <div className="relative mt-5 sm:mt-6 flex flex-wrap gap-1.5 sm:gap-2">
                 {stack.map((t) => (
-                  <span key={t} className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-mono text-ink-soft">
+                  <span key={t} className="rounded-full border border-line bg-surface px-2.5 sm:px-3 py-1 text-xs font-mono text-ink-soft">
                     {t}
                   </span>
                 ))}
@@ -102,20 +102,20 @@ const About = () => {
           <motion.div
             custom={2} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
             data-edit-id="about.sqlCard" data-edit-name="About · SQL Terminal" data-edit-kind="section"
-            className="lg:col-span-2 rounded-3xl border border-ink/80 bg-ink p-5 shadow-[0_30px_60px_-30px_rgba(9,9,11,0.6)]"
+            className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-ink/80 bg-ink p-4 sm:p-5 shadow-[0_30px_60px_-30px_rgba(9,9,11,0.6)]"
           >
-            <div className="flex items-center gap-1.5 mb-4">
-              <span className="h-3 w-3 rounded-full bg-danger/90" />
-              <span className="h-3 w-3 rounded-full bg-amber-400/90" />
-              <span className="h-3 w-3 rounded-full bg-emerald-400/90" />
+            <div className="flex items-center gap-1.5 mb-3.5 sm:mb-4">
+              <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-danger/90" />
+              <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-amber-400/90" />
+              <span className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-emerald-400/90" />
               <span data-edit-id="about.sqlFilename" data-edit-name="About · SQL filename" data-edit-kind="text" data-edit-path="about.sqlFilename" className="ml-2 text-[10px] font-mono text-white/40">{about.sqlFilename || 'whoami.sql'}</span>
             </div>
-            <pre data-edit-id="about.sqlQuery" data-edit-name="About · SQL query" data-edit-kind="text" data-edit-path="about.sqlQuery" className="font-mono text-[12.5px] leading-relaxed text-white/90 whitespace-pre-wrap">
+            <pre data-edit-id="about.sqlQuery" data-edit-name="About · SQL query" data-edit-kind="text" data-edit-path="about.sqlQuery" className="font-mono text-xs sm:text-[12.5px] leading-relaxed text-white/90 whitespace-pre-wrap overflow-x-auto">
 <span className="text-indigo-300">SELECT</span> role, focus{'\n'}
 <span className="text-indigo-300">FROM</span>   arun_pandian{'\n'}
 <span className="text-indigo-300">WHERE</span>  curiosity = <span className="text-emerald-300">TRUE</span>;
             </pre>
-            <div className="mt-4 border-t border-white/10 pt-3 font-mono text-[12px] text-white/50">
+            <div className="mt-3.5 sm:mt-4 border-t border-white/10 pt-3 font-mono text-[11px] sm:text-[12px] text-white/50">
               <span className="text-accent">→</span> {about.profileCaption} · turns
               <br />&nbsp;&nbsp;messy data into decisions
             </div>
@@ -126,12 +126,12 @@ const About = () => {
             <motion.div
               custom={3} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
               data-edit-id="about.education" data-edit-name="About · Education" data-edit-kind="section"
-              className="lg:col-span-2 rounded-3xl border border-line bg-bg p-6"
+              className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-line bg-bg p-5 sm:p-6"
             >
               <span className="text-xs font-mono text-accent uppercase tracking-wider">Education</span>
-              <p data-edit-id="about.education.school" data-edit-name="About · School" data-edit-kind="text" data-edit-path="about.education.school" className="mt-2 text-ink font-semibold leading-snug">{about.education?.school}</p>
-              <p data-edit-id="about.education.degree" data-edit-name="About · Degree" data-edit-kind="text" data-edit-path="about.education.degree" className="mt-1 text-sm text-ink-soft">{about.education?.degree}</p>
-              <p data-edit-id="about.education.years" data-edit-name="About · Years" data-edit-kind="text" data-edit-path="about.education.years" className="mt-3 text-xs font-mono text-ink-soft/70">{about.education?.years}</p>
+              <p data-edit-id="about.education.school" data-edit-name="About · School" data-edit-kind="text" data-edit-path="about.education.school" className="mt-2 text-ink font-semibold leading-snug text-sm sm:text-base">{about.education?.school}</p>
+              <p data-edit-id="about.education.degree" data-edit-name="About · Degree" data-edit-kind="text" data-edit-path="about.education.degree" className="mt-1 text-xs sm:text-sm text-ink-soft">{about.education?.degree}</p>
+              <p data-edit-id="about.education.years" data-edit-name="About · Years" data-edit-kind="text" data-edit-path="about.education.years" className="mt-2.5 text-xs font-mono text-ink-soft/70">{about.education?.years}</p>
             </motion.div>
           )}
 
@@ -140,14 +140,14 @@ const About = () => {
             <motion.div
               custom={4} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
               data-edit-id="about.goals" data-edit-name="About · Goals" data-edit-kind="section"
-              className="lg:col-span-2 rounded-3xl border border-line bg-bg p-6"
+              className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-line bg-bg p-5 sm:p-6"
             >
               <span className="text-xs font-mono text-accent uppercase tracking-wider">Goals</span>
-              <p className="mt-2 text-ink font-medium leading-snug">
-                <span className="text-accent">Now →</span> <span data-edit-id="about.goals.now" data-edit-name="About · Goal Now" data-edit-kind="text" data-edit-path="about.goals.now">{about.goals?.now}</span>
+              <p className="mt-2 text-ink font-medium leading-snug text-xs sm:text-sm">
+                <span className="text-accent font-bold">Now →</span> <span data-edit-id="about.goals.now" data-edit-name="About · Goal Now" data-edit-kind="text" data-edit-path="about.goals.now">{about.goals?.now}</span>
               </p>
-              <p className="mt-3 text-ink font-medium leading-snug">
-                <span className="text-accent">Next →</span> <span data-edit-id="about.goals.next" data-edit-name="About · Goal Next" data-edit-kind="text" data-edit-path="about.goals.next">{about.goals?.next}</span>
+              <p className="mt-2.5 text-ink font-medium leading-snug text-xs sm:text-sm">
+                <span className="text-accent font-bold">Next →</span> <span data-edit-id="about.goals.next" data-edit-name="About · Goal Next" data-edit-kind="text" data-edit-path="about.goals.next">{about.goals?.next}</span>
               </p>
             </motion.div>
           )}
@@ -155,16 +155,16 @@ const About = () => {
 
         {/* Stats strip */}
         {isVisible('stats') && stats.length > 0 && (
-          <div className="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-line bg-line">
+          <div className="mt-10 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-px rounded-2xl overflow-hidden border border-line bg-line">
             {stats.map((s, i) => (
               <motion.div
                 key={s.label}
-                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ duration: 0.6, ease, delay: i * 0.08 }}
-                className="bg-surface p-6 sm:p-8"
+                initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ duration: 0.5, ease, delay: i * 0.06 }}
+                className="bg-surface p-4 sm:p-7"
               >
-                <div className="font-display font-extrabold text-3xl sm:text-4xl text-ink tabular-nums">{s.value}</div>
-                <div className="mt-1 text-sm text-ink-soft">{s.label}</div>
+                <div className="font-display font-extrabold text-2xl sm:text-4xl text-ink tabular-nums">{s.value}</div>
+                <div className="mt-1 text-xs sm:text-sm text-ink-soft">{s.label}</div>
               </motion.div>
             ))}
           </div>

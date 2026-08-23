@@ -300,18 +300,18 @@ export default function HomePage() {
       <FAQ />
 
       {/* Blog Section */}
-      <section id="blog" className="py-24 sm:py-32 bg-surface border-y border-line">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8">
-          <Parallax speed={26} className="mb-14">
+      <section id="blog" className="py-16 sm:py-24 lg:py-32 bg-surface border-y border-line">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <Parallax speed={20} className="mb-8 sm:mb-14">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <span data-edit-id="blog.label" data-edit-name="Writing · Eyebrow" data-edit-kind="text" data-edit-path="sections.blog.label" className="text-xs font-mono tracking-[0.25em] text-accent uppercase">{blogSection.label || '05 — Writing'}</span>
-                <h2 data-edit-id="blog.title" data-edit-name="Writing · Title" data-edit-kind="heading" data-edit-path="sections.blog.title" className="mt-3 font-display font-extrabold text-3xl sm:text-5xl text-ink tracking-tight">{blogSection.title || 'Latest Articles'}</h2>
+                <h2 data-edit-id="blog.title" data-edit-name="Writing · Title" data-edit-kind="heading" data-edit-path="sections.blog.title" className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">{blogSection.title || 'Latest Articles'}</h2>
               </div>
               {/* Scroll mode toggle hint */}
               {blogScroll === 'horizontal' && blogs?.length > 2 && (
                 <motion.div
-                  animate={{ x: [0, 8, 0] }}
+                  animate={{ x: [0, 6, 0] }}
                   transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
                   className="hidden sm:flex items-center gap-2 text-xs font-mono text-ink-soft/60 select-none"
                 >
@@ -326,9 +326,9 @@ export default function HomePage() {
           {blogScroll === 'horizontal' ? (
             /* Horizontal carousel — snap scrolling with right-arrow guide */
             <div className="relative">
-              <div className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory hide-scrollbar -mx-5 sm:-mx-8 px-5 sm:px-8">
+              <div className="flex overflow-x-auto gap-4 sm:gap-6 pb-4 sm:pb-6 snap-x snap-mandatory hide-scrollbar -mx-4 sm:-mx-8 px-4 sm:px-8">
                 {blogs?.map((blog, i) => (
-                  <div key={blog._id || blog.title} className="w-[85vw] sm:w-[50vw] md:w-[36vw] lg:w-[30vw] shrink-0 snap-center">
+                  <div key={blog._id || blog.title} className="w-[84vw] sm:w-[50vw] md:w-[36vw] lg:w-[30vw] shrink-0 snap-center">
                     <SliceReveal delay={i * 0.07} className="h-full">
                       <BlogCard blog={blog} />
                     </SliceReveal>
@@ -342,7 +342,7 @@ export default function HomePage() {
                   whileInView={{ opacity: 0 }}
                   viewport={{ once: true, amount: 0.8 }}
                   transition={{ delay: 2.5, duration: 0.6 }}
-                  className="pointer-events-none absolute right-0 top-0 bottom-6 w-24 flex items-center justify-end pr-2"
+                  className="pointer-events-none absolute right-0 top-0 bottom-4 sm:bottom-6 w-16 sm:w-24 flex items-center justify-end pr-2"
                   style={{ background: 'linear-gradient(to right, transparent, var(--color-surface) 85%)' }}
                 >
                   <motion.div
@@ -350,13 +350,13 @@ export default function HomePage() {
                     transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
                     className="flex items-center gap-0.5 text-accent"
                   >
-                    <ArrowRight size={20} strokeWidth={2} />
+                    <ArrowRight size={18} strokeWidth={2} />
                   </motion.div>
                 </motion.div>
               )}
             </div>
           ) : blogScroll === 'masonry' ? (
-            <div className="columns-1 sm:columns-2 lg:columns-3 gap-6">
+            <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 sm:gap-6">
               {blogs?.map((blog, i) => (
                 <SliceReveal key={blog._id || blog.title} delay={(i % 3) * 0.08}>
                   <BlogCard blog={blog} />
@@ -364,9 +364,9 @@ export default function HomePage() {
               ))}
             </div>
           ) : blogScroll === 'bento' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(220px,auto)]" style={{ gridAutoFlow: 'dense' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 auto-rows-[minmax(200px,auto)]" style={{ gridAutoFlow: 'dense' }}>
               {blogs?.map((blog, i) => (
-                <div key={blog._id || blog.title} className={i % 3 === 0 ? 'row-span-2' : ''}>
+                <div key={blog._id || blog.title} className={i % 3 === 0 ? 'sm:row-span-2' : ''}>
                   <SliceReveal delay={(i % 3) * 0.08} className="h-full">
                     <BlogCard blog={blog} />
                   </SliceReveal>
@@ -375,7 +375,7 @@ export default function HomePage() {
             </div>
           ) : (
             /* Default 3-column grid */
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {blogs?.map((blog, i) => (
                 <SliceReveal key={blog._id || blog.title} delay={(i % 3) * 0.12} className="h-full">
                   <BlogCard blog={blog} />
@@ -390,24 +390,24 @@ export default function HomePage() {
 
       {/* Footer */}
       {footerStyle === 'karolbinkowski' ? (
-        <footer className="bg-bg text-ink border-t-[3px] border-ink mt-12">
+        <footer className="bg-bg text-ink border-t-[3px] border-ink mt-8 sm:mt-12">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row">
-            <div className="w-full md:w-2/3 p-8 border-b-[3px] md:border-b-0 md:border-r-[3px] border-ink">
-              <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-display font-black text-6xl sm:text-8xl uppercase tracking-tighter hover:text-accent transition-colors duration-300 break-words w-full" style={{ WebkitTextStroke: '1px var(--color-ink)' }}>
+            <div className="w-full md:w-2/3 p-5 sm:p-8 border-b-[3px] md:border-b-0 md:border-r-[3px] border-ink">
+              <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-display font-black text-4xl sm:text-7xl lg:text-8xl uppercase tracking-tighter hover:text-accent transition-colors duration-300 break-words w-full" style={{ WebkitTextStroke: '1px var(--color-ink)' }}>
                 {footerData.name}
               </h3>
-              <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-6 text-sm font-bold uppercase tracking-widest max-w-sm">{footerData.tagline}</p>
+              <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-4 sm:mt-6 text-xs sm:text-sm font-bold uppercase tracking-widest max-w-sm">{footerData.tagline}</p>
             </div>
             <div className="w-full md:w-1/3 flex flex-col justify-between">
-              <div className="p-8 flex flex-col gap-4">
-                <a href={footerData.github} target="_blank" rel="noopener noreferrer" className="text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max">GitHub</a>
-                <a href={footerData.linkedin} target="_blank" rel="noopener noreferrer" className="text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max">LinkedIn</a>
-                <a href={`mailto:${footerData.email}`} className="text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max">Email</a>
+              <div className="p-5 sm:p-8 flex flex-col gap-3 sm:gap-4">
+                <a href={footerData.github} target="_blank" rel="noopener noreferrer" className="text-lg sm:text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max">GitHub</a>
+                <a href={footerData.linkedin} target="_blank" rel="noopener noreferrer" className="text-lg sm:text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max">LinkedIn</a>
+                <a href={`mailto:${footerData.email}`} className="text-lg sm:text-xl font-bold uppercase border-b-[3px] border-transparent hover:border-accent hover:text-accent transition-all inline-block w-max break-all">Email</a>
               </div>
-              <div className="border-t-[3px] border-ink p-8 bg-surface text-xs font-bold uppercase tracking-widest flex flex-col gap-2">
+              <div className="border-t-[3px] border-ink p-5 sm:p-8 bg-surface text-xs font-bold uppercase tracking-widest flex flex-col gap-2">
                 <span>&copy; {new Date().getFullYear()} {footerData.name}</span>
                 <span>{footerData.copyright}</span>
-                <Link to="/admin" className="mt-4 inline-flex items-center gap-2 hover:text-accent w-max">
+                <Link to="/admin" className="mt-3 sm:mt-4 inline-flex items-center gap-2 hover:text-accent w-max min-h-[36px]">
                   <Lock size={12} /> ADMIN
                 </Link>
               </div>
@@ -415,113 +415,113 @@ export default function HomePage() {
           </div>
         </footer>
       ) : footerStyle === 'pelizzari' ? (
-        <footer className="bg-bg text-ink border-t border-line mt-24">
-          <div className="max-w-7xl mx-auto px-6 py-20 flex flex-col items-center text-center">
-            <Logo size={48} className="text-ink mb-12 opacity-80" title="Logo" />
-            <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-serif italic text-4xl sm:text-6xl font-light mb-6">{footerData.name}</h3>
-            <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-ink/60 font-serif text-lg max-w-md">{footerData.tagline}</p>
-            <div className="flex items-center gap-12 mt-16 text-sm tracking-widest uppercase text-ink/80">
-              <a href={footerData.github} className="hover:text-ink transition-colors">GitHub</a>
-              <a href={footerData.linkedin} className="hover:text-ink transition-colors">LinkedIn</a>
-              <a href={`mailto:${footerData.email}`} className="hover:text-ink transition-colors">Contact</a>
+        <footer className="bg-bg text-ink border-t border-line mt-12 sm:mt-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20 flex flex-col items-center text-center">
+            <Logo size={40} className="text-ink mb-8 sm:mb-12 opacity-80" title="Logo" />
+            <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-serif italic text-3xl sm:text-5xl lg:text-6xl font-light mb-4 sm:mb-6">{footerData.name}</h3>
+            <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-ink/60 font-serif text-base sm:text-lg max-w-md">{footerData.tagline}</p>
+            <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-12 mt-10 sm:mt-16 text-xs sm:text-sm tracking-widest uppercase text-ink/80">
+              <a href={footerData.github} className="hover:text-ink transition-colors min-h-[36px] flex items-center">GitHub</a>
+              <a href={footerData.linkedin} className="hover:text-ink transition-colors min-h-[36px] flex items-center">LinkedIn</a>
+              <a href={`mailto:${footerData.email}`} className="hover:text-ink transition-colors min-h-[36px] flex items-center">Contact</a>
             </div>
           </div>
-          <div className="max-w-7xl mx-auto px-6 py-6 border-t border-line/50 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-ink/40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 border-t border-line/50 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 text-[10px] uppercase tracking-[0.2em] text-ink/40">
             <span>&copy; {new Date().getFullYear()} {footerData.copyright}</span>
-            <Link to="/admin" className="hover:text-ink transition-colors flex items-center gap-2">
+            <Link to="/admin" className="hover:text-ink transition-colors flex items-center gap-2 min-h-[36px]">
               <Lock size={10} /> Admin
             </Link>
           </div>
         </footer>
       ) : footerStyle === 'russellnumo' ? (
-        <footer className="bg-surface text-ink border-t border-ink mt-20">
-          <div className="max-w-7xl mx-auto px-6">
+        <footer className="bg-surface text-ink border-t border-ink mt-12 sm:mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="grid grid-cols-1 md:grid-cols-4 border-b border-ink">
-              <div className="col-span-1 md:col-span-2 p-6 border-b md:border-b-0 md:border-r border-ink">
-                <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-mono text-2xl font-bold uppercase">{footerData.name}</h3>
-                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="font-mono text-sm mt-4 text-ink-soft">{footerData.tagline}</p>
+              <div className="col-span-1 md:col-span-2 p-4 sm:p-6 border-b md:border-b-0 md:border-r border-ink">
+                <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-mono text-xl sm:text-2xl font-bold uppercase">{footerData.name}</h3>
+                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="font-mono text-xs sm:text-sm mt-3 sm:mt-4 text-ink-soft">{footerData.tagline}</p>
               </div>
-              <div className="col-span-1 p-6 border-b md:border-b-0 md:border-r border-ink flex flex-col gap-4 font-mono text-sm">
-                <span className="font-bold border-b border-ink pb-2 mb-2">Socials</span>
+              <div className="col-span-1 p-4 sm:p-6 border-b md:border-b-0 md:border-r border-ink flex flex-col gap-3 sm:gap-4 font-mono text-xs sm:text-sm">
+                <span className="font-bold border-b border-ink pb-2 mb-1 sm:mb-2">Socials</span>
                 <a href={footerData.github} className="hover:text-accent">GitHub</a>
                 <a href={footerData.linkedin} className="hover:text-accent">LinkedIn</a>
               </div>
-              <div className="col-span-1 p-6 flex flex-col justify-between font-mono text-xs">
+              <div className="col-span-1 p-4 sm:p-6 flex flex-col justify-between font-mono text-xs">
                 <div>
-                  <span className="font-bold border-b border-ink pb-2 mb-4 block">Status</span>
+                  <span className="font-bold border-b border-ink pb-2 mb-3 sm:mb-4 block">Status</span>
                   <div className="flex items-center gap-2 text-accent">
                     <span className="w-2 h-2 bg-accent rounded-full animate-pulse" /> Available
                   </div>
                 </div>
-                <a href={`mailto:${footerData.email}`} className="mt-8 bg-ink text-bg text-center py-2 hover:bg-accent hover:text-ink transition-colors uppercase font-bold">Email Me</a>
+                <a href={`mailto:${footerData.email}`} className="mt-6 sm:mt-8 bg-ink text-bg text-center py-2.5 hover:bg-accent hover:text-ink transition-colors uppercase font-bold min-h-[44px] flex items-center justify-center">Email Me</a>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row justify-between items-center p-6 text-xs font-mono text-ink-soft">
+            <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:p-6 text-xs font-mono text-ink-soft gap-3">
               <span>&copy; {new Date().getFullYear()} — {footerData.copyright}</span>
-              <Link to="/admin" className="flex items-center gap-2 hover:text-ink border border-line px-3 py-1">
+              <Link to="/admin" className="flex items-center gap-2 hover:text-ink border border-line px-3 py-1.5 min-h-[36px]">
                 <Lock size={12} /> Admin
               </Link>
             </div>
           </div>
         </footer>
       ) : footerStyle === 'studiomodular' ? (
-        <footer className="bg-ink text-bg mt-12 py-16 px-8 relative overflow-hidden">
+        <footer className="bg-ink text-bg mt-8 sm:mt-12 py-12 sm:py-16 px-4 sm:px-8 relative overflow-hidden">
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-accent/20 rounded-full blur-[100px] pointer-events-none" />
-          <div className="max-w-6xl mx-auto grid md:grid-cols-12 gap-12">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-12">
             <div className="md:col-span-5 flex flex-col justify-between">
               <div>
-                <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-display text-4xl sm:text-5xl font-medium tracking-tight mb-4">{footerData.name}</h3>
-                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-bg/60 text-lg max-w-sm">{footerData.tagline}</p>
+                <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-display text-3xl sm:text-5xl font-medium tracking-tight mb-3 sm:mb-4">{footerData.name}</h3>
+                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-bg/60 text-base sm:text-lg max-w-sm">{footerData.tagline}</p>
               </div>
-              <div className="mt-12 text-xs font-mono text-bg/40">
+              <div className="mt-8 sm:mt-12 text-xs font-mono text-bg/40">
                 <p>&copy; {new Date().getFullYear()} {footerData.copyright}</p>
-                <Link to="/admin" className="mt-4 flex items-center gap-2 hover:text-bg w-max">
+                <Link to="/admin" className="mt-3 sm:mt-4 flex items-center gap-2 hover:text-bg w-max min-h-[36px]">
                   <Lock size={12} /> Admin Portal
                 </Link>
               </div>
             </div>
-            <div className="md:col-span-7 grid sm:grid-cols-2 gap-8 text-sm">
-              <div className="flex flex-col gap-6 border-t border-bg/20 pt-6">
+            <div className="md:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-sm">
+              <div className="flex flex-col gap-4 sm:gap-6 border-t border-bg/20 pt-4 sm:pt-6">
                 <span className="text-bg/40 uppercase tracking-widest text-xs">Socials</span>
-                <a href={footerData.github} className="hover:text-accent transition-colors font-medium">GitHub</a>
-                <a href={footerData.linkedin} className="hover:text-accent transition-colors font-medium">LinkedIn</a>
+                <a href={footerData.github} className="hover:text-accent transition-colors font-medium min-h-[36px] flex items-center">GitHub</a>
+                <a href={footerData.linkedin} className="hover:text-accent transition-colors font-medium min-h-[36px] flex items-center">LinkedIn</a>
               </div>
-              <div className="flex flex-col gap-6 border-t border-bg/20 pt-6">
+              <div className="flex flex-col gap-4 sm:gap-6 border-t border-bg/20 pt-4 sm:pt-6">
                 <span className="text-bg/40 uppercase tracking-widest text-xs">Inquiries</span>
-                <a href={`mailto:${footerData.email}`} className="text-xl hover:text-accent transition-colors font-medium break-all">{footerData.email}</a>
+                <a href={`mailto:${footerData.email}`} className="text-base sm:text-xl hover:text-accent transition-colors font-medium break-all">{footerData.email}</a>
               </div>
             </div>
           </div>
         </footer>
       ) : (
         <footer className="bg-ink text-bg">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8">
               <div>
-                <Logo size={40} className="text-bg mb-5" title="AP monogram" />
+                <Logo size={36} className="text-bg mb-4 sm:mb-5" title="AP monogram" />
                 <h3
                   data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name"
                   className={`font-display font-extrabold tracking-tight ${
                     animationStyle === 'monolog'
-                      ? 'text-[clamp(3rem,12vw,10rem)] leading-none opacity-90' /* bymonolog.com — giant brand wordmark filling the footer */
-                      : 'text-4xl sm:text-6xl'
+                      ? 'text-[clamp(2.5rem,10vw,10rem)] leading-none opacity-90' /* bymonolog.com — giant brand wordmark filling the footer */
+                      : 'text-3xl sm:text-6xl'
                   }`}
                 >{footerData.name}</h3>
-                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-3 text-bg/60 max-w-sm">{footerData.tagline}</p>
+                <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-2.5 sm:mt-3 text-bg/60 text-xs sm:text-sm max-w-sm">{footerData.tagline}</p>
               </div>
-              <div className="flex gap-6 text-sm text-bg/70">
-                <a href={footerData.github} target="_blank" rel="noopener noreferrer" className="hover:text-bg transition-colors">GitHub</a>
-                <a href={footerData.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-bg transition-colors">LinkedIn</a>
-                <a href={`mailto:${footerData.email}`} className="hover:text-bg transition-colors">Email</a>
+              <div className="flex flex-wrap gap-4 sm:gap-6 text-xs sm:text-sm text-bg/70">
+                <a href={footerData.github} target="_blank" rel="noopener noreferrer" className="hover:text-bg transition-colors min-h-[36px] flex items-center">GitHub</a>
+                <a href={footerData.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-bg transition-colors min-h-[36px] flex items-center">LinkedIn</a>
+                <a href={`mailto:${footerData.email}`} className="hover:text-bg transition-colors min-h-[36px] flex items-center break-all">Email</a>
               </div>
             </div>
-            <div className="mt-12 pt-6 border-t border-bg/10 flex flex-wrap items-center justify-between gap-2 text-xs text-bg/40 font-mono">
+            <div className="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-bg/10 flex flex-wrap items-center justify-between gap-3 text-[11px] sm:text-xs text-bg/40 font-mono">
               <span>&copy; {new Date().getFullYear()} {footerData.name}. {footerData.copyright}</span>
-              <div className="flex items-center gap-4">
-                <span>Designed &amp; developed in {footerData.designYear}</span>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="hidden sm:inline">Designed &amp; developed in {footerData.designYear}</span>
                 <Link
                   to="/admin"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-bg/10 text-bg/30 hover:text-bg/70 hover:border-bg/30 transition-all duration-300 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-bg/10 text-bg/40 hover:text-bg/80 hover:border-bg/30 transition-all duration-300 cursor-pointer min-h-[32px]"
                   aria-label="Admin dashboard"
                 >
                   <Lock size={10} />
@@ -535,10 +535,10 @@ export default function HomePage() {
 
       {/* Dynamic Custom Section */}
       {settings?.custom_elements && Object.values(settings.custom_elements).some((e) => e.section === 'custom_section') && (
-        <section id="custom-section" className="py-24 sm:py-32 bg-bg border-b border-line">
-          <div className="max-w-7xl mx-auto px-5 sm:px-8">
+        <section id="custom-section" className="py-16 sm:py-24 lg:py-32 bg-bg border-b border-line">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8">
             <span className="text-xs font-mono tracking-[0.25em] text-accent uppercase">06 — Custom Section</span>
-            <div className="mt-8 space-y-6">
+            <div className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
               {renderCustomElements('custom_section', settings.custom_elements)}
             </div>
           </div>
@@ -554,9 +554,9 @@ export default function HomePage() {
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={scrollToTop}
             aria-label="Scroll to top"
-            className="fixed bottom-6 right-6 p-3.5 bg-ink hover:bg-accent text-bg hover:text-ink rounded-full shadow-lg z-50 cursor-pointer focus:outline-none transition-colors"
+            className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 min-w-[44px] min-h-[44px] p-3 bg-ink hover:bg-accent text-bg hover:text-ink rounded-full shadow-xl z-50 cursor-pointer focus:outline-none transition-colors flex items-center justify-center"
           >
-            <ArrowUp size={20} />
+            <ArrowUp size={18} />
           </motion.button>
         )}
       </AnimatePresence>

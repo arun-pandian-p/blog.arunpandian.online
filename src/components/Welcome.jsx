@@ -100,24 +100,24 @@ export default function Welcome({ onDone }) {
         animate={phase === 'exit' ? { opacity: 0 } : { opacity: 1 }}
         transition={{ duration: 0.4 }}
         onClick={finish}
-        className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-white overflow-hidden px-6 cursor-pointer pointer-events-auto"
+        className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 text-white overflow-hidden px-4 sm:px-6 cursor-pointer pointer-events-auto"
       >
         <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_45%,rgba(37,99,235,0.2),transparent_70%)]" />
 
         {/* Skip */}
         <button
           onClick={(e) => { e.stopPropagation(); finish(); }}
-          className="absolute top-6 right-6 z-10 text-[11px] font-mono tracking-[0.25em] uppercase text-white/50 hover:text-white transition-colors"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 min-h-[44px] px-3 py-2 flex items-center text-[11px] font-mono tracking-[0.25em] uppercase text-white/60 hover:text-white active:text-white transition-colors"
         >
           Skip →
         </button>
 
         {phase === 'quote' ? (
-          <div className="relative max-w-3xl text-center">
+          <div className="relative max-w-3xl text-center px-2">
             {/* Logo + Name */}
-            <div className="flex flex-col items-center justify-center gap-4 mb-8">
-              <Logo size={42} className="opacity-90 animate-pulse" />
-              <span className="text-[11px] font-mono tracking-[0.35em] uppercase text-white/40">
+            <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <Logo size={36} className="opacity-90 animate-pulse sm:w-10 sm:h-10" />
+              <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.3em] uppercase text-white/40">
                 {welcome.name || 'Arun Pandian · Data Analyst'}
               </span>
             </div>
@@ -126,7 +126,7 @@ export default function Welcome({ onDone }) {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="font-display font-extrabold text-2xl sm:text-4xl md:text-5xl tracking-tight leading-[1.2] text-balance text-slate-100"
+              className="font-display font-extrabold text-xl sm:text-4xl md:text-5xl tracking-tight leading-[1.2] text-balance text-slate-100"
             >
               &ldquo;{quote}&rdquo;
             </motion.p>
@@ -136,16 +136,16 @@ export default function Welcome({ onDone }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="relative text-center max-w-2xl px-4"
+            className="relative text-center max-w-2xl px-3 sm:px-4"
           >
-            <div className="flex justify-center mb-6">
-              <Logo size={56} className="opacity-95" />
+            <div className="flex justify-center mb-4 sm:mb-6">
+              <Logo size={48} className="opacity-95 sm:w-14 sm:h-14" />
             </div>
-            <p className="text-xs font-mono tracking-[0.35em] uppercase text-blue-400 mb-3">Welcome</p>
-            <h2 className="font-display font-extrabold text-3xl sm:text-5xl tracking-tight leading-tight text-white">
+            <p className="text-xs font-mono tracking-[0.35em] uppercase text-blue-400 mb-2 sm:mb-3">Welcome</p>
+            <h2 className="font-display font-extrabold text-2xl sm:text-5xl tracking-tight leading-tight text-white">
               {welcome.inviteTitle || 'Pleasure to have you here.'}
             </h2>
-            <p className="mt-4 text-slate-400 text-lg sm:text-xl">
+            <p className="mt-3 sm:mt-4 text-slate-400 text-base sm:text-xl">
               {welcome.inviteSubtitle || "Let's turn data into decisions — and connect."}
             </p>
           </motion.div>
