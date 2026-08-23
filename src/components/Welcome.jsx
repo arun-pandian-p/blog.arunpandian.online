@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContent } from '../context/ContentProvider';
 import Logo from './Logo';
+import DoodleGuide from './DoodleGuide';
 
 /* Awwwards-style intro: shows a single curated quote, then transitions to 
    the landing screen via a premium staggered mosaic/grid small box scale-down reveal. */
@@ -148,6 +149,18 @@ export default function Welcome({ onDone }) {
             <p className="mt-3 sm:mt-4 text-slate-400 text-base sm:text-xl">
               {welcome.inviteSubtitle || "Let's turn data into decisions — and connect."}
             </p>
+
+            <div className="mt-6 flex justify-center">
+              <DoodleGuide
+                tag="Enter"
+                text="Click anywhere or scroll to explore"
+                subtext="Interactive portfolio awaits ✦"
+                icon="sparkle"
+                arrow="straight-squiggle"
+                arrowPosition="bottom-right"
+                rotation={-1}
+              />
+            </div>
           </motion.div>
         ) : null}
       </motion.div>

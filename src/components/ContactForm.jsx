@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Send, CheckCircle, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import MagneticButton from './MagneticButton';
 import { useContent } from '../context/ContentProvider';
+import DoodleGuide from './DoodleGuide';
 
 const ease = [0.16, 1, 0.3, 1];
 
@@ -47,6 +48,20 @@ const ContactForm = () => {
                 <p data-edit-id="contact.subtitle" data-edit-name="Contact · Subtitle" data-edit-kind="text" data-edit-path="contact.subtitle" className="mt-4 sm:mt-6 text-base sm:text-lg text-ink-soft max-w-md leading-relaxed">
                   {contact.subtitle || 'Let us build something together.'}
                 </p>
+
+                {/* Doodle Guide for Contact */}
+                <div className="mt-6">
+                  <DoodleGuide
+                    tag="Say Hello"
+                    text="Got an idea or role? Takes < 1 min to send"
+                    subtext="I reply quickly · Excited to connect ☕"
+                    icon="plane"
+                    arrow="curved-down-right"
+                    arrowPosition="bottom-right"
+                    rotation={-1.5}
+                    color="var(--color-primary, #2563EB)"
+                  />
+                </div>
               </>
             )}
             {isVisible('contactDetails') && (

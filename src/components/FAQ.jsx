@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import DoodleGuide from './DoodleGuide';
 
 const faqs = [
   {
@@ -45,11 +46,25 @@ const FAQ = () => {
       </Helmet>
       
       <div className="max-w-4xl mx-auto px-4 sm:px-8">
-        <div className="text-center mb-8 sm:mb-16">
+        <div className="text-center mb-8 sm:mb-14">
           <span className="text-xs font-mono tracking-[0.25em] text-accent uppercase">FAQ</span>
           <h2 className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">
             Frequently Asked Questions
           </h2>
+
+          {/* Doodle Guide for FAQ */}
+          <div className="mt-5 flex justify-center">
+            <DoodleGuide
+              tag="FAQ"
+              text="Quick answers to common questions & workflow"
+              subtext="Tap any question to expand details ↓"
+              icon="question"
+              arrow="curved-down-right"
+              arrowPosition="bottom-right"
+              rotation={1.5}
+              color="var(--color-primary, #2563EB)"
+            />
+          </div>
         </div>
 
         <div className="space-y-3 sm:space-y-4">

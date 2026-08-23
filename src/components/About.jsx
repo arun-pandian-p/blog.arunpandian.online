@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import arunProfile from '../assets/arun-profile.jpg';
 import SliceReveal from './SliceReveal';
 import { useContent } from '../context/ContentProvider';
+import DoodleGuide from './DoodleGuide';
 
 const ease = [0.16, 1, 0.3, 1];
 
@@ -25,11 +26,25 @@ const About = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Header */}
         {isVisible('sectionHeaders') && (
-          <div className="mb-8 sm:mb-12">
-            <span data-edit-id="about.label" data-edit-name="About · Eyebrow" data-edit-kind="text" data-edit-path="about.sectionLabel" className="text-xs font-mono tracking-[0.25em] text-accent uppercase">{about.sectionLabel}</span>
-            <h2 data-edit-id="about.title" data-edit-name="About · Title" data-edit-kind="heading" data-edit-path="about.sectionTitle" className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">
-              {about.sectionTitle}
-            </h2>
+          <div className="mb-8 sm:mb-12 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <span data-edit-id="about.label" data-edit-name="About · Eyebrow" data-edit-kind="text" data-edit-path="about.sectionLabel" className="text-xs font-mono tracking-[0.25em] text-accent uppercase">{about.sectionLabel}</span>
+              <h2 data-edit-id="about.title" data-edit-name="About · Title" data-edit-kind="heading" data-edit-path="about.sectionTitle" className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">
+                {about.sectionTitle}
+              </h2>
+            </div>
+            
+            {/* Doodle Art Guide for About */}
+            <DoodleGuide
+              tag="Insight"
+              text="Turning messy raw data into strategic decisions"
+              subtext="Problem solver · Business minded"
+              icon="lightbulb"
+              arrow="curved-down-right"
+              arrowPosition="bottom-right"
+              rotation={-2}
+              color="var(--color-primary, #2563EB)"
+            />
           </div>
         )}
 

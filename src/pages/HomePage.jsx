@@ -21,6 +21,7 @@ import { useContent } from '../context/ContentProvider';
 import CanvasRuntime from '../editor/CanvasRuntime';
 import StyleOverrides from '../editor/StyleOverrides';
 import { TopMarquee, PreloaderCounter, GrainOverlay, RadianScrollNav, Scanlines, toRoman } from '../theme/Modifiers';
+import DoodleGuide from '../components/DoodleGuide';
 
 export default function HomePage() {
   const { settings, projects, blogs } = useContent();
@@ -308,6 +309,19 @@ export default function HomePage() {
                 <span data-edit-id="blog.label" data-edit-name="Writing · Eyebrow" data-edit-kind="text" data-edit-path="sections.blog.label" className="text-xs font-mono tracking-[0.25em] text-accent uppercase">{blogSection.label || '05 — Writing'}</span>
                 <h2 data-edit-id="blog.title" data-edit-name="Writing · Title" data-edit-kind="heading" data-edit-path="sections.blog.title" className="mt-2.5 sm:mt-3 font-display font-extrabold text-2xl sm:text-4xl lg:text-5xl text-ink tracking-tight">{blogSection.title || 'Latest Articles'}</h2>
               </div>
+              
+              {/* Doodle Guide for Blog */}
+              <DoodleGuide
+                tag="Articles"
+                text="Deep dives into SQL, Python & data stories"
+                subtext="Actionable takeaways & technical tutorials"
+                icon="star"
+                arrow="curved-down-right"
+                arrowPosition="bottom-right"
+                rotation={-1.5}
+                color="var(--color-primary, #2563EB)"
+              />
+
               {/* Scroll mode toggle hint */}
               {blogScroll === 'horizontal' && blogs?.length > 2 && (
                 <motion.div
@@ -508,6 +522,18 @@ export default function HomePage() {
                   }`}
                 >{footerData.name}</h3>
                 <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-2.5 sm:mt-3 text-bg/60 text-xs sm:text-sm max-w-sm">{footerData.tagline}</p>
+                
+                {/* Doodle Art Guide Sticky Note for Footer */}
+                <div className="mt-5">
+                  <DoodleGuide
+                    tag="Connect"
+                    text="Open for full-time Data Analyst roles & projects"
+                    subtext="Let's build something data-driven together ✦"
+                    icon="heart"
+                    arrow="none"
+                    rotation={1}
+                  />
+                </div>
               </div>
               <div className="flex flex-wrap gap-4 sm:gap-6 text-xs sm:text-sm text-bg/70">
                 <a href={footerData.github} target="_blank" rel="noopener noreferrer" className="hover:text-bg transition-colors min-h-[36px] flex items-center">GitHub</a>

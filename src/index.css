@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Caveat:wght@500;600;700&family=Kalam:wght@400;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
   --font-sans: var(--font-primary);
   --font-display: var(--font-heading);
+  --font-handwriting: 'Caveat', 'Kalam', cursive;
 
   --color-bg: var(--color-background);
   --color-surface: var(--color-surface);
@@ -115,3 +116,23 @@ h1, h2, h3, h4, h5, h6, .font-display {
   html { scroll-behavior: auto; }
   .animate-marquee { animation: none; }
 }
+
+/* ─── Doodle Art Guide Helpers ─── */
+.font-handwriting {
+  font-family: 'Caveat', 'Kalam', cursive, system-ui;
+}
+
+@keyframes doodleFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--doodle-rot, 0deg)); }
+  50% { transform: translateY(-4px) rotate(calc(var(--doodle-rot, 0deg) + 1.5deg)); }
+}
+
+.animate-doodle-float {
+  animation: doodleFloat 4s ease-in-out infinite;
+}
+
+.doodle-stroke {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+

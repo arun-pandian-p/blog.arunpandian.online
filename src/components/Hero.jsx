@@ -6,6 +6,7 @@ import Parallax from './Parallax';
 import arunProfile from '../assets/arun-profile.jpg';
 import { useContent } from '../context/ContentProvider';
 import { WordRotator } from '../theme/Modifiers';
+import DoodleGuide from './DoodleGuide';
 
 const GithubIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1122,7 +1123,21 @@ const Hero = () => {
             </motion.div>
           )}
 
-          <motion.div custom={6} variants={rise} initial="hidden" animate="show" className="mt-6 sm:mt-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {/* Doodle Art Guide Note for Hero */}
+          <div className="mt-6 sm:mt-7 -mb-1">
+            <DoodleGuide
+              tag="Explore"
+              text="Explore selected work & live data apps"
+              subtext="Click below to see case studies ↓"
+              icon="sparkle"
+              arrow="curved-down-left"
+              arrowPosition="bottom-left"
+              rotation={-1.5}
+              color="var(--color-primary, #2563EB)"
+            />
+          </div>
+
+          <motion.div custom={6} variants={rise} initial="hidden" animate="show" className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
             {isVisible('primaryCta') && (
               <MagneticButton
                 href={hero.primaryCta?.href || '#projects'}

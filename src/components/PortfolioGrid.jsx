@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectChartPreview from './ProjectChartPreview';
+import DoodleGuide from './DoodleGuide';
 
 const GithubIcon = ({ size = 16 }) => (
   <svg
@@ -106,6 +107,20 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
           <p className="text-xs sm:text-base text-slate-600 max-w-xl mx-auto font-normal leading-relaxed px-2">
             {sectionConfig.subtitle || 'Recruiter-ready case studies'}
           </p>
+
+          {/* Doodle Guide for Projects */}
+          <div className="mt-5 flex justify-center">
+            <DoodleGuide
+              tag="Interactive"
+              text="Filter by skill & test live interactive apps!"
+              subtext="Click any project to inspect data & code ↓"
+              icon="chart"
+              arrow="curved-down-right"
+              arrowPosition="bottom-right"
+              rotation={1.5}
+              color="#2563EB"
+            />
+          </div>
         </div>
 
         {/* ── Category Filter Tabs (Touch-friendly & Horizontal scroll on mobile) ── */}
