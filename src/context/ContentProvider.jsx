@@ -335,20 +335,30 @@ export function useContent() {
 // Helper: convert Supabase project row → component shape
 function mapProject(row) {
   return {
+    id: row.id,
     _id: row.id,
     title: row.title,
+    subtitle: row.subtitle,
+    category: row.category,
     problem: row.problem,
     data: row.data,
+    dataset_url: row.dataset_url,
+    records_count: row.records_count,
     process: row.process,
     insight: row.insight,
+    result: row.result,
     tags: row.tags || [],
     githubLink: row.github_link,
+    github_link: row.github_link,
     liveLink: row.live_link,
+    live_link: row.live_link,
     demoLink: row.live_link,
+    powerbi_embed_url: row.powerbi_embed_url || row.live_link,
     imageUrl: row.image_url,
-    // ProjectCard reads the raw column names — keep both shapes wired
     image_url: row.image_url,
     created_at: row.created_at,
+    published: row.published,
+    sort_order: row.sort_order,
   };
 }
 

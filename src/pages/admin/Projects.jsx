@@ -27,10 +27,14 @@ export default function Projects() {
   // Form state
   const emptyProject = {
     title: '',
+    subtitle: '',
     problem: '',
     data: '',
+    dataset_url: '',
+    records_count: '',
     process: '',
     insight: '',
+    result: '',
     tags: '',
     live_link: '',
     github_link: '',
@@ -108,10 +112,14 @@ export default function Projects() {
       setEditingProject(project);
       setFormData({
         title: project.title || '',
+        subtitle: project.subtitle || '',
         problem: project.problem || '',
         data: project.data || '',
+        dataset_url: project.dataset_url || '',
+        records_count: project.records_count || '',
         process: project.process || '',
         insight: project.insight || '',
+        result: project.result || '',
         tags: Array.isArray(project.tags) ? project.tags.join(', ') : (project.tags || ''),
         live_link: project.live_link || '',
         github_link: project.github_link || '',
@@ -392,74 +400,118 @@ export default function Projects() {
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="e.g. Data Science Job Market Analysis"
+                placeholder="e.g. Amazon Delivery Performance & Prediction Dashboard"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Problem Statement</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Subtitle / Executive Summary</label>
+              <input
+                type="text"
+                value={formData.subtitle}
+                onChange={e => setFormData({...formData, subtitle: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                placeholder="Brief 1-2 sentence executive summary of the case study..."
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Business Problem Statement ("The Question")</label>
               <textarea
                 value={formData.problem}
                 onChange={e => setFormData({...formData, problem: e.target.value})}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
-                placeholder="Describe the problem this project solves..."
+                placeholder="What business question or operational problem does this project address?"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Data Used</label>
-              <textarea
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset Description</label>
+              <input
+                type="text"
                 value={formData.data}
                 onChange={e => setFormData({...formData, data: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[60px]"
-                placeholder="What dataset or data sources did this project use?"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                placeholder="e.g. Amazon Delivery Logistics & Routing Dataset"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Process</label>
-              <textarea
-                value={formData.process}
-                onChange={e => setFormData({...formData, process: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
-                placeholder="How did you approach and build it?"
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset URL (Clickable Kaggle / Source)</label>
+              <input
+                type="url"
+                value={formData.dataset_url}
+                onChange={e => setFormData({...formData, dataset_url: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                placeholder="https://kaggle.com/... or https://..."
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Insight / Result</label>
-              <textarea
-                value={formData.insight}
-                onChange={e => setFormData({...formData, insight: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[60px]"
-                placeholder="The key finding or outcome..."
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Records Count / Scope</label>
+              <input
+                type="text"
+                value={formData.records_count}
+                onChange={e => setFormData({...formData, records_count: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                placeholder="e.g. 45,000+ Orders or 73,000+ Rows"
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-bold text-slate-700 mb-1.5">Tags (Comma separated)</label>
               <input
                 type="text"
                 value={formData.tags}
                 onChange={e => setFormData({...formData, tags: e.target.value})}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="Excel, Power Query, DAX"
+                placeholder="Power BI, SQL, Python, DAX, KPI"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Analytical Process & Methodology</label>
+              <textarea
+                value={formData.process}
+                onChange={e => setFormData({...formData, process: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
+                placeholder="Describe the steps performed (e.g. Data Cleaning, ETL, Feature Engineering, DAX Modeling, Dashboarding)..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Live Link URL</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Key Findings / Insights</label>
+              <textarea
+                value={formData.insight}
+                onChange={e => setFormData({...formData, insight: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[70px]"
+                placeholder="Key discovery or takeaway from the data..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Quantified Result / Business Impact</label>
+              <textarea
+                value={formData.result}
+                onChange={e => setFormData({...formData, result: e.target.value})}
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[70px]"
+                placeholder="Quantified outcome (e.g. Reduced turnaround bottlenecks by 14%)..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">Power BI / Live Dashboard Embed URL</label>
               <input
                 type="url"
                 value={formData.live_link}
                 onChange={e => setFormData({...formData, live_link: e.target.value})}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="https://..."
+                placeholder="https://app.powerbi.com/view?r=... or https://..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">GitHub URL</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">GitHub Repository URL</label>
               <input
                 type="url"
                 value={formData.github_link}
