@@ -111,7 +111,7 @@ const Skills = () => {
                 className="group flex w-full items-start gap-3.5 sm:gap-4 p-4 sm:p-5 rounded-2xl border border-line bg-surface text-left hover:shadow-lg hover:border-ink/20 transition-all duration-300 cursor-pointer min-h-[44px]"
               >
                 {c.image && isImage(c.image) ? (
-                  <img loading="lazy" src={c.image} alt={c.name} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0" />
+                  <img loading="lazy" decoding="async" src={c.image} alt={c.name} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0" />
                 ) : c.image ? (
                   (() => {
                     const FileKindIcon = CERT_FILE_ICON[getFileKind(c.image)] || FileIcon;
@@ -147,7 +147,7 @@ const Skills = () => {
                     className="group flex w-[82vw] sm:w-[52vw] md:w-[36vw] lg:w-[28vw] shrink-0 snap-center items-start gap-3.5 sm:gap-4 p-4 sm:p-5 rounded-2xl border border-line bg-surface text-left hover:shadow-lg hover:border-ink/20 transition-all duration-300 cursor-pointer min-h-[44px]"
                   >
                     {c.image && isImage(c.image) ? (
-                      <img loading="lazy" src={c.image} alt={c.name} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0" />
+                      <img loading="lazy" decoding="async" src={c.image} alt={c.name} className="h-11 w-11 sm:h-12 sm:w-12 rounded-lg object-cover shrink-0" />
                     ) : c.image ? (
                       (() => {
                         const FileKindIcon = CERT_FILE_ICON[getFileKind(c.image)] || FileIcon;
@@ -271,7 +271,7 @@ const Skills = () => {
               <div className="grid min-h-[260px] sm:min-h-[300px] flex-1 place-items-center overflow-auto bg-bg p-2">
                 {media ? (
                   isImage(media) ? (
-                    <img loading="lazy" src={media} alt={activeCert.name} className="max-h-[75vh] w-auto object-contain" />
+                    <img loading="lazy" decoding="async" src={media} alt={activeCert.name} className="max-h-[75vh] w-auto object-contain" />
                   ) : isPdf(media) ? (
                     <iframe src={media} title={activeCert.name} className="h-[70vh] sm:h-[75vh] w-full border-0 bg-white" />
                   ) : isOfficeDoc(media) ? (

@@ -56,7 +56,9 @@ const Timeline = () => {
                   {exp.media_url && (
                     <div className="w-full md:w-[40%] shrink-0 mt-3 md:mt-0">
                       <div className="rounded-xl overflow-hidden border border-line bg-surface relative group">
-                        <img loading="lazy" 
+                        <img
+                          loading="lazy"
+                          decoding="async"
                           src={exp.media_url} 
                           alt={`${exp.role} Certificate`}
                           className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"

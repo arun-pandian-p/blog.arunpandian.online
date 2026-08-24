@@ -7,7 +7,7 @@ import DoodleGuide from './DoodleGuide';
 /* Awwwards-style intro: shows a single curated quote, then transitions to 
    the landing screen via a premium staggered mosaic/grid small box scale-down reveal. */
 
-const QUOTE_DURATION = 2000; // Duration to show the single quote
+const QUOTE_DURATION = 900; // Snappy duration for the single quote
 const COLS = 10;
 const ROWS = 8;
 
@@ -28,33 +28,40 @@ export default function Welcome({ onDone }) {
   const finish = () => {
     if (done.current) return;
     done.current = true;
+    try {
+      sessionStorage.setItem('welcome_shown', 'true');
+    } catch {}
     setPhase('exit');
-    setTimeout(onDone, 1200); // Allow time for the mosaic animation to complete
+    setTimeout(onDone, 350); // Snappy exit transition
   };
 
   useEffect(() => {
     if (reduced) {
-      const t = setTimeout(onDone, 400);
+      const t = setTimeout(() => {
+        try { sessionStorage.setItem('welcome_shown', 'true'); } catch {}
+        onDone();
+      }, 200);
       return () => clearTimeout(t);
     }
 
     const timers = [];
 
-    // Show single quote, then go to invite/welcome splash, then auto-finish
+    // Show single quote briefly, then go to invite, then auto-finish
     timers.push(setTimeout(() => setPhase('invite'), QUOTE_DURATION));
-    timers.push(setTimeout(() => setPhase('exit'), QUOTE_DURATION + 2000));
-    timers.push(setTimeout(() => finish(), QUOTE_DURATION + 3000));
+    timers.push(setTimeout(() => finish(), QUOTE_DURATION + 1000));
 
-    // Allow skip by key/scroll/click
+    // Allow instant skip by key/scroll/click/touch
     const bail = () => finish();
     window.addEventListener('wheel', bail, { passive: true });
     window.addEventListener('touchmove', bail, { passive: true });
+    window.addEventListener('touchstart', bail, { passive: true });
     window.addEventListener('keydown', bail);
     
     return () => {
       timers.forEach(clearTimeout);
       window.removeEventListener('wheel', bail);
       window.removeEventListener('touchmove', bail);
+      window.removeEventListener('touchstart', bail);
       window.removeEventListener('keydown', bail);
     };
   }, [onDone, reduced]);

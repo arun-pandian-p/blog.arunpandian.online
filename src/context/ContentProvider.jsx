@@ -382,14 +382,33 @@ function mapExperience(row) {
   };
 }
 
-// ─── Provider ───────────────────────────────────────────────
+const CACHE_KEY = 'arun_site_content_cache_v2';
+
+function getCachedData() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function setCachedData(data) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {}
+}
 
 export function ContentProvider({ children }) {
-  const [settings, setSettings] = useState(fallbackSettings);
-  const [projects, setProjects] = useState(fallbackProjects);
-  const [blogs, setBlogs] = useState(fallbackBlogs);
-  const [experiences, setExperiences] = useState(fallbackExperiences);
-  const [loading, setLoading] = useState(true);
+  const cached = getCachedData();
+  const [settings, setSettings] = useState(() => cached?.settings || fallbackSettings);
+  const [projects, setProjects] = useState(() => cached?.projects || fallbackProjects);
+  const [blogs, setBlogs] = useState(() => cached?.blogs || fallbackBlogs);
+  const [experiences, setExperiences] = useState(() => cached?.experiences || fallbackExperiences);
+  const [loading, setLoading] = useState(() => !cached);
 
   // ── Live draft preview: when this app runs inside the admin's preview iframe,
   //    the admin pushes unsaved form drafts here so the site re-renders instantly.
@@ -418,6 +437,20 @@ export function ContentProvider({ children }) {
       return;
     }
 
+    let latestSettings = cached?.settings || fallbackSettings;
+    let latestProjects = cached?.projects || fallbackProjects;
+    let latestBlogs = cached?.blogs || fallbackBlogs;
+    let latestExperiences = cached?.experiences || fallbackExperiences;
+
+    const syncCache = () => {
+      setCachedData({
+        settings: latestSettings,
+        projects: latestProjects,
+        blogs: latestBlogs,
+        experiences: latestExperiences,
+      });
+    };
+
     // Per-table fetchers so realtime events can refresh just what changed
     const fetchSettings = async () => {
       const { data: rows, error } = await supabase
@@ -443,7 +476,9 @@ export function ContentProvider({ children }) {
             merged[row.key] = val;
           }
         }
+        latestSettings = merged;
         setSettings(merged);
+        syncCache();
       }
     };
 
@@ -454,7 +489,12 @@ export function ContentProvider({ children }) {
         .select('*')
         .eq('published', true)
         .order('sort_order', { ascending: true });
-      if (!error && rows) setProjects(rows.length > 0 ? rows.map(mapProject) : []);
+      if (!error && rows) {
+        const mapped = rows.length > 0 ? rows.map(mapProject) : [];
+        latestProjects = mapped;
+        setProjects(mapped);
+        syncCache();
+      }
     };
 
     const fetchBlogs = async () => {
@@ -463,7 +503,12 @@ export function ContentProvider({ children }) {
         .select('*')
         .eq('published', true)
         .order('sort_order', { ascending: true });
-      if (!error && rows) setBlogs(rows.length > 0 ? rows.map(mapBlog) : []);
+      if (!error && rows) {
+        const mapped = rows.length > 0 ? rows.map(mapBlog) : [];
+        latestBlogs = mapped;
+        setBlogs(mapped);
+        syncCache();
+      }
     };
 
     const fetchExperiences = async () => {
@@ -472,7 +517,12 @@ export function ContentProvider({ children }) {
         .select('*')
         .eq('published', true)
         .order('sort_order', { ascending: true });
-      if (!error && rows) setExperiences(rows.length > 0 ? rows.map(mapExperience) : []);
+      if (!error && rows) {
+        const mapped = rows.length > 0 ? rows.map(mapExperience) : [];
+        latestExperiences = mapped;
+        setExperiences(mapped);
+        syncCache();
+      }
     };
 
     const fetchAll = async () => {

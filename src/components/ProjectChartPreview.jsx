@@ -5,6 +5,7 @@ export default function ProjectChartPreview({ type = 0, title = '', imageUrl = n
     return (
       <img
         loading="lazy"
+        decoding="async"
         src={imageUrl}
         alt={title}
         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

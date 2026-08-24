@@ -39,27 +39,33 @@ export default function HomePage() {
   const projectsScroll = theme?.layout?.projectsScroll || 'grid';
   const blogScroll = theme?.layout?.blogScroll || 'horizontal';
 
+  const alreadySeenIntro =
+    typeof window !== 'undefined' &&
+    sessionStorage.getItem('welcome_shown') === 'true';
+
   const [loadComplete, setLoadComplete] = useState(animationStyle !== 'juliencalot');
-  const [intro, setIntro] = useState(!isPreview);
+  const [intro, setIntro] = useState(!isPreview && !alreadySeenIntro && Boolean(settings?.welcome?.enabled));
 
   useEffect(() => {
     setLoadComplete(animationStyle !== 'juliencalot');
   }, [animationStyle]);
 
-  // Admin can disable the welcome intro entirely
-  const welcomeEnabled = settings?.welcome?.enabled !== false;
+  // Admin can enable/disable the welcome intro
+  const welcomeEnabled = Boolean(settings?.welcome?.enabled);
   useEffect(() => {
-    if (!welcomeEnabled && intro) setIntro(false);
-  }, [welcomeEnabled, intro]);
+    if ((!welcomeEnabled || alreadySeenIntro) && intro) setIntro(false);
+  }, [welcomeEnabled, alreadySeenIntro, intro]);
 
   useEffect(() => {
     if (!intro) {
       document.body.style.overflow = '';
-      window.scrollTo(0, 0);
       return;
     }
     document.body.style.overflow = 'hidden';
-    const safety = setTimeout(() => setIntro(false), 9000);
+    const safety = setTimeout(() => {
+      try { sessionStorage.setItem('welcome_shown', 'true'); } catch {}
+      setIntro(false);
+    }, 2500);
     return () => {
       clearTimeout(safety);
       document.body.style.overflow = '';
