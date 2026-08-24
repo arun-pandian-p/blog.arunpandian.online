@@ -153,14 +153,16 @@ const fallbackProjects = [
   {
     _id: '1',
     title: 'Data Science Job Market Analysis',
+    subtitle: 'An end-to-end analysis of the data science job market to identify demand, salary patterns, hiring trends, and the most valuable technical skills.',
     category: 'data viz',
     problem: "Job seekers struggle to know which skills actually pay. Postings are broad and generic, so it's hard to tell which tech stacks drive salary for data roles.",
     data: 'Real 2023 data-science job-posting dataset — titles, skill requirements, salary ranges, countries and schedule types.',
     process: 'Built an end-to-end Excel analysis: Power Query ETL to clean and shape the data, a Power Pivot data model, and custom DAX measures comparing US vs. non-US median salaries. Linked skill demand to pay with combo PivotCharts.',
     insight: 'SQL and Python are the highest-value skill combination — the pairing tops the dataset on both demand and median salary.',
     result: 'Discovered SQL + Python unlocks a $125k+ median compensation benchmark with 3.4x higher hiring volume than single-tool skillsets.',
-    tags: ['Excel', 'Power Query', 'Power Pivot', 'DAX'],
+    tags: ['Excel', 'Power Query', 'Power Pivot', 'DAX', 'PivotTables', 'Data Visualization', 'Job Market Analysis', 'Salary Analysis', 'SQL', 'Python'],
     githubLink: GH,
+    dataset_url: 'https://www.kaggle.com/datasets/gmanish/data-nerd-job-analysis',
     chartType: 0,
   },
   {
