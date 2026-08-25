@@ -10,14 +10,15 @@ import { useThemeStore } from '../theme/store';
    Shared helpers
 ───────────────────────────────────────────────────────────────────────────── */
 
-/** Three-column pill layout — logo left | links center | cta right.
- *  Uses CSS Grid (1fr auto 1fr) so the center column is always exactly
- *  centred relative to the container regardless of how wide each side is. */
-function NavGrid({ children, px = 'px-5 sm:px-7', py = 'py-2.5', extra = '' }) {
+/** Responsive navbar container.
+ *  Desktop: CSS Grid (1fr auto 1fr) — logo left, links perfectly centered, cta right.
+ *  Mobile:  same grid but with minmax(0,auto) so columns compress gracefully.
+ */
+function NavGrid({ children, px = 'px-4 sm:px-7', py = 'py-2.5', extra = '' }) {
   return (
     <div
-      className={`grid items-center ${px} ${py} ${extra}`}
-      style={{ gridTemplateColumns: '1fr auto 1fr' }}
+      className={`grid items-center gap-x-2 ${px} ${py} ${extra}`}
+      style={{ gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)' }}
     >
       {children}
     </div>
@@ -89,9 +90,9 @@ const Navbar = () => {
   const idleLink    = { color: 'var(--color-muted)'   };
   const ctaBtn      = { background: 'var(--color-text)', color: 'var(--color-background)' };
 
-  /* ── Shared desktop link list ── */
+  /* ── Shared desktop link list ── hidden on mobile (shown in drawer) */
   const DesktopLinks = () => (
-    <div className="flex items-center justify-center gap-1">
+    <div className="hidden sm:flex items-center justify-center gap-1">
       {navLinks.map(({ name, href }) => (
         <Link
           key={name}
@@ -203,13 +204,14 @@ const Navbar = () => {
           {/* ── 3-column grid: logo | links | cta ── */}
           <NavGrid>
             {/* Col 1 — Brand (left-aligned) */}
-            <a href="/#hero" className="flex items-center gap-2.5 group" aria-label={`${brandName} home`}>
+            <a href="/#hero" className="flex items-center gap-2 group" aria-label={`${brandName} home`}>
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
-              <div>
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+              {/* Name always visible — grid column handles spacing */}
+              <div className="min-w-0">
+                <span className="block text-[11px] font-extrabold tracking-tight leading-none truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   {brandName}
                 </span>
-                <span className="block text-[9px] font-mono mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                <span className="block text-[9px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
                   {role}
                 </span>
               </div>
@@ -404,16 +406,16 @@ const Navbar = () => {
       <div className="relative w-full max-w-7xl">
         <NavGrid px="px-4 sm:px-8" py="py-3.5">
           {/* Col 1 — Brand */}
-          <a href="/#hero" className="flex items-center gap-2.5 group shrink-0" aria-label={`${brandName} home`}>
+          <a href="/#hero" className="flex items-center gap-2 group shrink-0" aria-label={`${brandName} home`}>
             <Logo size={30} className="transition-transform duration-300 group-hover:scale-105" />
-            <div>
+            <div className="min-w-0">
               <span
-                className="block text-[11px] sm:text-[13px] font-extrabold tracking-tight leading-none"
+                className="block text-[11px] sm:text-[12px] font-extrabold tracking-tight leading-none truncate"
                 style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 {brandName}
               </span>
-              <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5" style={{ color: 'var(--color-muted)' }}>
+              <span className="block text-[9px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
                 {role}
               </span>
             </div>
