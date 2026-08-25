@@ -227,7 +227,7 @@ const Hero = () => {
   }
 
   // ─── LAYOUT A: JOY RUSH (Playful Candy & Floaters) ───
-  if (animationStyle === 'joyrush') {
+  if (heroStyle === 'default' && animationStyle === 'joyrush') {
     return (
       <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-36 pb-12 bg-[#FDF7EE]">
         {/* Floating background clouds/bubbles */}
@@ -290,7 +290,7 @@ const Hero = () => {
   }
 
   // ─── LAYOUT B: K95 MINIMAL (Monochrome & Lines) ───
-  if (animationStyle === 'k95') {
+  if (heroStyle === 'default' && animationStyle === 'k95') {
     return (
       <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-between pt-36 pb-12 bg-[#FAFAFA] text-[#111111] font-mono">
         {/* Hairline structural grids */}
@@ -301,102 +301,48 @@ const Hero = () => {
           <div className="h-full" />
         </div>
 
-        <div className="w-full max-w-7xl mx-auto px-5 flex flex-col justify-center flex-1">
-          <div className="grid lg:grid-cols-4 gap-6 items-start">
-            <div className="lg:col-span-1 text-xs space-y-4">
-              <div>[01] INDEX</div>
-              <div className="text-black/50">BRAND & DIGITAL DIGITAL EXPERT PORTFOLIO</div>
-              {isVisible('badge') && (
-                <div data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="underline">{hero.badge}</div>
-              )}
-            </div>
-
-            <div className="lg:col-span-3">
-              <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-display font-bold text-4xl sm:text-7xl uppercase tracking-tighter leading-none">
-                {(hero.headline || []).map((line, i) => (
-                  <span key={i} className="block">{line}</span>
-                ))}
-                {isVisible('headlineAccent') && (
-                  <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="block text-accent italic">{hero.headlineAccent}</span>
-                )}
-              </h1>
-
-              {isVisible('subtitle') && (
-                <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="mt-8 max-w-lg text-sm text-[#111111]/70 leading-relaxed uppercase">
-                  {hero.subtitle?.replace(/<[^>]*>/g, '')}
-                </p>
-              )}
-
-              <div className="mt-8 flex gap-4">
-                {isVisible('primaryCta') && (
-                  <a
-                    href={hero.primaryCta?.href || '#projects'}
-                    data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label"
-                    className="custom-element-button px-6 py-2.5 border border-black uppercase text-xs tracking-widest hover:bg-black hover:text-white transition-transform"
-                  >
-                    {hero.primaryCta?.label}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full max-w-7xl mx-auto px-5 flex justify-between items-end text-[10px] border-t border-line pt-6">
-          <span>ARUN PANDIAN PORTFOLIO Selected Works</span>
-          <span>© 2026 EDITION</span>
-        </div>
-      </section>
-    );
-  }
-
-  // ─── LAYOUT C: JULIEN CALOT ART ───
-  if (animationStyle === 'juliencalot') {
-    return (
-      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-36 pb-12 bg-[#F4F1EC] text-[#1A1A1A]">
-        <div className="w-full max-w-7xl mx-auto px-5 grid lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7">
+        <div className="w-full max-w-6xl mx-auto px-5">
+          <div className="flex justify-between items-start border-b border-line pb-8">
             {isVisible('badge') && (
-              <span data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="text-xs uppercase tracking-[0.2em] text-[#FF2A54] font-bold">
+              <span data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="text-xs uppercase tracking-widest text-ink-soft">
                 {hero.badge}
               </span>
             )}
-            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="mt-6 font-display font-extrabold text-5xl sm:text-8xl italic tracking-tight leading-none">
+            <span className="text-xs text-ink-soft font-mono">EST. 2026</span>
+          </div>
+
+          <div className="my-16">
+            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="text-[clamp(2.5rem,7vw,6rem)] font-light leading-[1.05] tracking-tight uppercase">
               {(hero.headline || []).map((line, i) => (
                 <span key={i} className="block">{line}</span>
               ))}
               {isVisible('headlineAccent') && (
-                <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="block text-[#FF2A54] not-italic font-black mt-2">{hero.headlineAccent}</span>
+                <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="block text-accent font-normal mt-2 underline underline-offset-8">
+                  {hero.headlineAccent}
+                </span>
               )}
             </h1>
+          </div>
 
-            {isVisible('subtitle') && (
-              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="mt-6 max-w-md text-base text-black/60 leading-relaxed font-mono">
-                {hero.subtitle?.replace(/<[^>]*>/g, '')}
-              </p>
-            )}
-
-            <div className="mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-8 border-t border-line">
+            <div className="col-span-2">
+              {isVisible('subtitle') && (
+                <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="text-sm text-ink-soft leading-relaxed max-w-xl">
+                  {hero.subtitle?.replace(/<[^>]*>/g, '')}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 justify-end items-start md:items-end">
               {isVisible('primaryCta') && (
                 <a
                   href={hero.primaryCta?.href || '#projects'}
                   data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#1A1A1A] text-white hover:bg-[#FF2A54] transition-transform text-sm font-bold"
+                  className="inline-flex items-center gap-2 text-xs uppercase tracking-widest text-ink hover:text-accent font-bold transition-colors"
                 >
-                  {hero.primaryCta?.label} <ArrowRight size={16} />
+                  <span>{hero.primaryCta?.label || 'Work Index'}</span>
+                  <ArrowRight size={14} />
                 </a>
               )}
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative w-72 h-96 rounded-2xl overflow-hidden border border-black/10 shadow-2xl">
-              <img fetchPriority="high"
-                data-edit-id="hero.profileImage" data-edit-name="Hero · Profile image" data-edit-kind="image" data-edit-path="hero.profileImage"
-                src={hero.profileImage || arunProfile}
-                alt={hero.name || 'Arun Pandian'}
-                className="w-full h-full object-cover filter saturate-125"
-              />
             </div>
           </div>
         </div>
@@ -404,57 +350,45 @@ const Hero = () => {
     );
   }
 
-  // ─── LAYOUT D: DEPOLUXE (Brutalist Cinematic) ───
-  if (animationStyle === 'depoluxe') {
+  // ─── LAYOUT C: JULIEN CALOT (Dark Artistic Drama) ───
+  if (heroStyle === 'default' && animationStyle === 'juliencalot') {
     return (
-      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center items-center bg-[#0B0B0B] text-[#E8E4DC] px-5 py-24 text-center">
-        {/* Fullscreen muted video background layer */}
-        <div className="absolute inset-0 opacity-20 -z-10">
-          <video
-            ref={videoRef}
-            src={hero.videoSrc || '/hero-animation.mp4'}
-            autoPlay muted={isMuted} loop playsInline
-            className="w-full h-full object-cover pointer-events-none"
-          />
-          <button 
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMuted(!isMuted); }}
-            className="absolute bottom-6 right-6 p-3 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white/20 transition-colors pointer-events-auto z-50 flex items-center justify-center cursor-pointer shadow-lg"
-            title={isMuted ? "Unmute" : "Mute"}
-          >
-            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-          </button>
-        </div>
+      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex items-center justify-center pt-28 pb-16 bg-[#0B0A0F] text-[#FAF9FC] overflow-hidden">
+        {/* Glow ambient background sphere */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#FF2A54]/15 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-        <div className="w-full max-w-5xl mx-auto flex flex-col items-center">
+        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center text-center">
           {isVisible('badge') && (
-            <span data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="text-xs uppercase tracking-[0.3em] text-[#E8E4DC]/60 font-semibold mb-6">
+            <span data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="inline-block px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-[11px] font-mono tracking-widest uppercase text-[#A59EB5] mb-6">
               {hero.badge}
             </span>
           )}
 
-          <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-display font-extrabold text-3xl sm:text-6xl uppercase tracking-[0.1em] leading-tight">
+          <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-serif italic font-light text-[clamp(3rem,8vw,7rem)] leading-[0.95] text-white">
             {(hero.headline || []).map((line, i) => (
               <span key={i} className="block">{line}</span>
             ))}
             {isVisible('headlineAccent') && (
-              <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="block text-white italic tracking-widest mt-2">{hero.headlineAccent}</span>
+              <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="not-italic font-sans font-black text-[#FF2A54] block mt-2 tracking-tight">
+                {hero.headlineAccent}
+              </span>
             )}
           </h1>
 
           {isVisible('subtitle') && (
-            <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="mt-8 max-w-xl text-sm text-[#E8E4DC]/70 uppercase tracking-widest leading-loose">
+            <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="mt-8 max-w-xl text-sm sm:text-base text-[#A59EB5] leading-relaxed">
               {hero.subtitle?.replace(/<[^>]*>/g, '')}
             </p>
           )}
 
-          <div className="mt-10">
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
             {isVisible('primaryCta') && (
               <a
                 href={hero.primaryCta?.href || '#projects'}
                 data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label"
-                className="custom-element-button px-10 py-4 border border-[#E8E4DC] text-xs uppercase tracking-[0.2em] font-bold hover:bg-[#E8E4DC] hover:text-[#0B0B0B] transition-transform"
+                className="px-8 py-3.5 rounded-full bg-[#FF2A54] hover:bg-[#ff4267] text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-[#FF2A54]/30 hover:scale-105 transition-all"
               >
-                {hero.primaryCta?.label}
+                {hero.primaryCta?.label || 'Explore'}
               </a>
             )}
           </div>
@@ -463,8 +397,70 @@ const Hero = () => {
     );
   }
 
+  // ─── LAYOUT D: DEPO LUXE (High-End Luxury Monolith) ───
+  if (heroStyle === 'default' && animationStyle === 'depoluxe') {
+    return (
+      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center pt-32 pb-16 bg-[#0E0F11] text-[#EAEAEA] border-b border-[#2C2F36]">
+        <div className="w-full max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="lg:col-span-8 space-y-6">
+            <div className="flex items-center gap-3">
+              <span className="h-px w-8 bg-[#D4AF37]" />
+              {isVisible('badge') && (
+                <span data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="text-xs uppercase tracking-[0.3em] text-[#D4AF37] font-serif">
+                  {hero.badge}
+                </span>
+              )}
+            </div>
+
+            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-serif text-[clamp(2.5rem,6vw,5.5rem)] font-light leading-[1.05] tracking-tight">
+              {(hero.headline || []).map((line, i) => (
+                <span key={i} className="block">{line}</span>
+              ))}
+              {isVisible('headlineAccent') && (
+                <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="block text-[#D4AF37] italic font-normal mt-1">
+                  {hero.headlineAccent}
+                </span>
+              )}
+            </h1>
+
+            {isVisible('subtitle') && (
+              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="max-w-xl text-sm text-[#808590] leading-relaxed font-serif pt-4 border-t border-[#2C2F36]">
+                {hero.subtitle?.replace(/<[^>]*>/g, '')}
+              </p>
+            )}
+
+            <div className="pt-4 flex gap-4">
+              {isVisible('primaryCta') && (
+                <a
+                  href={hero.primaryCta?.href || '#projects'}
+                  data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label"
+                  className="px-8 py-3.5 bg-transparent border border-[#D4AF37] text-[#D4AF37] text-xs uppercase tracking-[0.2em] font-serif hover:bg-[#D4AF37] hover:text-black transition-colors"
+                >
+                  {hero.primaryCta?.label || 'Curated Portfolio'}
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-4 flex justify-center">
+            <div className="relative w-64 h-80 rounded-none border border-[#2C2F36] p-2 bg-[#181A1F]">
+              <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-[#D4AF37]" />
+              <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-[#D4AF37]" />
+              <img fetchPriority="high"
+                data-edit-id="hero.profileImage" data-edit-name="Hero · Profile image" data-edit-kind="image" data-edit-path="hero.profileImage"
+                src={hero.profileImage || arunProfile}
+                alt={hero.name || 'Arun Pandian'}
+                className="w-full h-full object-cover grayscale contrast-125"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   // ─── LAYOUT E: RADIAN (Neon Hazard Sports) ───
-  if (animationStyle === 'radian') {
+  if (heroStyle === 'default' && animationStyle === 'radian') {
     return (
       <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center bg-bg text-ink overflow-hidden pt-36 pb-12">
         {/* Full-width neon lines background */}

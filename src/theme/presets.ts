@@ -32,7 +32,6 @@ export interface ThemeState {
 }
 
 // ── Font families collected from each reference website (Google-Fonts equivalents) ──
-// Grouped so the Studio can render an optgroup per source site.
 export interface SiteFontGroup {
   site: string;
   fonts: { name: string; stack: string; role: 'heading' | 'body' | 'both' }[];
@@ -158,6 +157,38 @@ export const presets: Record<string, ThemeState> = {
       heroStyle: 'default',
       footerStyle: 'default',
       scrollStyle: 'horizontal',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+    }
+  },
+  'Love & Respect (loveandrespect.com)': {
+    colors: {
+      primary: '#D63E2E',
+      background: '#F7F5F2',
+      surface: '#FFFFFF',
+      text: '#2C2B29',
+      muted: '#7A7875',
+      border: '#E5E2DC',
+    },
+    typography: {
+      fontFamily: 'Outfit, sans-serif',
+      headingFont: 'Playfair Display, serif',
+      bodySize: '16px',
+      headingSize: '64px',
+      bodyWeight: '400',
+      headingWeight: '300',
+    },
+    layout: {
+      radius: '1.25rem',
+      navbarStyle: 'capsule',
+      heroStyle: 'loveandrespect',
+      cardStyle: 'editorial',
+      footerStyle: 'pelizzari',
+      animationStyle: 'default',
+      cursorStyle: 'default',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Joy Rush (drinkjoyrush.com)': {
@@ -183,6 +214,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '3px solid #2C0E1E',
       animationStyle: 'joyrush',
       cursorStyle: 'bubble',
+      navbarStyle: 'capsule',
+      heroStyle: 'default',
+      cardStyle: 'gradient',
+      footerStyle: 'default',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'K95 Minimal (k95.it)': {
@@ -207,6 +245,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '1px solid #1A1A1A',
       animationStyle: 'k95',
       cursorStyle: 'dot',
+      navbarStyle: 'minimal',
+      heroStyle: 'russellnumo',
+      cardStyle: 'minimal',
+      footerStyle: 'default',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Julien Calot Art (juliencalot.com)': {
@@ -219,7 +264,7 @@ export const presets: Record<string, ThemeState> = {
       border: '#3F394C',
     },
     typography: {
-      fontFamily: 'Satoshi, sans-serif',
+      fontFamily: 'Space Grotesk, sans-serif',
       headingFont: 'Fraunces, serif',
       bodySize: '16px',
       headingSize: '60px',
@@ -230,6 +275,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '1.25rem',
       animationStyle: 'juliencalot',
       cursorStyle: 'invert',
+      navbarStyle: 'capsule',
+      heroStyle: 'vividmotion',
+      cardStyle: 'glass',
+      footerStyle: 'default',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Depoluxe (depoluxe.xyz)': {
@@ -254,6 +306,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '1px solid #2C2F36',
       animationStyle: 'depoluxe',
       cursorStyle: 'crosshair',
+      navbarStyle: 'minimal',
+      heroStyle: 'pelizzari',
+      cardStyle: 'editorial',
+      footerStyle: 'pelizzari',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Monolog Editorial (bymonolog.com)': {
@@ -277,6 +336,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '0.75rem',
       animationStyle: 'monolog',
       cursorStyle: 'default',
+      navbarStyle: 'minimal',
+      heroStyle: 'loveandrespect',
+      cardStyle: 'magazine',
+      footerStyle: 'default',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Hilden Kaira (hildenkaira.fi)': {
@@ -301,6 +367,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '1px solid #D8D8CF',
       animationStyle: 'hildenkaira',
       cursorStyle: 'dot',
+      navbarStyle: 'default',
+      heroStyle: 'loveandrespect',
+      cardStyle: 'editorial',
+      footerStyle: 'default',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Radian (rideradian.com)': {
@@ -326,6 +399,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '2px solid #222222',
       animationStyle: 'radian',
       cursorStyle: 'dot',
+      navbarStyle: 'minimal',
+      heroStyle: 'karolbinkowski',
+      cardStyle: 'karolbinkowski',
+      footerStyle: 'karolbinkowski',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Avant-Garde (Awwwards)': {
@@ -349,6 +429,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '1.5rem',
       animationStyle: 'avantgarde',
       cursorStyle: 'invert',
+      navbarStyle: 'capsule',
+      heroStyle: 'karolbinkowski',
+      cardStyle: 'bento',
+      footerStyle: 'karolbinkowski',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Retro Cyber (Awwwards)': {
@@ -373,6 +460,13 @@ export const presets: Record<string, ThemeState> = {
       borderStyle: '1px solid #153321',
       animationStyle: 'cyber',
       cursorStyle: 'crosshair',
+      navbarStyle: 'minimal',
+      heroStyle: 'russellnumo',
+      cardStyle: 'russellnumo',
+      footerStyle: 'russellnumo',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Metropolitan Luxe (Awwwards)': {
@@ -396,6 +490,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '8px',
       animationStyle: 'metropolitan',
       cursorStyle: 'invert',
+      navbarStyle: 'pelizzari',
+      heroStyle: 'pelizzari',
+      cardStyle: 'pelizzari',
+      footerStyle: 'pelizzari',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Pelizzari Studio (pelizzari.com)': {
@@ -419,6 +520,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '0px',
       animationStyle: 'default',
       cursorStyle: 'dot',
+      navbarStyle: 'pelizzari',
+      heroStyle: 'pelizzari',
+      cardStyle: 'pelizzari',
+      footerStyle: 'pelizzari',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
     }
   },
   'Karol Binkowski (karolbinkow.ski)': {
@@ -442,6 +550,13 @@ export const presets: Record<string, ThemeState> = {
       radius: '16px',
       animationStyle: 'k95',
       cursorStyle: 'invert',
+      navbarStyle: 'karolbinkowski',
+      heroStyle: 'karolbinkowski',
+      cardStyle: 'karolbinkowski',
+      footerStyle: 'karolbinkowski',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
   'Russell Numo (russellnumo.nl)': {
@@ -465,52 +580,73 @@ export const presets: Record<string, ThemeState> = {
       radius: '0px',
       animationStyle: 'default',
       cursorStyle: 'dot',
+      navbarStyle: 'minimal',
+      heroStyle: 'russellnumo',
+      cardStyle: 'russellnumo',
+      footerStyle: 'russellnumo',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   },
-  'Studio Modular (studiomodular.be)': {
+  'Konnect Dark (konnect.com)': {
     colors: {
-      primary: '#0055FF',
-      background: '#FFFFFF',
-      surface: '#F5F5F5',
-      text: '#111111',
-      muted: '#888888',
-      border: '#EEEEEE',
+      primary: '#6366F1',
+      background: '#0A0B10',
+      surface: '#121420',
+      text: '#FFFFFF',
+      muted: '#818898',
+      border: '#23263B',
     },
     typography: {
       fontFamily: 'Inter, sans-serif',
-      headingFont: 'Inter, sans-serif',
-      bodySize: '15px',
-      headingSize: '56px',
-      bodyWeight: '400',
-      headingWeight: '600',
-    },
-    layout: {
-      radius: '4px',
-      animationStyle: 'default',
-      cursorStyle: 'default',
-    }
-  },
-  'Haoqi Design (haoqi.design)': {
-    colors: {
-      primary: '#FF4D00',
-      background: '#111111',
-      surface: '#1E1E1E',
-      text: '#F5F5F5',
-      muted: '#A0A0A0',
-      border: '#333333',
-    },
-    typography: {
-      fontFamily: 'Roboto, sans-serif',
-      headingFont: 'Space Mono, monospace',
+      headingFont: 'Outfit, sans-serif',
       bodySize: '16px',
-      headingSize: '48px',
+      headingSize: '64px',
       bodyWeight: '400',
       headingWeight: '700',
     },
     layout: {
-      radius: '0px',
-      animationStyle: 'cyber',
-      cursorStyle: 'crosshair',
+      radius: '1.5rem',
+      navbarStyle: 'capsule',
+      heroStyle: 'konnect',
+      cardStyle: 'glass',
+      footerStyle: 'default',
+      animationStyle: 'metropolitan',
+      cursorStyle: 'dot',
+      projectsScroll: 'horizontal',
+      blogScroll: 'horizontal',
+      scrollStyle: 'horizontal',
+    }
+  },
+  'Pure Moda Bento (puremoda.com)': {
+    colors: {
+      primary: '#111111',
+      background: '#F6F6F4',
+      surface: '#FFFFFF',
+      text: '#111111',
+      muted: '#767676',
+      border: '#E2E2DE',
+    },
+    typography: {
+      fontFamily: 'Space Grotesk, sans-serif',
+      headingFont: 'Space Grotesk, sans-serif',
+      bodySize: '15px',
+      headingSize: '56px',
+      bodyWeight: '400',
+      headingWeight: '700',
+    },
+    layout: {
+      radius: '1.25rem',
+      navbarStyle: 'minimal',
+      heroStyle: 'puremoda',
+      cardStyle: 'bento',
+      footerStyle: 'default',
+      animationStyle: 'default',
+      cursorStyle: 'default',
+      projectsScroll: 'grid',
+      blogScroll: 'grid',
+      scrollStyle: 'horizontal',
     }
   }
 };
