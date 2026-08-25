@@ -12,18 +12,46 @@ interface ThemeStore {
   applyPreset: (presetName: string) => void;
 }
 
+function broadcastTheme(theme: ThemeState) {
+  if (typeof window !== 'undefined') {
+    const iframes = document.querySelectorAll('iframe');
+    iframes.forEach((iframe) => {
+      iframe.contentWindow?.postMessage({ type: 'SYNC_THEME', theme }, '*');
+    });
+  }
+}
+
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
       theme: presets.Default,
-      setTheme: (theme) => set({ theme }),
-      updateColors: (colors) => set((state) => ({ theme: { ...state.theme, colors: { ...state.theme.colors, ...colors } } })),
-      updateTypography: (typography) => set((state) => ({ theme: { ...state.theme, typography: { ...state.theme.typography, ...typography } } })),
-      updateLayout: (layout) => set((state) => ({ theme: { ...state.theme, layout: { ...state.theme.layout, ...layout } } })),
+      setTheme: (theme) => {
+        set({ theme });
+        broadcastTheme(theme);
+      },
+      updateColors: (colors) =>
+        set((state) => {
+          const next = { ...state.theme, colors: { ...state.theme.colors, ...colors } };
+          broadcastTheme(next);
+          return { theme: next };
+        }),
+      updateTypography: (typography) =>
+        set((state) => {
+          const next = { ...state.theme, typography: { ...state.theme.typography, ...typography } };
+          broadcastTheme(next);
+          return { theme: next };
+        }),
+      updateLayout: (layout) =>
+        set((state) => {
+          const next = { ...state.theme, layout: { ...state.theme.layout, ...layout } };
+          broadcastTheme(next);
+          return { theme: next };
+        }),
       applyPreset: (presetName) => {
         const preset = presets[presetName];
         if (preset) {
           set({ theme: preset });
+          broadcastTheme(preset);
         }
       },
     }),

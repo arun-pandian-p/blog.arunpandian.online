@@ -1,13 +1,33 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Monitor, Smartphone, RotateCw, ExternalLink, PanelRightClose, Radio } from 'lucide-react';
 import { usePreview } from './PreviewContext';
 
-const PREVIEW_SRC = '/?preview=1';
-
 export default function PreviewPanel() {
   const { draft, device, setDevice, setPreviewOpen, previewAnchor } = usePreview();
+  const location = useLocation();
   const iframeRef = useRef(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Dynamic preview destination based on current admin section
+  const previewSrc = useMemo(() => {
+    if (location.pathname.startsWith('/admin/blogs')) {
+      return '/blog?preview=1';
+    }
+    if (location.pathname.startsWith('/admin/projects')) {
+      return '/#projects';
+    }
+    if (location.pathname.startsWith('/admin/settings/certifications') || location.pathname.startsWith('/admin/settings/skills')) {
+      return '/#skills';
+    }
+    if (location.pathname.startsWith('/admin/settings/about')) {
+      return '/#about';
+    }
+    if (location.pathname.startsWith('/admin/settings/contact')) {
+      return '/#contact';
+    }
+    return '/?preview=1';
+  }, [location.pathname]);
 
   // Keep the latest values available to the (stable) ready-handshake listener.
   const draftRef = useRef(draft);
@@ -74,8 +94,8 @@ export default function PreviewPanel() {
           <button
             type="button"
             onClick={() => setDevice('desktop')}
-            title="Desktop"
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            title="Desktop Viewport"
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
               !isMobile ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -84,8 +104,8 @@ export default function PreviewPanel() {
           <button
             type="button"
             onClick={() => setDevice('mobile')}
-            title="Mobile"
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            title="Mobile Viewport"
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer ${
               isMobile ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -98,16 +118,16 @@ export default function PreviewPanel() {
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
             title="Reload preview"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
           >
             <RotateCw size={15} />
           </button>
           <a
-            href="/"
+            href={previewSrc}
             target="_blank"
             rel="noopener noreferrer"
-            title="Open live site in new tab"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            title="Open live view in new tab"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
           >
             <ExternalLink size={15} />
           </a>
@@ -115,7 +135,7 @@ export default function PreviewPanel() {
             type="button"
             onClick={() => setPreviewOpen(false)}
             title="Close preview"
-            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
           >
             <PanelRightClose size={15} />
           </button>
@@ -132,9 +152,9 @@ export default function PreviewPanel() {
           }
         >
           <iframe
-            key={reloadKey}
+            key={`${previewSrc}-${reloadKey}`}
             ref={iframeRef}
-            src={PREVIEW_SRC}
+            src={previewSrc}
             onLoad={handleLoad}
             title="Live site preview"
             className="h-full w-full border-0 bg-white"

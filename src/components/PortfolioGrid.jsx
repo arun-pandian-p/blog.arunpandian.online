@@ -37,12 +37,43 @@ const GithubIcon = ({ size = 16 }) => (
 );
 
 const CATEGORIES = [
-  { id: 'all', label: 'Show all' },
-  { id: 'data viz', label: 'Data Viz' },
+  { id: 'all', label: 'All Projects' },
+  { id: 'power bi', label: 'Power BI' },
+  { id: 'sql', label: 'SQL' },
+  { id: 'python', label: 'Python' },
+  { id: 'excel', label: 'Excel' },
   { id: 'machine learning', label: 'Machine Learning' },
-  { id: 'analytics', label: 'Analytics & SQL' },
-  { id: 'automation', label: 'Automation & n8n' },
 ];
+
+// Helper to determine analytical question
+const getAnalyticalQuestion = (project) => {
+  if (project.analytical_question || project.question) {
+    return project.analytical_question || project.question;
+  }
+  const title = (project.title || '').toLowerCase();
+  if (title.includes('delivery') || title.includes('amazon')) {
+    return 'Can delivery delays be predicted from traffic, weather, and distance dynamics?';
+  }
+  if (title.includes('job') || title.includes('salary')) {
+    return 'Which skills and technologies command the highest demand and compensation?';
+  }
+  if (title.includes('flight') || title.includes('turnaround')) {
+    return 'What operational bottlenecks are responsible for airport gate turnaround delays?';
+  }
+  if (title.includes('churn')) {
+    return 'What customer activity patterns signal subscription cancellation 30 days ahead?';
+  }
+  if (title.includes('life') || title.includes('regression')) {
+    return 'How do healthcare spending and economic metrics interact with mortality rates?';
+  }
+  if (title.includes('epidemic') || title.includes('heatmap')) {
+    return 'How do spatial clustering algorithms trace epidemiological vector velocity?';
+  }
+  if (title.includes('email') || title.includes('automation')) {
+    return 'Can local private LLM models automate inbox triage with zero cloud API cost?';
+  }
+  return project.subtitle || project.problem || 'How can data-driven modeling answer core business questions?';
+};
 
 export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
   const [activeCategory, setActiveCategory] = useState('all');
@@ -74,87 +105,70 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
       const cat = (p.category || '').toLowerCase();
       const tags = (p.tags || []).map((t) => t.toLowerCase());
 
-      if (activeCategory === 'data viz') {
-        return cat.includes('viz') || tags.some((t) => t.includes('bi') || t.includes('chart') || t.includes('viz') || t.includes('pivot'));
+      if (activeCategory === 'power bi') {
+        return cat.includes('bi') || tags.some((t) => t.includes('power bi') || t.includes('bi') || t.includes('dax'));
+      }
+      if (activeCategory === 'sql') {
+        return cat.includes('sql') || tags.some((t) => t.includes('sql') || t.includes('postgres') || t.includes('query'));
+      }
+      if (activeCategory === 'python') {
+        return cat.includes('python') || tags.some((t) => t.includes('python') || t.includes('pandas') || t.includes('eda'));
+      }
+      if (activeCategory === 'excel') {
+        return cat.includes('excel') || tags.some((t) => t.includes('excel') || t.includes('pivot') || t.includes('formula'));
       }
       if (activeCategory === 'machine learning') {
-        return cat.includes('machine') || cat.includes('ml') || tags.some((t) => t.includes('learn') || t.includes('xgboost') || t.includes('model') || t.includes('python'));
-      }
-      if (activeCategory === 'analytics') {
-        return cat.includes('analytics') || tags.some((t) => t.includes('sql') || t.includes('excel') || t.includes('analytics') || t.includes('eda'));
-      }
-      if (activeCategory === 'automation') {
-        return cat.includes('auto') || tags.some((t) => t.includes('n8n') || t.includes('llm') || t.includes('sheet') || t.includes('api'));
+        return cat.includes('machine') || cat.includes('ml') || tags.some((t) => t.includes('learn') || t.includes('xgboost') || t.includes('model'));
       }
       return cat === activeCategory;
     });
   }, [projects, activeCategory]);
 
   return (
-    <section id="projects" className="py-16 sm:py-24 lg:py-28 bg-[#fafafa] text-slate-900 border-t border-slate-200/80">
+    <section id="projects" className="py-16 sm:py-20 bg-white text-slate-900 border-b border-slate-200/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* ── Section Header ── */}
-        <div className="text-center mb-8 sm:mb-12">
-          <span className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-[0.25em] text-blue-600 mb-2 block">
-            {sectionConfig.label || '01 — Selected Work'}
-          </span>
-          <h2 className="font-display font-black text-3xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-slate-900">
-            {sectionConfig.title || 'PORTFOLIO'}
-          </h2>
-          {/* Blue accent line */}
-          <div className="h-1 w-12 sm:w-14 bg-blue-600 rounded-full mx-auto mt-2.5 sm:mt-3 mb-3.5 sm:mb-4" />
-          <p className="text-xs sm:text-base text-slate-600 max-w-xl mx-auto font-normal leading-relaxed px-2">
-            {sectionConfig.subtitle || 'Recruiter-ready case studies'}
-          </p>
-
-          {/* Doodle Guide for Projects */}
-          <div className="mt-5 flex justify-center">
-            <DoodleGuide
-              tag="Interactive"
-              text="Filter by skill & test live interactive apps!"
-              subtext="Click any project to inspect data & code ↓"
-              icon="chart"
-              arrow="curved-down-right"
-              arrowPosition="bottom-right"
-              rotation={1.5}
-              color="#2563EB"
-            />
+        {/* ── Section Header (Editorial FlowingData Style) ── */}
+        <div className="mb-10 sm:mb-12">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+            <div>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-blue-600 block mb-1">
+                Analytical Case Studies & Projects
+              </span>
+              <h2 className="font-display font-black text-2xl sm:text-4xl text-slate-900 tracking-tight">
+                Project Index
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 font-mono">
+              Showing {filteredProjects.length} data projects with interactive reports
+            </p>
           </div>
         </div>
 
-        {/* ── Category Filter Tabs (Touch-friendly & Horizontal scroll on mobile) ── */}
-        <div className="flex justify-start sm:justify-center mb-8 sm:mb-12 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="inline-flex items-center gap-1.5 p-1 bg-white rounded-2xl border border-slate-200/90 shadow-xs shadow-slate-100/50">
+        {/* ── Category Filter Tabs (Instant, Clean Editorial) ── */}
+        <div className="flex justify-start sm:justify-start mb-8 sm:mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="inline-flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200">
             {CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`relative min-h-[38px] sm:min-h-[40px] px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
+                  className={`min-h-[36px] px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
                     isActive
-                      ? 'text-blue-600 bg-blue-50/90 font-bold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'text-blue-700 bg-white font-bold shadow-xs border border-slate-200/80'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {cat.label}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activePill"
-                      className="absolute inset-0 border border-blue-200 rounded-xl pointer-events-none"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* ── Responsive Projects Grid ── */}
-        {/* Mobile: 1 column clean cards | Desktop: Multi-column dense showcase */}
-        <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+        {/* ── FlowingData-Inspired Editorial Project Feed ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           <AnimatePresence>
             {filteredProjects.map((project, index) => {
               const {
@@ -165,9 +179,6 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                 githubLink,
                 demoLink,
                 liveLink = demoLink,
-                insight,
-                problem,
-                result,
                 chartType = index,
                 image_url,
                 imageUrl = image_url,
@@ -176,193 +187,84 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
 
               const projectNumber = String(index + 1).padStart(2, '0');
               const displayCategory = category || tags[0] || 'Analytics';
-              const summaryResult = result || insight;
+              const question = getAnalyticalQuestion(project);
 
               return (
-                <motion.article
-                  layout
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.25, delay: (index % 4) * 0.04 }}
+                <article
                   key={id || title}
-                  className="group relative bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-xl hover:border-blue-400/80 hover:-translate-y-1 transition-all duration-300 flex flex-col cursor-pointer"
-                  onClick={() => setSelectedProject(project)}
+                  className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex flex-col justify-between"
                 >
-                  {/* ── Cover Image / Chart Preview (Full Card Width, Responsive, Rounded) ── */}
-                  <div className="relative w-full aspect-[16/9] sm:aspect-[4/3] bg-slate-50 border-b border-slate-100 overflow-hidden">
-                    <ProjectChartPreview
-                      type={chartType}
-                      title={title}
-                      imageUrl={imageUrl}
-                    />
-
-                    {/* Mobile Top Header Badges (Visible on mobile, hidden on desktop hover overlay) */}
-                    <div className="md:hidden absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                      <span className="font-mono text-[10px] font-bold text-blue-700 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-md shadow-xs border border-slate-200/80 tracking-wider">
-                        #{projectNumber}
-                      </span>
-                      <span className="text-[10px] font-mono font-semibold uppercase tracking-wider bg-slate-900/80 text-white backdrop-blur-md px-2 py-0.5 rounded-md">
-                        {displayCategory}
-                      </span>
-                    </div>
-
-                    {/* Desktop Hover Overlay with Quick Buttons */}
-                    <div className="hidden md:flex absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-col justify-between p-3.5 backdrop-blur-[2px]">
-                      <div className="flex justify-between items-center text-white/80 text-[10px] font-mono">
-                        <span className="bg-blue-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                          #{projectNumber} · {displayCategory}
+                  <div>
+                    {/* Visual Preview */}
+                    <Link to={`/project/${id || 1}`} className="block relative w-full aspect-[16/10] bg-slate-50 border-b border-slate-100 overflow-hidden">
+                      <ProjectChartPreview
+                        type={chartType}
+                        title={title}
+                        imageUrl={imageUrl}
+                      />
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <span className="font-mono text-[10px] font-bold text-slate-800 bg-white/95 backdrop-blur px-2 py-0.5 rounded shadow-xs border border-slate-200 tracking-wider">
+                          {projectNumber}
                         </span>
-                        <span className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded">
-                          <Sparkles size={10} className="text-amber-400" />
-                          View Case Study
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/70 px-2 py-0.5 rounded">
+                          {displayCategory}
                         </span>
                       </div>
+                    </Link>
 
-                      <div className="flex items-center justify-center gap-2.5" onClick={(e) => e.stopPropagation()}>
-                        {githubLink && (
-                          <a
-                            href={githubLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-xl bg-white text-slate-900 hover:bg-blue-600 hover:text-white shadow-md transition-all hover:scale-110"
-                            title="View GitHub Repository"
-                            aria-label="View GitHub Repository"
-                          >
-                            <GithubIcon size={16} />
-                          </a>
-                        )}
-                        {liveLink && (
-                          <a
-                            href={liveLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-xl bg-white text-slate-900 hover:bg-blue-600 hover:text-white shadow-md transition-all hover:scale-110"
-                            title="Open Live Demo"
-                            aria-label="Open Live Demo"
-                          >
-                            <ExternalLink size={16} />
-                          </a>
-                        )}
-                        <button
-                          onClick={() => setSelectedProject(project)}
-                          className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-500 font-semibold text-xs shadow-md transition-all flex items-center gap-1 hover:scale-105"
-                        >
-                          Case Study
-                          <ArrowUpRight size={14} />
-                        </button>
-                      </div>
-
-                      <div className="text-[10px] text-white/70 text-center font-mono">
-                        Click card for full breakdown
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Card Content Body ── */}
-                  <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between bg-white gap-3">
-                    <div>
-                      {/* Desktop Tags (top of text) */}
-                      <div className="hidden md:flex flex-wrap gap-1 mb-2">
-                        {tags.slice(0, 3).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-md bg-slate-100 text-slate-600 border border-slate-200/60"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
+                    {/* Content */}
+                    <div className="p-5">
                       {/* Project Title */}
-                      <h3 className="font-display font-bold text-slate-900 text-base sm:text-lg leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {title}
-                      </h3>
+                      <Link to={`/project/${id || 1}`}>
+                        <h3 className="font-display font-bold text-slate-900 text-lg leading-snug group-hover:text-blue-600 transition-colors mb-2">
+                          {title}
+                        </h3>
+                      </Link>
 
-                      {/* Recruiter-Scan 1-line Problem & Result (Clean on mobile) */}
-                      <div className="mt-2 space-y-1 text-xs leading-relaxed">
-                        {problem && (
-                          <p className="text-slate-600 line-clamp-2 font-normal">
-                            <span className="font-semibold text-slate-800">Problem: </span>
-                            {problem}
-                          </p>
-                        )}
-                        {summaryResult && (
-                          <p className="text-emerald-700 line-clamp-1 font-medium text-[11px] sm:text-xs">
-                            <span className="font-bold text-emerald-800">Impact: </span>
-                            {summaryResult}
-                          </p>
-                        )}
-                      </div>
+                      {/* Analytical Question in Editorial Style */}
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal mb-4">
+                        <span className="font-semibold text-slate-900 block text-[11px] font-mono uppercase tracking-wider mb-0.5 text-blue-700">
+                          Analytical Question:
+                        </span>
+                        {question}
+                      </p>
 
-                      {/* Mobile Key Tools / Tags (Compact badges) */}
-                      <div className="md:hidden flex flex-wrap gap-1 mt-2.5">
+                      {/* Tools Tag Pills */}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
                         {tags.slice(0, 4).map((tag) => (
                           <span
                             key={tag}
-                            className="px-2 py-0.5 text-[10px] font-mono font-medium rounded-md bg-slate-100 text-slate-700 border border-slate-200/70"
+                            className="px-2 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-100 text-slate-600 border border-slate-200/60"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
                     </div>
-
-                    {/* ── Mobile Touch-Friendly Action Bar (min 44px touch targets) ── */}
-                    <div className="md:hidden pt-3 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => setSelectedProject(project)}
-                        className="flex-1 min-h-[44px] px-3.5 py-2.5 rounded-xl bg-blue-600 active:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 select-none"
-                        aria-label={`View Case Study for ${title}`}
-                      >
-                        <Sparkles size={13} className="text-blue-200" />
-                        <span>View Case Study</span>
-                        <ArrowUpRight size={14} />
-                      </button>
-
-                      {githubLink && (
-                        <a
-                          href={githubLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-slate-100 text-slate-700 active:bg-slate-200 border border-slate-200/80 flex items-center justify-center transition-colors"
-                          title="GitHub Repository"
-                          aria-label="GitHub Repository"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <GithubIcon size={18} />
-                        </a>
-                      )}
-                      {liveLink && (
-                        <a
-                          href={liveLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-slate-100 text-slate-700 active:bg-slate-200 border border-slate-200/80 flex items-center justify-center transition-colors"
-                          title="Live Demo"
-                          aria-label="Live Demo"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink size={18} />
-                        </a>
-                      )}
-                    </div>
-
-                    {/* ── Desktop Bottom Action Footer ── */}
-                    <div className="hidden md:flex mt-4 pt-3 border-t border-slate-100 items-center justify-between text-xs text-slate-400">
-                      <span className="font-mono text-[10px] text-slate-400">
-                        {new Date(project.created_at || Date.now()).getFullYear()}
-                      </span>
-                      <span className="text-blue-600 font-semibold text-[11px] group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1">
-                        Explore Case Study <ArrowUpRight size={12} />
-                      </span>
-                    </div>
                   </div>
-                </motion.article>
+
+                  {/* Card Bottom CTA Link */}
+                  <div className="p-5 pt-0 border-t border-slate-100/60 flex items-center justify-between">
+                    <Link
+                      to={`/project/${id || 1}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <span>Read Case Study</span>
+                      <ArrowUpRight size={14} />
+                    </Link>
+
+                    <button
+                      onClick={() => setSelectedProject(project)}
+                      className="text-[11px] font-mono text-slate-400 hover:text-slate-700 transition-colors"
+                    >
+                      Quick Overview
+                    </button>
+                  </div>
+                </article>
               );
             })}
           </AnimatePresence>
-        </motion.div>
+        </div>
 
         {/* ── Empty State ── */}
         {filteredProjects.length === 0 && (

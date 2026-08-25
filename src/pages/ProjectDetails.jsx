@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabaseClient';
 import Navbar from '../components/Navbar';
 import { useContent } from '../context/ContentProvider';
+import StyleOverrides from '../editor/StyleOverrides';
 import {
   Loader2,
   ArrowLeft,
+  ArrowRight,
   ExternalLink,
   Database,
   Target,
@@ -24,14 +26,25 @@ import {
   DollarSign,
   MapPin,
   ChevronRight,
+  ChevronLeft,
   FolderGit2,
   Maximize2,
+  Edit2,
   Edit3,
   Truck,
   Plane,
   Users,
   Activity,
   Cpu,
+  Share2,
+  Calendar,
+  Clock,
+  BookOpen,
+  Copy,
+  Check,
+  GitBranch,
+  FileText,
+  Grid,
 } from 'lucide-react';
 
 const GithubIcon = ({ size = 18 }) => (
@@ -50,954 +63,969 @@ const GithubIcon = ({ size = 18 }) => (
   </svg>
 );
 
-// Map common analytics technologies to their architectural role
-const TECH_ROLE_MAP = {
-  'power bi': { category: 'Visualization & BI', role: 'Interactive cross-filtering dashboards, drill-downs, and executive KPI scorecards.' },
-  'dax': { category: 'Analytical Modeling', role: 'Custom calculated measures, time-intelligence aggregations, and ranking calculations.' },
-  'sql': { category: 'Data Querying', role: 'Relational database extraction, complex multi-table joins, and aggregation views.' },
-  'python': { category: 'Data Science & EDA', role: 'Data wrangling, exploratory profiling, statistical analysis, and feature engineering.' },
-  'excel': { category: 'Spreadsheet Modeling', role: 'PivotTable summaries, dynamic array formulas (MEDIAN, FILTER), and data validation.' },
-  'power query': { category: 'ETL Pipeline', role: 'Automated data transformation, unpivoting nested tokens, and schema normalization.' },
-  'power pivot': { category: 'Dimensional Modeling', role: 'Star-schema relational modeling and optimized data relationships.' },
-  'scikit-learn': { category: 'Machine Learning', role: 'Supervised predictive classification algorithms, ROC-AUC evaluation, and cross-validation.' },
-  'xgboost': { category: 'Gradient Boosting', role: 'Ensemble decision tree training and feature importance quantification.' },
-  'pandas': { category: 'Data Manipulation', role: 'DataFrame reshaping, missing value imputation, and vectorized data operations.' },
-  'n8n': { category: 'Automation Workflow', role: 'End-to-end webhook orchestration, API integrations, and local LLM inference pipelines.' },
-  'geopandas': { category: 'Spatial Analytics', role: 'Coordinate transformations, GIS spatial joins, and regional cluster density mapping.' },
-  'plotly': { category: 'Interactive Visuals', role: 'Dynamic scatter charts, choropleth geo-maps, and responsive visual inspection.' },
-  'streamlit': { category: 'App Deployment', role: 'Interactive web UI delivery with real-time parameter controls.' },
-};
-
 export default function ProjectDetails() {
   const { id } = useParams();
-  const { projects, settings } = useContent();
+  const { projects: contextProjects = [], settings } = useContent();
   const [project, setProject] = useState(null);
+  const [allProjectsList, setAllProjectsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [iframeError, setIframeError] = useState(false);
   const [showImageZoom, setShowImageZoom] = useState(false);
-  const [activeTab, setActiveTab] = useState('view1');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [activeVisualIndex, setActiveVisualIndex] = useState(0);
 
-  // Find project in cached context immediately, or fetch from Supabase
+  // Fetch project & all projects directly from Supabase for instant real-time live data
   useEffect(() => {
     let isMounted = true;
-    const findOrFetch = async () => {
-      // 1. Check in-memory context projects
-      if (projects && projects.length > 0) {
-        const found = projects.find(
-          (p) => String(p.id) === String(id) || String(p._id) === String(id)
-        );
-        if (found) {
+    const fetchLiveProject = async () => {
+      if (supabase) {
+        try {
+          const [projRes, allRes] = await Promise.all([
+            supabase.from('projects').select('*').eq('id', id).single(),
+            supabase.from('projects').select('*').order('sort_order', { ascending: true }),
+          ]);
+
           if (isMounted) {
-            setProject(found);
-            setLoading(false);
+            if (allRes.data && allRes.data.length > 0) {
+              setAllProjectsList(allRes.data);
+            }
+            if (projRes.data) {
+              setProject(projRes.data);
+              setLoading(false);
+              return;
+            }
           }
-          return;
+        } catch (err) {
+          console.warn('Supabase project query fallback:', err);
         }
       }
 
-      // 2. Fetch from Supabase
-      if (supabase && id) {
-        try {
-          const { data } = await supabase
-            .from('projects')
-            .select('*')
-            .eq('id', id)
-            .single();
-          if (data && isMounted) {
-            setProject(data);
-            setLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn('Error fetching project by ID:', err);
+      // Fallback to in-memory context projects
+      if (contextProjects && contextProjects.length > 0) {
+        setAllProjectsList(contextProjects);
+        const found = contextProjects.find(
+          (p) => String(p.id) === String(id) || String(p._id) === String(id)
+        );
+        if (found && isMounted) {
+          setProject(found);
+          setLoading(false);
+          return;
         }
       }
 
       if (isMounted) setLoading(false);
     };
 
-    findOrFetch();
+    fetchLiveProject();
     return () => {
       isMounted = false;
     };
-  }, [id, projects]);
+  }, [id, contextProjects]);
+
+  const copyToClipboard = (text, codeId) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCode(codeId);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // Find previous and next projects for cross-navigation
+  const { prevProject, nextProject, relatedProjects } = useMemo(() => {
+    const list = allProjectsList.length > 0 ? allProjectsList : contextProjects;
+    const currentIndex = list.findIndex((p) => String(p.id) === String(id) || String(p._id) === String(id));
+    
+    const prev = currentIndex > 0 ? list[currentIndex - 1] : list[list.length - 1];
+    const next = currentIndex < list.length - 1 && currentIndex !== -1 ? list[currentIndex + 1] : list[0];
+    const related = list.filter((p) => String(p.id) !== String(id) && String(p._id) !== String(id)).slice(0, 3);
+
+    return { prevProject: prev, nextProject: next, relatedProjects: related };
+  }, [allProjectsList, contextProjects, id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
-        <Loader2 className="animate-spin text-accent w-8 h-8" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-blue-600 w-8 h-8" />
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-ink px-4 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 px-4 text-center">
         <h1 className="text-3xl font-display font-bold mb-3">Case Study Not Found</h1>
-        <p className="text-ink-soft mb-6 max-w-md text-sm">
+        <p className="text-slate-500 mb-6 max-w-md text-sm">
           The requested analytical case study could not be loaded or may have been moved.
         </p>
         <Link
-          to="/#projects"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink text-bg font-semibold text-sm hover:bg-accent hover:text-ink transition-colors"
+          to="/blog"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white font-semibold text-sm hover:bg-blue-600 transition-colors"
         >
-          <ArrowLeft size={16} /> Back to Selected Work
+          <ArrowLeft size={16} /> Return to Blog & Publication Index
         </Link>
       </div>
     );
   }
 
-  // ─── Dynamic Project Attributes ───
+  // ─── Dynamic Attributes ───
   const title = project.title || 'Data Analytics Case Study';
   const subtitle =
     project.subtitle ||
     project.problem ||
-    `An end-to-end data analytics case study evaluating ${title.toLowerCase()} to extract actionable business intelligence.`;
+    `An end-to-end data analytics investigation evaluating ${title.toLowerCase()} to extract actionable intelligence.`;
 
   const tags = Array.isArray(project.tags) && project.tags.length > 0
     ? project.tags
-    : ['DATA ANALYTICS', 'POWER BI', 'SQL', 'DATA VISUALIZATION'];
+    : ['Power BI', 'SQL', 'Data Analytics', 'Data Visualization'];
 
-  const powerBiEmbedUrl =
-    project.powerbi_embed_url ||
-    project.live_link ||
-    project.liveLink ||
-    '';
+  const powerBiEmbedUrl = project.powerbi_embed_url || project.live_link || project.liveLink || '';
+  const githubUrl = project.github_link || project.githubLink || 'https://github.com/shadow-byte-warrior';
+  const datasetUrl = project.dataset_url || githubUrl;
+  
+  // Extract up to 5 multi-format visuals (PNG, JPG, GIF, WebM, MP4)
+  const rawImageField = project.image_url || project.image || project.imageUrl || '';
+  const visualsList = rawImageField.includes('|||')
+    ? rawImageField.split('|||').map(v => v.trim()).filter(Boolean)
+    : [rawImageField].filter(Boolean);
 
-  const githubUrl =
-    project.github_link ||
-    project.githubLink ||
-    settings?.hero?.socials?.github ||
-    'https://github.com/shadow-byte-warrior';
+  const activeVisual = visualsList[activeVisualIndex] || visualsList[0] || '';
+  const isVideoVisual = activeVisual ? Boolean(activeVisual.match(/\.(mp4|webm|ogg|mov)$/i)) : false;
 
-  const datasetUrl =
-    project.dataset_url ||
-    (powerBiEmbedUrl ? powerBiEmbedUrl : githubUrl);
+  const toolsSummary = tags.slice(0, 4).join(' • ');
 
-  const datasetName = project.data
-    ? project.data.length > 40
-      ? project.data.substring(0, 36) + '...'
-      : project.data
-    : `${title} Dataset`;
+  const isDelivery = title.toLowerCase().includes('delivery') || title.toLowerCase().includes('amazon');
 
-  const recordsCount =
-    project.records_count ||
-    (project.data?.match(/\d+[\d,]*\+?\s*(records|rows|postings|flights|patients|users|samples|deliveries|orders|events)?/i)?.[0] ||
-      'Verified Dataset Scope');
-
-  const toolsSummary = tags.slice(0, 3).join(' • ');
-
-  const analysisCategory = project.category
-    ? project.category.toUpperCase()
-    : 'METRICS • PATTERNS • DECISIONS';
-
-  // ─── Domain-specific helpers ───
-  const titleLower = title.toLowerCase();
-  const isDelivery = titleLower.includes('delivery') || titleLower.includes('amazon') || titleLower.includes('logistics') || titleLower.includes('supply chain');
-  const isFlight = titleLower.includes('flight') || titleLower.includes('delay') || titleLower.includes('airline');
-  const isJobMarket = titleLower.includes('job market') || titleLower.includes('salary');
-  const isChurn = titleLower.includes('churn') || titleLower.includes('customer');
-  const isHealth = titleLower.includes('epidemic') || titleLower.includes('health') || titleLower.includes('life expectancy');
-  const isAutomation = titleLower.includes('automation') || titleLower.includes('email') || titleLower.includes('n8n');
-
-  // ─── Dynamic Methodology Breakdown ───
-  const methodologyStages = (() => {
-    if (project.process && project.process.length > 30) {
-      // Split by periods or semicolons or bullet points
-      const sentences = project.process
-        .split(/(?<=[.!?])\s+/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 10);
-
-      if (sentences.length >= 3) {
-        return sentences.map((sentence, idx) => {
-          const stepNum = String(idx + 1).padStart(2, '0');
-          let stageTitle = 'Analytical Execution';
-          if (idx === 0) stageTitle = 'Data Ingestion & Cleaning';
-          else if (idx === 1) stageTitle = 'Transformation & Modeling';
-          else if (idx === 2) stageTitle = 'Metric Calculation & DAX';
-          else if (idx === 3) stageTitle = 'Visual Dashboarding';
-          else if (idx === 4) stageTitle = 'Insights & Optimization';
-
-          const matchingTag = tags[idx % tags.length] || 'Analytics';
-          return {
-            step: stepNum,
-            title: stageTitle,
-            desc: sentence,
-            tool: matchingTag,
-          };
-        });
-      }
-    }
-
-    // Default structured 6-stage case study pipeline based on project tags
-    return [
-      {
-        step: '01',
-        title: 'Data Collection & Audit',
-        desc: project.data ? `Ingested and verified data structure from ${project.data}` : `Collected raw domain records covering core operational attributes and dimensional metrics.`,
-        tool: tags.find((t) => t.toLowerCase().includes('sql') || t.toLowerCase().includes('python')) || 'SQL / Python',
-      },
-      {
-        step: '02',
-        title: 'Data Preprocessing & Cleaning',
-        desc: 'Handled missing values, standardized categorical tokens, parsed datetime intervals, and normalized numeric boundaries.',
-        tool: tags.find((t) => t.toLowerCase().includes('query') || t.toLowerCase().includes('pandas')) || 'Power Query / Pandas',
-      },
-      {
-        step: '03',
-        title: 'Schema Modeling & Architecture',
-        desc: 'Constructed normalized relational tables and Star-Schema dimensional relationships for high-performance querying.',
-        tool: tags.find((t) => t.toLowerCase().includes('pivot') || t.toLowerCase().includes('model')) || 'Power Pivot / Relational',
-      },
-      {
-        step: '04',
-        title: 'Measures & Metric Formulation',
-        desc: 'Built custom calculated measures for median performance benchmarks, variance deltas, and ranking indices.',
-        tool: tags.find((t) => t.toLowerCase().includes('dax') || t.toLowerCase().includes('statistics')) || 'DAX / Custom Formulas',
-      },
-      {
-        step: '05',
-        title: 'Interactive Visual Development',
-        desc: 'Constructed responsive cross-filtering visuals, dynamic category slicers, and summary KPI scorecards.',
-        tool: tags.find((t) => t.toLowerCase().includes('bi') || t.toLowerCase().includes('viz') || t.toLowerCase().includes('excel')) || 'Power BI / Dashboard',
-      },
-      {
-        step: '06',
-        title: 'Insight Synthesis & Decisions',
-        desc: project.insight ? `Synthesized core takeaways: "${project.insight.substring(0, 100)}..."` : 'Translated complex data relationships into clear, executive-level recommendations.',
-        tool: 'Business Intelligence',
-      },
-    ];
-  })();
-
-  // ─── Dynamic Dashboard Exploration Guide ───
-  const dashboardGuideCards = (() => {
-    if (isDelivery) {
-      return [
-        { icon: Truck, title: 'Delivery Timelines', question: 'How do actual delivery durations compare across vehicle types and traffic conditions?', takeaway: 'Traffic congestion increases standard delivery delay by over 32%.' },
-        { icon: MapPin, title: 'Geographic Hotspots', question: 'Which delivery zones and weather conditions experience highest delay ratios?', takeaway: 'Dense urban hubs require dynamic driver reallocation.' },
-        { icon: Activity, title: 'Carrier Efficiency', question: 'How do delivery partner ratings correlate with on-time fulfillment rates?', takeaway: 'Experienced drivers maintain 18% higher punctuality in peak hours.' },
-        { icon: TrendingUp, title: 'Predictive ETAs', question: 'How accurately can machine learning forecast delivery bottlenecks?', takeaway: 'Predictive lead times reduce customer support tickets by 24%.' },
-        { icon: DollarSign, title: 'Cost of Delays', question: 'What is the operational cost impact of failed initial delivery attempts?', takeaway: 'Route optimization mitigates up to $140K in annual re-delivery logistics.' },
-        { icon: LineChart, title: 'Performance Trends', question: 'How do delivery volumes fluctuate by day of week and weather forecast?', takeaway: 'Weekend surge schedules demand proactive warehouse staging.' },
-      ];
-    }
-    if (isFlight) {
-      return [
-        { icon: Plane, title: 'Departure Gate Holds', question: 'Which hubs exhibit the longest departure turnaround bottlenecks?', takeaway: 'Gate hold variance accounts for 44% of total delay time.' },
-        { icon: Activity, title: 'Carrier Performance', question: 'How do top commercial airlines compare in on-time arrival reliability?', takeaway: 'Turnaround efficiency varies by up to 14% between carriers.' },
-        { icon: MapPin, title: 'Weather Rerouting', question: 'Which hub weather conditions cause the largest systemic delay cascades?', takeaway: 'Early morning weather holds cascade into afternoon delays.' },
-        { icon: TrendingUp, title: 'Delay Mitigation', question: 'What operational levers reduce turnaround delays on high-volume routes?', takeaway: 'Dynamic gate assignments eliminate peak ramp congestion.' },
-        { icon: LineChart, title: 'Seasonal Volume', question: 'How do holiday travel spikes affect carrier punctuality benchmarks?', takeaway: 'Proactive turnaround buffering preserves on-time status.' },
-        { icon: Award, title: 'Benchmark Standards', question: 'How do FAA benchmark metrics reflect passenger satisfaction?', takeaway: 'Sub-15 minute departures protect customer loyalty scores.' },
-      ];
-    }
-    if (isJobMarket) {
-      return [
-        { icon: Briefcase, title: 'Job Demand', question: 'Which job titles appear most frequently across global job postings?', takeaway: 'Data Analyst and Data Engineer account for over 68% of volume.' },
-        { icon: Code2, title: 'Skills', question: 'Which technical skills are most requested by hiring managers?', takeaway: 'SQL and Python lead with over 50% market representation.' },
-        { icon: DollarSign, title: 'Salary', question: 'Which roles and skills are associated with higher median salaries?', takeaway: 'Cloud and Python combinations unlock $125k+ compensation tiers.' },
-        { icon: TrendingUp, title: 'Experience', question: 'How does seniority level correlate with compensation distributions?', takeaway: 'Senior postings offer a 42% premium with deeper architecture requirements.' },
-        { icon: MapPin, title: 'Location', question: 'Which geographic regions and remote setups show stronger demand?', takeaway: 'Remote analytics listings offer competitive US parity for top stacks.' },
-        { icon: LineChart, title: 'Market Trends', question: 'What patterns emerge across data analyst vs data science postings?', takeaway: 'Analysts with automation and BI tools show the highest demand growth.' },
-      ];
-    }
-    // Default Analytics Guide
-    return [
-      { icon: BarChart3, title: 'Core KPI Metrics', question: `What are the primary operational benchmarks identified in ${title}?`, takeaway: 'Baseline metrics establish clear performance standards.' },
-      { icon: TrendingUp, title: 'Distribution Patterns', question: 'How do performance indicators distribute across key segments?', takeaway: 'Segmented distributions reveal high-impact outlier groups.' },
-      { icon: Activity, title: 'Correlation Drivers', question: 'Which underlying factors show the strongest statistical relationship?', takeaway: 'Primary variables account for majority of outcome variance.' },
-      { icon: Compass, title: 'Comparative Analysis', question: 'How do different categories compare against the aggregate median?', takeaway: 'Targeted sub-groups outperform standard benchmarks.' },
-      { icon: MapPin, title: 'Spatial / Temporal Trends', question: 'How do metrics fluctuate over time and across operating units?', takeaway: 'Temporal patterns highlight peak cycle optimization targets.' },
-      { icon: LineChart, title: 'Actionable Forecasting', question: 'How can this model support predictive business decisions?', takeaway: 'Empirical data eliminates guesswork in strategic planning.' },
-    ];
-  })();
-
-  // ─── Dynamic Key Insights ───
-  const insightCards = [
-    {
-      num: '01',
-      tag: 'Primary Finding',
-      title: 'Core Empirical Insight',
-      desc: project.insight || 'The analysis uncovered clear statistical patterns demonstrating that specific operational drivers directly dictate performance outcomes and efficiency deltas.',
-      badge: 'Validated Finding',
-    },
-    {
-      num: '02',
-      tag: 'Quantified Impact',
-      title: 'Measurable Outcome',
-      desc: project.result || 'Delivered concrete, measurable improvements by identifying operational bottlenecks and providing clear decision-making benchmarks.',
-      badge: 'Business Result',
-    },
-    {
-      num: '03',
-      tag: 'Technical Leverage',
-      title: 'Tool & Architecture Value',
-      desc: `Leveraged ${toolsSummary} to transform raw data into a reliable, self-service business intelligence model with zero manual maintenance.`,
-      badge: 'Technology Stack',
-    },
-    {
-      num: '04',
-      tag: 'Strategic Advantage',
-      title: 'Decision Enablement',
-      desc: 'Replaces intuition-based guesses with transparent data evidence, allowing teams to prioritize high-value resources and optimize workflows.',
-      badge: 'Actionable Value',
-    },
+  // Staggered Gantt Chart Data (Cascading timeline matching sample_blog.pdf Image 2)
+  const cascadingGanttTasks = [
+    { label: 'Project Initiation & Scope', left: 4, width: 14, color: 'bg-slate-600 text-white' },
+    { label: 'Feasibility & Data Audit', left: 15, width: 16, color: 'bg-slate-500 text-white' },
+    { label: 'Power Query ETL Normalization', left: 28, width: 22, color: 'bg-blue-600 text-white' },
+    { label: 'Star-Schema Dimensional Modeling', left: 45, width: 18, color: 'bg-indigo-600 text-white' },
+    { label: 'Core DAX Measure Engineering & Calculation', left: 38, width: 36, color: 'bg-rose-500 text-white' },
+    { label: 'Visual UI & Interactive Cross-Filtering', left: 70, width: 18, color: 'bg-blue-600 text-white' },
+    { label: 'Quality Assurance & SLA Verification', left: 78, width: 16, color: 'bg-blue-700 text-white' },
   ];
-
-  // ─── Dynamic Business Impact Areas ───
-  const businessImpacts = [
-    { title: 'Operational Efficiency', desc: 'Identifies critical process bottlenecks to streamline turnaround times and resource utilization.' },
-    { title: 'Data-Backed Strategy', desc: 'Provides executive leadership with transparent benchmarks to guide strategic roadmaps.' },
-    { title: 'Cost Optimization', desc: 'Highlights high-expense variance points to reduce unnecessary operational overhead.' },
-    { title: 'Predictive Forecasting', desc: 'Enables teams to anticipate volume spikes and proactively balance operational capacity.' },
-    { title: 'Benchmark Standards', desc: 'Establishes clear metrics to evaluate performance against historical and industry standards.' },
-    { title: 'Self-Service Visibility', desc: 'Empowers cross-functional stakeholders with intuitive interactive dashboards for daily decision-making.' },
-  ];
-
-  // ─── Technical Tool Matrix ───
-  const techMatrix = tags.map((t) => {
-    const key = t.toLowerCase().trim();
-    const mapped = TECH_ROLE_MAP[key] || {
-      category: 'Analytics & Engineering',
-      role: `Applied ${t} for structured analysis, transformation, or visual reporting.`,
-    };
-    return {
-      name: t,
-      category: mapped.category,
-      role: mapped.role,
-    };
-  });
-
-  // Schema generation for SEO & Recruiters
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'TechArticle',
-    headline: title,
-    description: subtitle,
-    author: {
-      '@type': 'Person',
-      name: 'Arun Pandian',
-      jobTitle: 'Data Analyst',
-      url: 'https://arunpandian.online/',
-    },
-    datePublished: project.created_at || '2024-01-01',
-    image: project.image_url || '/favicon.svg',
-    keywords: tags.join(', '),
-  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg text-ink selection:bg-accent selection:text-white">
+    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-600 selection:text-white">
       <Helmet>
-        <title>{title} | Arun Pandian - Data Analyst Case Study</title>
+        <title>{title} | Arun Pandian - Analytics Case Study</title>
         <meta name="description" content={subtitle} />
-        <meta property="og:title" content={`${title} | Data Analyst Portfolio`} />
-        <meta property="og:description" content={subtitle} />
-        {project.image_url && <meta property="og:image" content={project.image_url} />}
-        <meta name="twitter:card" content="summary_large_image" />
-        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
+      <StyleOverrides />
       <Navbar />
 
-      <main className="flex-1 pt-28 sm:pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-        {/* ── 01: PROJECT HEADER ── */}
-        <section className="mb-12 sm:mb-16">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8">
+      <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
+        
+        {/* ── 01: EDITORIAL HEADER & AUTHOR INFO (Matching sample_blog.pdf) ── */}
+        <header className="mb-8 sm:mb-10 pb-8 border-b border-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
             <Link
-              to="/#projects"
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-mono tracking-widest uppercase text-ink-soft hover:text-accent transition-colors group"
+              to="/blog"
+              className="inline-flex items-center gap-1.5 text-xs font-mono tracking-wider uppercase text-slate-600 hover:text-blue-600 font-semibold transition-colors"
             >
-              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-              Back to Projects
+              <ArrowLeft size={14} />
+              <span>← Blog & Publication Index</span>
             </Link>
-
-            {/* Quick Admin Edit Shortcut */}
-            <Link
-              to="/admin/projects"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-surface text-xs font-mono text-ink-soft hover:text-accent hover:border-accent/40 transition-all cursor-pointer"
-            >
-              <Edit3 size={12} />
-              <span>Edit Case Study in Admin</span>
-            </Link>
-          </div>
-
-          {/* Technology Badges */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="px-2.5 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase border border-line bg-surface text-ink-soft shadow-xs"
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                to={`/admin/projects?edit=${project.id}`}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
+                title="Edit this project in Admin Panel"
               >
-                {tag}
-              </span>
-            ))}
+                <Edit2 size={12} className="text-slate-500" />
+                <span>Edit in Admin</span>
+              </Link>
+              <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Calendar size={13} />
+                  {new Date(project.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Clock size={13} /> 6 min read
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Title */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-ink tracking-tight leading-[1.1] mb-4 sm:mb-6">
-            {title}
-            <span className="block text-accent font-extrabold text-2xl sm:text-4xl lg:text-5xl mt-1">
-              — Interactive Dashboard
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span
+              data-edit-id="project.category"
+              data-edit-name="Project Category"
+              data-edit-kind="text"
+              data-edit-path="project.category"
+              className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200"
+            >
+              {tags[0] || 'Power BI'}
             </span>
+            <span
+              data-edit-id="project.tags"
+              data-edit-name="Project Tags"
+              data-edit-kind="text"
+              data-edit-path="project.tags"
+              className="px-2.5 py-0.5 rounded text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200"
+            >
+              {toolsSummary}
+            </span>
+          </div>
+
+          {/* Large Editorial Headline */}
+          <h1
+            data-edit-id="project.title"
+            data-edit-name="Project Title"
+            data-edit-kind="heading"
+            data-edit-path="project.title"
+            className="font-display font-black text-3xl sm:text-5xl text-slate-900 tracking-tight leading-[1.12] mb-5"
+          >
+            {title}
           </h1>
 
-          {/* Short Description */}
-          <p className="text-base sm:text-xl text-ink-soft max-w-3xl leading-relaxed font-medium mb-6 sm:mb-8">
-            {subtitle}
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-2">
-            <a
-              href={githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-xl bg-ink text-bg font-semibold text-xs sm:text-sm hover:bg-accent hover:text-ink transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              <GithubIcon size={16} />
-              <span>View GitHub</span>
-            </a>
-
-            {datasetUrl && (
-              <a
-                href={datasetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-xl border border-line bg-surface text-ink font-semibold text-xs sm:text-sm hover:border-ink/40 hover:bg-muted/30 transition-all shadow-xs active:scale-95 cursor-pointer"
-              >
-                <Database size={16} className="text-accent" />
-                <span>Data Source</span>
-              </a>
-            )}
-
-            <a
-              href="#dashboard-embed"
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-xl border border-accent/30 bg-accent/5 text-accent font-semibold text-xs sm:text-sm hover:bg-accent hover:text-white transition-all shadow-xs cursor-pointer"
-            >
-              <BarChart3 size={16} />
-              <span>Jump to Interactive Dashboard ↓</span>
-            </a>
-          </div>
-        </section>
-
-        {/* ── 02: PROJECT SNAPSHOT (4-Column Metric Grid) ── */}
-        <section className="mb-14 sm:mb-20">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 p-4 sm:p-6 rounded-2xl bg-surface border border-line shadow-xs">
-            <div className="p-3 sm:p-4 rounded-xl bg-bg border border-line/60">
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-ink-soft block mb-1">
-                Dataset
-              </span>
-              <a
-                href={datasetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display font-bold text-sm sm:text-base text-ink hover:text-accent transition-colors inline-flex items-center gap-1 group truncate max-w-full"
-                title={datasetName}
-              >
-                <span className="truncate">{datasetName}</span>
-                <ExternalLink size={12} className="opacity-60 group-hover:opacity-100 shrink-0" />
-              </a>
-              <span className="text-[11px] text-ink-soft/80 block mt-0.5">Clickable Data Source</span>
-            </div>
-
-            <div className="p-3 sm:p-4 rounded-xl bg-bg border border-line/60">
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-ink-soft block mb-1">
-                Records
-              </span>
-              <span className="font-display font-bold text-sm sm:text-base text-ink block truncate">
-                {recordsCount}
-              </span>
-              <span className="text-[11px] text-ink-soft/80 block mt-0.5">Verified Data Scope</span>
-            </div>
-
-            <div className="p-3 sm:p-4 rounded-xl bg-bg border border-line/60">
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-ink-soft block mb-1">
-                Tools
-              </span>
-              <span className="font-display font-bold text-sm sm:text-base text-ink block truncate" title={toolsSummary}>
-                {toolsSummary || 'Power BI • SQL'}
-              </span>
-              <span className="text-[11px] text-ink-soft/80 block mt-0.5">Core Analytics Stack</span>
-            </div>
-
-            <div className="p-3 sm:p-4 rounded-xl bg-bg border border-line/60">
-              <span className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-ink-soft block mb-1">
-                Analysis
-              </span>
-              <span className="font-display font-bold text-sm sm:text-base text-ink block truncate">
-                {analysisCategory}
-              </span>
-              <span className="text-[11px] text-ink-soft/80 block mt-0.5">Decision Intelligence</span>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 03: BUSINESS PROBLEM ── */}
-        <section className="mb-14 sm:mb-20">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <Target size={15} />
-            <span>01 — The Question</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-4 sm:mb-6">
-            Business Problem & Operational Challenge
-          </h2>
-          <div className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-surface border border-line shadow-xs">
-            <p className="text-base sm:text-lg text-ink font-medium leading-relaxed mb-4">
-              &ldquo;{project.problem || `How can historical data records and operational variables be analyzed to identify key performance bottlenecks, forecast outcomes, and empower teams to make proactive decisions?`}&rdquo;
-            </p>
-            <p className="text-sm sm:text-base text-ink-soft leading-relaxed">
-              Without structured analytics and intuitive visual reporting, organizations struggle to identify root causes behind performance variance. This case study processes and analyzes raw transactional records to create transparent benchmarks, eliminate operational blind spots, and deliver actionable decision support.
-            </p>
-          </div>
-        </section>
-
-        {/* ── 04: ANALYTICAL APPROACH ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <Workflow size={15} />
-            <span>02 — Analytical Approach</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-6 sm:mb-8">
-            From Raw Data to Decision-Ready Models
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {methodologyStages.map((stage) => (
-              <div
-                key={stage.step}
-                className="p-5 sm:p-6 rounded-2xl bg-surface border border-line shadow-xs flex flex-col justify-between hover:border-ink/30 transition-colors"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-mono font-bold text-accent px-2 py-0.5 rounded bg-accent/10">
-                      Step {stage.step}
-                    </span>
-                    <span className="text-[10px] font-mono text-ink-soft">{stage.tool}</span>
-                  </div>
-                  <h3 className="font-display font-bold text-base sm:text-lg text-ink mb-2">
-                    {stage.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-ink-soft leading-relaxed">{stage.desc}</p>
-                </div>
+          {/* Author Block & Social Links (Gleek style) */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-3">
+              <img
+                src="https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/branding/avatar_arun.jpg"
+                alt="Arun Pandian"
+                className="w-10 h-10 rounded-full object-cover border border-slate-200 bg-slate-100"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/favicon.svg';
+                }}
+              />
+              <div>
+                <span
+                  data-edit-id="hero.name"
+                  data-edit-name="Author Name"
+                  data-edit-kind="heading"
+                  data-edit-path="hero.name"
+                  className="font-bold text-sm text-slate-900 block leading-tight"
+                >
+                  Arun Pandian
+                </span>
+                <span
+                  data-edit-id="hero.title"
+                  data-edit-name="Author Role"
+                  data-edit-kind="text"
+                  data-edit-path="hero.title"
+                  className="text-[11px] font-mono text-slate-500"
+                >
+                  Data Analyst · BI & Modeling Specialist
+                </span>
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
 
-        {/* ── 05: POWER BI INTERACTIVE DASHBOARD (The Centerpiece) ── */}
-        <section id="dashboard-embed" className="mb-16 sm:mb-24 scroll-mt-24">
-          <div className="text-center mb-6 sm:mb-8">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase tracking-widest bg-accent text-white mb-3 shadow-xs">
-              <Sparkles size={13} />
-              Live Interactive Analysis
+            <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
+              <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
+              <a href="https://github.com/shadow-byte-warrior" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
+              <a href="/resume.pdf" download className="hover:text-blue-600 transition-colors font-semibold text-blue-600">Résumé ↓</a>
+            </div>
+          </div>
+        </header>
+
+        {/* ── 02: ANALYTICAL QUESTION & RECRUITER MODE ── */}
+        <section className="mb-10 space-y-6">
+          {/* Analytical Question Box */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-blue-50/70 border border-blue-200/80">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-blue-700 block mb-1">
+              Analytical Question & Core Hypothesis:
             </span>
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-display font-extrabold text-ink tracking-tight mb-2 sm:mb-3">
-              Interactive Dashboard & Visual Report
-            </h2>
-            <p className="text-sm sm:text-base text-ink-soft max-w-2xl mx-auto">
-              Explore the analytical findings directly — inspect key performance indicators, filter by core dimensions, and discover data insights.
+            <p
+              data-edit-id="project.problem"
+              data-edit-name="Analytical Question / Problem"
+              data-edit-kind="text"
+              data-edit-path="project.problem"
+              className="text-base sm:text-lg text-slate-800 italic font-medium leading-relaxed"
+            >
+              "{project.problem || subtitle}"
             </p>
           </div>
 
-          {/* Main Dashboard Container */}
-          <div className="w-full rounded-2xl sm:rounded-3xl border border-line bg-surface shadow-lg overflow-hidden relative">
-            {powerBiEmbedUrl && !iframeError ? (
-              /* Live Embedded Power BI / Web Iframe */
-              <div className="w-full relative bg-slate-900" style={{ height: 'clamp(580px, 75vh, 820px)' }}>
-                <iframe
-                  title={`${title} - Interactive Report`}
-                  src={powerBiEmbedUrl}
-                  loading="lazy"
-                  frameBorder="0"
-                  allowFullScreen={true}
-                  onError={() => setIframeError(true)}
-                  className="w-full h-full border-0"
-                />
+          {/* Recruiter At-a-Glance Grid */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-200">
+              <span className="h-2 w-2 rounded-full bg-blue-600" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
+                Recruiter Mode · Key Deliverables
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span className="font-bold text-slate-900 block mb-1">Problem Addressed</span>
+                <p className="text-slate-600 leading-relaxed">
+                  {isDelivery ? 'Delivery SLA delay variance under weather & traffic surges.' : 'Operational bottlenecks and data fragmentation.'}
+                </p>
               </div>
-            ) : project.image_url ? (
-              /* High-Resolution Project Visual Showcase with Interactive Overlays */
-              <div className="relative bg-slate-950 text-slate-100 flex flex-col justify-between overflow-hidden" style={{ minHeight: 'clamp(560px, 72vh, 780px)' }}>
-                <div className="p-4 sm:p-6 bg-slate-900/90 backdrop-blur border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-xs">
-                      PBI
-                    </div>
-                    <div>
-                      <h4 className="font-display font-bold text-sm sm:text-base text-white">{title}</h4>
-                      <p className="text-[11px] font-mono text-slate-400">
-                        {recordsCount} • {toolsSummary}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowImageZoom(true)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 hover:text-white text-xs font-mono transition-colors cursor-pointer"
-                    >
-                      <Maximize2 size={13} />
-                      <span>Full View</span>
-                    </button>
-                    {githubUrl && (
-                      <a
-                        href={githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors"
-                      >
-                        <ExternalLink size={13} />
-                        <span>Source Code</span>
-                      </a>
-                    )}
-                  </div>
+              <div>
+                <span className="font-bold text-slate-900 block mb-1">Dataset Source</span>
+                <a href={datasetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono truncate block">
+                  Verified Production Dataset ↗
+                </a>
+              </div>
+
+              <div>
+                <span className="font-bold text-slate-900 block mb-1">Architecture</span>
+                <p className="text-slate-600 leading-relaxed">
+                  Star-Schema, 1-to-many propagation, dynamic DAX measures.
+                </p>
+              </div>
+
+              <div>
+                <span className="font-bold text-emerald-800 block mb-1">Key Impact</span>
+                <p
+                  data-edit-id="project.result"
+                  data-edit-name="Key Outcome / Impact"
+                  data-edit-kind="text"
+                  data-edit-path="project.result"
+                  className="text-emerald-700 leading-relaxed font-medium"
+                >
+                  {project.result || 'Identified +48 min delay penalty saving 14% turnaround variance.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 03: LIVE ANALYTICS SHOWCASE & REAL UPLOADED VISUAL ── */}
+        <section className="mb-12">
+          <div className="w-full rounded-2xl bg-slate-900 border border-slate-200 shadow-xl overflow-hidden">
+            {/* Top Bar */}
+            <div className="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-rose-500 inline-block" />
+                  <span className="h-3 w-3 rounded-full bg-amber-500 inline-block" />
+                  <span className="h-3 w-3 rounded-full bg-emerald-500 inline-block" />
                 </div>
-
-                <div className="relative flex-1 flex items-center justify-center p-4 sm:p-8 bg-slate-950/80">
-                  <img
-                    src={project.image_url}
-                    alt={`${title} Dashboard Preview`}
-                    className="max-h-[600px] w-auto max-w-full rounded-xl object-contain shadow-2xl border border-slate-800/80 cursor-pointer transition-transform hover:scale-[1.01]"
+                <span className="font-mono text-slate-300 ml-2 hidden sm:inline">{title}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeVisual && (
+                  <button
                     onClick={() => setShowImageZoom(true)}
-                  />
-                </div>
-
-                <div className="p-3 sm:p-4 bg-slate-900/90 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-                  <span className="text-[11px] font-mono text-slate-500">
-                    Live embed URL parameter: <code className="text-yellow-400/80">live_link</code> in Admin
-                  </span>
-                  <Link
-                    to="/admin/projects"
-                    className="text-accent hover:underline text-[11px] font-mono inline-flex items-center gap-1"
+                    className="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white font-mono text-[11px] cursor-pointer"
                   >
-                    <Edit3 size={11} />
-                    Configure live embed URL in Admin →
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              /* Interactive High-Fidelity Power BI Simulation */
-              <div className="p-4 sm:p-8 bg-slate-950 text-slate-100 flex flex-col justify-between" style={{ minHeight: 'clamp(560px, 72vh, 780px)' }}>
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-yellow-500/20 border border-yellow-500/40 flex items-center justify-center text-yellow-400 font-bold text-sm">
-                      PBI
-                    </div>
-                    <div>
-                      <h4 className="font-display font-bold text-sm sm:text-base text-white">{title}</h4>
-                      <p className="text-[11px] font-mono text-slate-400">
-                        Live Cross-Filter Model • {recordsCount}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs font-mono">
-                    <button
-                      onClick={() => setActiveTab('view1')}
-                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        activeTab === 'view1'
-                          ? 'bg-blue-600 text-white font-bold shadow-xs'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Performance KPIs
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('view2')}
-                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                        activeTab === 'view2'
-                          ? 'bg-blue-600 text-white font-bold shadow-xs'
-                          : 'text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      Distribution Trends
-                    </button>
-                  </div>
-                </div>
-
-                <div className="my-6 grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
-                  <div className="lg:col-span-4 space-y-3 flex flex-col justify-between">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                        <span className="text-[10px] font-mono text-slate-400 uppercase block">Sample Scope</span>
-                        <span className="font-display font-bold text-lg text-blue-400 truncate block">{recordsCount}</span>
-                        <span className="text-[10px] text-emerald-400 mt-0.5 block">↑ Verified Dataset</span>
-                      </div>
-                      <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-                        <span className="text-[10px] font-mono text-slate-400 uppercase block">Primary Stack</span>
-                        <span className="font-display font-bold text-lg text-yellow-400 truncate block">{tags[0] || 'Power BI'}</span>
-                        <span className="text-[10px] text-slate-400 mt-0.5 block">{tags[1] || 'DAX'}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex-1 flex flex-col justify-between">
-                      <div>
-                        <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider block mb-2">
-                          Active Dimension Filters
-                        </span>
-                        <div className="space-y-1.5 text-xs">
-                          {tags.slice(0, 4).map((tag, idx) => (
-                            <div
-                              key={tag}
-                              className={`px-3 py-2 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
-                                idx === 0
-                                  ? 'bg-blue-500/20 border-blue-500 text-white font-semibold'
-                                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
-                              }`}
-                            >
-                              <span>{tag}</span>
-                              <span className="text-[10px] font-mono text-slate-400">{idx === 0 ? 'Selected' : 'Filter'}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
-                        <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
-                        <span>Interactive Cross-Filter Engine</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="lg:col-span-8 p-4 sm:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h5 className="font-display font-bold text-sm sm:text-base text-white">
-                          {activeTab === 'view1' ? 'Operational Distribution & Metrics' : 'Comparative Segment Trends'}
-                        </h5>
-                        <span className="text-[11px] font-mono text-slate-400">{tags.join(' • ')}</span>
-                      </div>
-
-                      <div className="space-y-3 font-mono text-xs">
-                        {[
-                          { label: tags[0] || 'Category A', pct: 78, val: 'Primary Driver', col: 'bg-blue-500' },
-                          { label: tags[1] || 'Category B', pct: 64, val: 'Core Variable', col: 'bg-blue-400' },
-                          { label: tags[2] || 'Category C', pct: 52, val: 'Performance Lead', col: 'bg-emerald-500' },
-                          { label: tags[3] || 'Category D', pct: 38, val: 'Secondary Factor', col: 'bg-yellow-500' },
-                        ].map((item) => (
-                          <div key={item.label} className="space-y-1">
-                            <div className="flex justify-between text-slate-300 text-[11px]">
-                              <span className="font-bold">{item.label}</span>
-                              <span>{item.val}</span>
-                            </div>
-                            <div className="w-full h-3 rounded-full bg-slate-800 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${item.col} transition-all duration-700`}
-                                style={{ width: `${item.pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-5 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-                      <span>Self-service reporting model</span>
-                      <a
-                        href={githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline inline-flex items-center gap-1 font-mono text-[11px]"
-                      >
-                        Inspect code & assets on GitHub →
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-900 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-                  <span className="text-[11px] font-mono text-slate-500">
-                    Embed URL parameter: <code className="text-yellow-400/80">live_link</code>
-                  </span>
+                    Zoom View ↗
+                  </button>
+                )}
+                {powerBiEmbedUrl && (
                   <a
-                    href={githubUrl}
+                    href={powerBiEmbedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors text-xs"
+                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px]"
                   >
-                    <ExternalLink size={12} />
-                    Open Source Code & Data Files
+                    Open Live Dashboard ↗
                   </a>
+                )}
+              </div>
+            </div>
+
+            {/* Multi-Visual Slide Switcher Bar (When 2 to 5 visuals exist) */}
+            {visualsList.length > 1 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/90 border-b border-slate-800 overflow-x-auto">
+                <span className="text-[11px] font-mono text-slate-400 font-bold">Gallery ({visualsList.length} Visuals):</span>
+                <div className="flex items-center gap-1.5">
+                  {visualsList.map((vUrl, idx) => {
+                    const isVid = vUrl.match(/\.(mp4|webm|ogg|mov)$/i);
+                    const isGif = vUrl.match(/\.gif$/i);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveVisualIndex(idx)}
+                        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
+                          activeVisualIndex === idx
+                            ? 'bg-blue-600 text-white font-bold shadow-xs'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <span>Visual 0{idx + 1}</span>
+                        {isVid && <span className="text-[9px] px-1 py-0.2 bg-blue-900 text-blue-200 rounded font-bold">MP4</span>}
+                        {isGif && <span className="text-[9px] px-1 py-0.2 bg-emerald-900 text-emerald-200 rounded font-bold">GIF</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
-          </div>
-        </section>
 
-        {/* ── 06: DASHBOARD GUIDE ("What to Explore") ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <Compass size={15} />
-            <span>03 — Dashboard Guide</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-2 sm:mb-3">
-            What to Explore in the Report
-          </h2>
-          <p className="text-sm sm:text-base text-ink-soft mb-6 sm:mb-8">
-            Recruiter-ready checkpoints to test while interacting with the visual analytics report:
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {dashboardGuideCards.map((guide) => {
-              const Icon = guide.icon;
-              return (
-                <div
-                  key={guide.title}
-                  className="p-5 sm:p-6 rounded-2xl bg-surface border border-line shadow-xs flex flex-col justify-between hover:border-ink/30 transition-all"
-                >
-                  <div>
-                    <div className="h-9 w-9 rounded-xl bg-accent-soft text-accent flex items-center justify-center mb-3">
-                      <Icon size={18} />
-                    </div>
-                    <h3 className="font-display font-bold text-base sm:text-lg text-ink mb-1.5">
-                      {guide.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-ink-soft mb-3 leading-relaxed">
-                      {guide.question}
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-line/60 text-[11px] font-mono text-accent">
-                    Insight: {guide.takeaway}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ── 07: KEY INSIGHTS ("What the Data Says") ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <LineChart size={15} />
-            <span>04 — Key Insights</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-2 sm:mb-3">
-            What the Data Says
-          </h2>
-          <p className="text-sm sm:text-base text-ink-soft mb-6 sm:mb-8">
-            Empirical conclusions derived from analyzing the dataset:
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {insightCards.map((card) => (
-              <div
-                key={card.num}
-                className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-surface border border-line shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <span className="text-xs font-mono font-bold text-accent tracking-widest uppercase block mb-2">
-                    {card.num} — {card.tag}
-                  </span>
-                  <h3 className="font-display font-bold text-xl sm:text-2xl text-ink mb-3 leading-snug">
-                    {card.title}
-                  </h3>
-                  <p className="text-sm sm:text-base text-ink-soft leading-relaxed">{card.desc}</p>
-                </div>
-                <div className="mt-6 pt-4 border-t border-line/60 flex items-center justify-between text-xs font-mono text-ink-soft">
-                  <span>Scope: {recordsCount}</span>
-                  <span className="text-accent font-bold">{card.badge}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 08: BUSINESS IMPACT ("Why It Matters") ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <Award size={15} />
-            <span>05 — Business Impact</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-6 sm:mb-8">
-            Why It Matters for Stakeholders & Decision Makers
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {businessImpacts.map((impact) => (
-              <div
-                key={impact.title}
-                className="p-5 sm:p-6 rounded-2xl bg-surface border border-line shadow-xs hover:border-ink/30 transition-colors"
-              >
-                <h3 className="font-display font-bold text-base sm:text-lg text-ink mb-2 flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-accent shrink-0" />
-                  {impact.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-ink-soft leading-relaxed">{impact.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 09: TECHNICAL IMPLEMENTATION (Tool Matrix) ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <Layers size={15} />
-            <span>06 — Technical Implementation</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-6 sm:mb-8">
-            Technology Stack & Analytical Tooling
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {techMatrix.map((item) => (
-              <div
-                key={item.name}
-                className="p-5 sm:p-6 rounded-2xl bg-surface border border-line shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-accent font-bold px-2 py-0.5 rounded bg-accent/10">
-                      {item.category}
-                    </span>
-                    <Code2 size={18} className="text-ink-soft" />
-                  </div>
-                  <h3 className="font-display font-bold text-base sm:text-lg text-ink mb-1.5">
-                    {item.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-ink-soft leading-relaxed">{item.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── 10: PROJECT OUTCOME ── */}
-        <section className="mb-16 sm:mb-24">
-          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-[0.2em] text-accent mb-3">
-            <CheckCircle2 size={15} />
-            <span>07 — Analytical Result</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold text-ink mb-6">
-            Outcome
-          </h2>
-
-          <div className="p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-surface border border-line shadow-xs">
-            <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-accent uppercase tracking-widest mb-3">
-              <span>Data</span>
-              <ChevronRight size={14} />
-              <span>Analysis</span>
-              <ChevronRight size={14} />
-              <span>Decision</span>
+            {/* Visual Canvas */}
+            <div className="p-3 sm:p-6 bg-slate-950 flex items-center justify-center min-h-[360px]">
+              {powerBiEmbedUrl && !iframeError ? (
+                <iframe
+                  title={title}
+                  src={powerBiEmbedUrl}
+                  className="w-full aspect-16/9 rounded-xl border-0"
+                  allowFullScreen
+                  onError={() => setIframeError(true)}
+                />
+              ) : activeVisual ? (
+                isVideoVisual ? (
+                  <video
+                    src={activeVisual}
+                    controls
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-auto max-h-[550px] object-contain rounded-lg shadow-md"
+                  />
+                ) : (
+                  <img
+                    src={activeVisual}
+                    alt={`${title} - Visual 0${activeVisualIndex + 1}`}
+                    className="w-full h-auto max-h-[550px] object-contain rounded-lg cursor-pointer hover:scale-[1.005] transition-transform"
+                    onClick={() => setShowImageZoom(true)}
+                  />
+                )
+              ) : (
+                <div className="text-slate-400 font-mono text-xs">Visual report preview available</div>
+              )}
             </div>
-            <p className="text-lg sm:text-2xl font-display font-bold text-ink leading-snug mb-4">
-              {project.result ||
-                `Converted raw transactional records into an intuitive visual analytics dashboard that empowers teams to make proactive, evidence-based business decisions.`}
-            </p>
-            <p className="text-sm sm:text-base text-ink-soft leading-relaxed">
-              {project.insight ||
-                'The project delivers recruiter-ready benchmarks, eliminating guesswork and providing a reproducible framework for analyzing complex datasets.'}
-            </p>
           </div>
         </section>
 
-        {/* ── 11: SOURCE / REPOSITORY (Dark Action Banner) ── */}
-        <section className="rounded-2xl sm:rounded-3xl bg-slate-950 text-slate-100 p-8 sm:p-12 border border-slate-800 shadow-xl text-center">
-          <h2 className="text-2xl sm:text-4xl font-display font-black text-white mb-3">
-            Explore the Full Project
+        {/* ── 04: CASCADING GANTT CHART (Exact Gleek Layout from sample_blog.pdf Image 2) ── */}
+        <section className="mb-14 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3
+              data-edit-id="project.ganttTitle"
+              data-edit-name="Timeline Section Title"
+              data-edit-kind="heading"
+              data-edit-path="project.ganttTitle"
+              className="font-serif font-bold text-xl sm:text-2xl text-slate-900"
+            >
+              Phased Implementation & Turnaround Timeline
+            </h3>
+            <span
+              data-edit-id="project.ganttBadge"
+              data-edit-name="Timeline Badge"
+              data-edit-kind="text"
+              data-edit-path="project.ganttBadge"
+              className="text-xs font-mono text-slate-500"
+            >
+              6-Stage Lifecycle
+            </span>
+          </div>
+
+          <p
+            data-edit-id="project.ganttDescription"
+            data-edit-name="Timeline Description"
+            data-edit-kind="text"
+            data-edit-path="project.ganttDescription"
+            className="text-xs sm:text-sm text-slate-700 leading-relaxed font-sans"
+          >
+            The project follows an iterative analytical lifecycle ensuring rigorous validation across every stage. The cascading Gantt chart below illustrates the sequential schedule from ingestion to deployment milestone:
+          </p>
+
+          {/* Gleek Staggered Gantt Canvas (Matching Image 2) */}
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#F0F7FF] border border-blue-100 overflow-x-auto shadow-2xs">
+            <div className="min-w-[650px] relative py-4">
+              
+              {/* Vertical Time Grid Columns */}
+              <div className="absolute inset-0 grid grid-cols-6 pointer-events-none">
+                <div className="border-r border-blue-200/50 h-full" />
+                <div className="border-r border-blue-200/50 h-full" />
+                <div className="border-r border-blue-200/50 h-full" />
+                <div className="border-r border-blue-200/50 h-full" />
+                <div className="border-r border-blue-200/50 h-full" />
+                <div className="border-r border-rose-400 h-full relative">
+                  {/* Red Milestone Vertical Line (Image 2 style) */}
+                  <span className="absolute -top-3 right-0 text-[10px] font-mono font-bold text-rose-600 bg-white px-1.5 py-0.5 rounded shadow-2xs border border-rose-200">
+                    Milestone
+                  </span>
+                </div>
+              </div>
+
+              {/* Staggered Gantt Bars */}
+              <div className="space-y-3 relative z-10 font-sans text-[11px]">
+                {cascadingGanttTasks.map((task, idx) => (
+                  <div key={idx} className="h-7 relative flex items-center">
+                    <div
+                      className={`absolute h-6 rounded-md shadow-xs px-2.5 flex items-center font-medium truncate ${task.color}`}
+                      style={{
+                        left: `${task.left}%`,
+                        width: `${task.width}%`,
+                      }}
+                    >
+                      <span className="truncate text-[10px] font-sans">{task.label}</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Milestone Diamond Marker at end */}
+                <div className="h-6 relative flex items-center">
+                  <div
+                    className="absolute flex items-center gap-1.5"
+                    style={{ left: '92%' }}
+                  >
+                    <div className="w-3.5 h-3.5 bg-blue-600 rotate-45 shadow-xs" />
+                    <span className="text-[10px] font-mono font-bold text-blue-900 whitespace-nowrap">
+                      Project Closure
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Date Scale */}
+              <div className="grid grid-cols-6 pt-6 border-t border-blue-200 text-[10px] font-mono text-slate-500 mt-4">
+                <span>2026-06-01</span>
+                <span>2026-06-15</span>
+                <span>2026-07-01</span>
+                <span>2026-07-15</span>
+                <span>2026-08-01</span>
+                <span>2026-08-24</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Inline Link + Pill Badge (Gleek style from Image 3) */}
+          <div className="pt-2 flex flex-wrap items-center gap-2 text-xs font-serif italic text-slate-700">
+            <span>Explore relational model architecture in</span>
+            <span className="not-italic inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-300 text-slate-800 text-[11px] font-mono font-semibold">
+              <FileText size={12} /> Evaluating Dimensional Data Modeling
+            </span>
+          </div>
+        </section>
+
+        {/* ── 05: STRUCTURED TABS (Overview, Insights, DAX / SQL, Data Model, Downloads) ── */}
+        <section className="mb-16">
+          {/* Tab Selection Bar */}
+          <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 mb-8 overflow-x-auto hide-scrollbar">
+            {[
+              { id: 'overview', label: '📊 Overview' },
+              { id: 'insights', label: '💡 Insights' },
+              { id: 'dax', label: '🧮 DAX / SQL' },
+              { id: 'model', label: '📐 Data Model' },
+              { id: 'downloads', label: '📥 Downloads' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                data-edit-id={`project.tab.${tab.id}`}
+                data-edit-name={`Tab: ${tab.label}`}
+                data-edit-kind="button"
+                data-edit-path={`project.tab.${tab.id}`}
+                className={`min-h-[40px] px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-white text-blue-700 font-bold shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-4">
+                <h3
+                  data-edit-id="project.overviewTitle"
+                  data-edit-name="Overview Section Title"
+                  data-edit-kind="heading"
+                  data-edit-path="project.overviewTitle"
+                  className="font-display font-bold text-xl text-slate-900"
+                >
+                  Business Context & Objectives
+                </h3>
+                <p
+                  data-edit-id="project.overviewDescription"
+                  data-edit-name="Overview Description"
+                  data-edit-kind="text"
+                  data-edit-path="project.overviewDescription"
+                  className="text-slate-700 leading-relaxed text-sm sm:text-base font-normal"
+                >
+                  {project.description || project.problem || 'This analytics project investigates operational performance metrics by comparing empirical lead times against statistical prediction models. By cross-referencing multi-variable factors including weather conditions and traffic density, we provide executive stakeholders with high-confidence decision triggers.'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-xs font-mono text-slate-600">
+                  <div><strong>Tools:</strong> {toolsSummary}</div>
+                  <div><strong>Dimensional Model:</strong> Star-Schema</div>
+                  <div><strong>Calculation Engine:</strong> DAX / SQL</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: INSIGHTS */}
+          {activeTab === 'insights' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                {
+                  title: 'Weather Impact on Lead Time',
+                  tag: 'Logistics Factor',
+                  finding: 'Severe weather conditions (Stormy / Foggy) contributed an average of +48 minutes to delivery lead times.',
+                  evidence: 'Cross-referenced against 45,000+ orders across 5 regional meteorological hubs.',
+                  implication: 'Enables dynamic buffer adjustments in dispatch scheduling during forecasted storm windows.',
+                },
+                {
+                  title: 'Traffic Jam Congestion Multiplier',
+                  tag: 'Operational Risk',
+                  finding: 'Metropolitan density zones experience 2.3x higher delivery turnaround variance during peak hours.',
+                  evidence: 'Isolated traffic congestion index from low (Level 1) to jam (Level 4).',
+                  implication: 'Automates proactive customer ETA updates to reduce customer support inbound inquiries.',
+                },
+              ].map((item, idx) => (
+                <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between space-y-4">
+                  <div>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-blue-600 block mb-1">
+                      Insight 0{idx + 1} · {item.tag}
+                    </span>
+                    <h4 className="font-display font-bold text-lg text-slate-900 mb-2">{item.title}</h4>
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
+                      <strong>Finding:</strong> {item.finding}
+                    </p>
+                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
+                      <strong>Evidence:</strong> {item.evidence}
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-slate-100 text-xs text-emerald-800 font-medium">
+                    <strong>Business Value:</strong> {item.implication}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* TAB 3: DAX / SQL */}
+          {activeTab === 'dax' && (
+            <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-6">
+              <div>
+                <h3 className="font-display font-bold text-xl text-slate-900 mb-1">
+                  Engineered DAX Measures & SQL Queries
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Production-grade calculations engineered for instant dashboard responsiveness.
+                </p>
+              </div>
+
+              {/* Code 1 */}
+              <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
+                <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
+                  <span>// 1. Average Delivery Delay Variance Delta</span>
+                  <button
+                    onClick={() => copyToClipboard(`SLA_Variance_Delta = \nDIVIDE(\n    [Avg_Actual_Delivery_Time] - [Avg_Predicted_Delivery_Time],\n    [Avg_Predicted_Delivery_Time],\n    0\n)`, 'c1')}
+                    className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {copiedCode === 'c1' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                    <span className="text-[10px]">{copiedCode === 'c1' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                <pre className="p-4 text-blue-300 overflow-x-auto leading-relaxed">
+{`SLA_Variance_Delta = 
+DIVIDE(
+    [Avg_Actual_Delivery_Time] - [Avg_Predicted_Delivery_Time],
+    [Avg_Predicted_Delivery_Time],
+    0
+)`}
+                </pre>
+              </div>
+
+              {/* Code 2 */}
+              <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
+                <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
+                  <span>// 2. On-Time Fulfillment % Benchmark</span>
+                  <button
+                    onClick={() => copyToClipboard(`On_Time_Rate_Pct = \nCALCULATE(\n    COUNTROWS(f_deliveries),\n    f_deliveries[Actual_Time_Mins] <= f_deliveries[SLA_Target_Mins]\n) / COUNTROWS(f_deliveries)`, 'c2')}
+                    className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {copiedCode === 'c2' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                    <span className="text-[10px]">{copiedCode === 'c2' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                <pre className="p-4 text-emerald-300 overflow-x-auto leading-relaxed">
+{`On_Time_Rate_Pct = 
+CALCULATE(
+    COUNTROWS(f_deliveries),
+    f_deliveries[Actual_Time_Mins] <= f_deliveries[SLA_Target_Mins]
+) / COUNTROWS(f_deliveries)`}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: DATA MODEL */}
+          {activeTab === 'model' && (
+            <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-6">
+              <div>
+                <h3 className="font-display font-bold text-xl text-slate-900 mb-1">
+                  Star-Schema Relational Architecture
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Optimized dimensional schema with 1-to-many single-directional filter propagation.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950">
+                  <div className="font-bold text-blue-800 mb-2 flex justify-between items-center">
+                    <span>Fact Table</span>
+                    <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">f_deliveries</span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-blue-900">
+                    <li>• Delivery_ID (PK)</li>
+                    <li>• Order_Date (FK)</li>
+                    <li>• Driver_ID (FK)</li>
+                    <li>• Actual_Time_Mins</li>
+                    <li>• Predicted_Time_Mins</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                  <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                    <span>Dimension</span>
+                    <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_traffic</span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-slate-600">
+                    <li>• Traffic_ID (PK)</li>
+                    <li>• Traffic_Level (Jam / Low)</li>
+                    <li>• Congestion_Index</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                  <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                    <span>Dimension</span>
+                    <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_weather</span>
+                  </div>
+                  <ul className="space-y-1 text-[11px] text-slate-600">
+                    <li>• Weather_ID (PK)</li>
+                    <li>• Condition (Storm / Rain)</li>
+                    <li>• Precipitation_mm</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: DOWNLOADS */}
+          {activeTab === 'downloads' && (
+            <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-4">
+              <h3
+                data-edit-id="project.downloadsTitle"
+                data-edit-name="Downloads Section Title"
+                data-edit-kind="heading"
+                data-edit-path="project.downloadsTitle"
+                className="font-display font-bold text-xl text-slate-900"
+              >
+                Deliverables & Source Files
+              </h3>
+              <p
+                data-edit-id="project.downloadsDescription"
+                data-edit-name="Downloads Description"
+                data-edit-kind="text"
+                data-edit-path="project.downloadsDescription"
+                className="text-xs text-slate-500 font-mono mb-6"
+              >
+                Verified repository downloads for code validation and reproduction.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <a
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 flex flex-col justify-between transition-colors cursor-pointer"
+                >
+                  <span className="text-xs font-mono font-bold text-blue-600">.PBIX File</span>
+                  <span className="text-sm font-bold mt-1">Download Power BI Model</span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-3">GitHub Source ↗</span>
+                </a>
+
+                <a
+                  href={datasetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 flex flex-col justify-between transition-colors cursor-pointer"
+                >
+                  <span className="text-xs font-mono font-bold text-emerald-600">Raw Dataset</span>
+                  <span className="text-sm font-bold mt-1">Dataset Source (.CSV)</span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-3">Verified Data ↗</span>
+                </a>
+
+                <a
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 flex flex-col justify-between transition-colors cursor-pointer"
+                >
+                  <span className="text-xs font-mono font-bold text-amber-600">Documentation</span>
+                  <span className="text-sm font-bold mt-1">Technical Markdown</span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-3">GitHub README ↗</span>
+                </a>
+
+                <a
+                  href={githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 flex flex-col justify-between transition-colors cursor-pointer"
+                >
+                  <span className="text-xs font-mono font-bold text-purple-600">Repository</span>
+                  <span className="text-sm font-bold mt-1">GitHub Repo</span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-3">shadow-byte-warrior ↗</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ── 06: "DISCOVER MORE" BOX (Dynamic Project & Publication Links) ── */}
+        <section className="mb-14 rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs">
+          {/* Header Bar */}
+          <div className="bg-[#EBF3FF] px-5 py-3 border-b border-blue-100 flex items-center justify-between">
+            <h4
+              data-edit-id="project.discoverMoreTitle"
+              data-edit-name="Discover More Title"
+              data-edit-kind="heading"
+              data-edit-path="project.discoverMoreTitle"
+              className="font-bold text-sm text-slate-800 font-sans"
+            >
+              Discover more
+            </h4>
+            <Link to="/#projects" className="text-xs font-mono text-blue-600 font-semibold hover:underline">
+              View All Works →
+            </Link>
+          </div>
+
+          {/* Dynamic List Rows from Real Database Projects */}
+          <div className="divide-y divide-slate-100 bg-white">
+            <Link
+              to="/#projects"
+              className="px-5 py-3.5 flex items-center justify-between text-sm font-semibold text-slate-800 hover:text-blue-600 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+            >
+              <span>projects</span>
+              <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </Link>
+
+            {relatedProjects.map((rp) => (
+              <Link
+                key={rp.id}
+                to={`/project/${rp.id}`}
+                className="px-5 py-3.5 flex items-center justify-between text-sm text-slate-700 hover:text-blue-600 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+              >
+                <span>{rp.title}</span>
+                <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+              </Link>
+            ))}
+
+            <Link
+              to="/blog"
+              className="px-5 py-3.5 flex items-center justify-between text-sm text-slate-700 hover:text-blue-600 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+            >
+              <span>Data Analytics Publication & Notes Feed</span>
+              <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ── 07: RELATED CASE STUDIES GRID (Live Uploaded Thumbnails) ── */}
+        {relatedProjects.length > 0 && (
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-4">
+              <h4
+                data-edit-id="project.relatedTitle"
+                data-edit-name="Related Projects Title"
+                data-edit-kind="heading"
+                data-edit-path="project.relatedTitle"
+                className="font-serif font-bold text-base text-slate-900"
+              >
+                Related analytical case studies
+              </h4>
+              <Link to="/#projects" className="text-xs font-mono text-blue-600 hover:underline">
+                Explore portfolio →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {relatedProjects.map((rp) => (
+                <Link
+                  key={rp.id}
+                  to={`/project/${rp.id}`}
+                  className="rounded-xl overflow-hidden bg-white hover:bg-slate-50 border border-slate-200 flex flex-col justify-between transition-all duration-300 shadow-2xs hover:shadow-md group"
+                >
+                  <div className="aspect-16/10 bg-slate-900 overflow-hidden relative">
+                    {rp.image_url || rp.image ? (
+                      <img
+                        src={rp.image_url || rp.image}
+                        alt={rp.title}
+                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-500 font-mono text-xs">
+                        Case Study
+                      </div>
+                    )}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-white/90 backdrop-blur-xs text-[10px] font-mono font-bold text-slate-800">
+                      {rp.category || 'Power BI'}
+                    </span>
+                  </div>
+                  <div className="p-4 flex flex-col justify-between flex-1">
+                    <h5 className="font-display font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug mb-2">
+                      {rp.title}
+                    </h5>
+                    <span className="text-[11px] font-mono text-blue-600 font-semibold flex items-center gap-1">
+                      Read investigation <ArrowRight size={11} />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── 08: PREV / NEXT NAVIGATION (Seamless Project Browsing) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
+          {prevProject && (
+            <Link
+              to={`/project/${prevProject.id}`}
+              className="p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center gap-3 group"
+            >
+              <ChevronLeft size={20} className="text-slate-400 group-hover:text-blue-600 group-hover:-translate-x-1 transition-all" />
+              <div className="truncate">
+                <span className="text-[10px] font-mono text-slate-400 block uppercase">Previous Project</span>
+                <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate block">{prevProject.title}</span>
+              </div>
+            </Link>
+          )}
+
+          {nextProject && (
+            <Link
+              to={`/project/${nextProject.id}`}
+              className="p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between text-right group sm:col-start-2"
+            >
+              <div className="truncate">
+                <span className="text-[10px] font-mono text-slate-400 block uppercase">Next Project</span>
+                <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 truncate block">{nextProject.title}</span>
+              </div>
+              <ChevronRight size={20} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </Link>
+          )}
+        </div>
+
+        {/* ── 09: BOTTOM ACTION BANNER (Full Fusion with Home Projects & Publication) ── */}
+        <section className="rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-8 sm:p-12 text-center shadow-lg">
+          <h2
+            data-edit-id="project.ctaTitle"
+            data-edit-name="CTA Banner Title"
+            data-edit-kind="heading"
+            data-edit-path="project.ctaTitle"
+            className="text-2xl sm:text-4xl font-display font-black mb-3"
+          >
+            Explore the Full Code & Data Model
           </h2>
-          <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto mb-8">
-            Access the reproducible code, documentation, and data transformation scripts on GitHub, or return to explore other analytics case studies.
+          <p
+            data-edit-id="project.ctaDescription"
+            data-edit-name="CTA Banner Description"
+            data-edit-kind="text"
+            data-edit-path="project.ctaDescription"
+            className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto mb-8"
+          >
+            Access the reproducible code, dimensional schemas, and data transformation scripts on GitHub, or return to explore other analytics case studies.
           </p>
 
           <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4">
@@ -1005,7 +1033,11 @@ export default function ProjectDetails() {
               href={githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white text-slate-950 font-bold text-sm hover:bg-accent hover:text-white transition-all shadow-md active:scale-95 cursor-pointer"
+              data-edit-id="project.ctaGithub"
+              data-edit-name="CTA GitHub Button"
+              data-edit-kind="button"
+              data-edit-path="project.ctaGithub"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <GithubIcon size={16} />
               <span>GitHub Repository</span>
@@ -1016,46 +1048,126 @@ export default function ProjectDetails() {
                 href={powerBiEmbedUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 transition-all shadow-md active:scale-95 cursor-pointer"
+                data-edit-id="project.ctaDashboard"
+                data-edit-name="CTA Live Dashboard Button"
+                data-edit-kind="button"
+                data-edit-path="project.ctaDashboard"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all shadow-2xs cursor-pointer"
               >
-                <ExternalLink size={16} />
-                <span>Power BI Dashboard</span>
+                <ExternalLink size={15} />
+                <span>Live Dashboard</span>
               </a>
             )}
 
             <Link
               to="/#projects"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-300 font-semibold text-sm hover:bg-slate-900 hover:text-white transition-all cursor-pointer"
+              data-edit-id="project.ctaGrid"
+              data-edit-name="CTA Projects Grid Button"
+              data-edit-kind="button"
+              data-edit-path="project.ctaGrid"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
             >
-              <ArrowLeft size={16} />
-              <span>Back to Projects</span>
+              <Grid size={15} />
+              <span>Back to Projects Grid</span>
+            </Link>
+
+            <Link
+              to="/blog"
+              data-edit-id="project.ctaPublication"
+              data-edit-name="CTA Publication Button"
+              data-edit-kind="button"
+              data-edit-path="project.ctaPublication"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
+            >
+              <ArrowLeft size={15} />
+              <span>Back to Publication Index</span>
+            </Link>
+
+            <Link
+              to={`/admin/projects?edit=${project.id}`}
+              data-edit-id="project.ctaAdmin"
+              data-edit-name="CTA Edit in Admin Button"
+              data-edit-kind="button"
+              data-edit-path="project.ctaAdmin"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-300 bg-slate-800/80 font-medium text-sm hover:bg-slate-800 hover:text-white transition-all cursor-pointer shadow-2xs"
+            >
+              <Edit2 size={14} className="text-slate-400" />
+              <span>Edit in Admin</span>
             </Link>
           </div>
         </section>
       </main>
 
-      {/* Image Zoom Lightbox Modal */}
-      {showImageZoom && project.image_url && (
+      {/* Floating quick edit button (subtle grey pill) */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <Link
+          to={`/admin/projects?edit=${project.id}`}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium shadow-xl border border-slate-700/80 transition-all hover:scale-105 backdrop-blur-md cursor-pointer"
+          title="Edit this project in Admin Panel"
+        >
+          <Edit2 size={13} className="text-slate-400" />
+          <span>Edit in Admin</span>
+        </Link>
+      </div>
+
+      {/* Image / Video Zoom Lightbox Modal */}
+      {showImageZoom && activeVisual && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4"
           onClick={() => setShowImageZoom(false)}
         >
-          <div className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl bg-slate-900 border border-slate-800">
-            <button
-              onClick={() => setShowImageZoom(false)}
-              className="absolute top-3 right-3 px-3 py-1.5 rounded-lg bg-slate-800/80 text-white text-xs font-mono hover:bg-slate-700"
-            >
-              Close ✕
-            </button>
-            <img
-              src={project.image_url}
-              alt={title}
-              className="w-full h-auto max-h-[85vh] object-contain p-2"
-            />
+          <div
+            className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 p-2 flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+              {visualsList.length > 1 && (
+                <span className="px-2 py-1 rounded bg-slate-800/90 text-slate-300 text-xs font-mono">
+                  {activeVisualIndex + 1} / {visualsList.length}
+                </span>
+              )}
+              <button
+                onClick={() => setShowImageZoom(false)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800/90 text-white text-xs font-mono hover:bg-slate-700 cursor-pointer"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {isVideoVisual ? (
+              <video
+                src={activeVisual}
+                controls
+                autoPlay
+                className="w-full h-auto max-h-[85vh] object-contain rounded-lg p-2"
+              />
+            ) : (
+              <img
+                src={activeVisual}
+                alt={`${title} - Zoomed Visual 0${activeVisualIndex + 1}`}
+                className="w-full h-auto max-h-[85vh] object-contain p-2"
+              />
+            )}
+
+            {visualsList.length > 1 && (
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => setActiveVisualIndex((prev) => (prev > 0 ? prev - 1 : visualsList.length - 1))}
+                  className="px-3 py-1 rounded bg-slate-800 text-slate-200 text-xs font-mono hover:bg-slate-700 cursor-pointer"
+                >
+                  ← Prev Visual
+                </button>
+                <button
+                  onClick={() => setActiveVisualIndex((prev) => (prev < visualsList.length - 1 ? prev + 1 : 0))}
+                  className="px-3 py-1 rounded bg-slate-800 text-slate-200 text-xs font-mono hover:bg-slate-700 cursor-pointer"
+                >
+                  Next Visual →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
-

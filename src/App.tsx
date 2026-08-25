@@ -6,6 +6,8 @@ import { Helmet } from 'react-helmet-async';
 import { useContent } from './context/ContentProvider';
 import HomePage from './pages/HomePage';
 import ProjectDetails from './pages/ProjectDetails';
+import BlogPublicationPage from './pages/BlogPublicationPage';
+import BlogDetails from './pages/BlogDetails';
 import NotFound from './pages/NotFound';
 import AdminRoute from './components/admin/AdminRoute';
 
@@ -52,8 +54,10 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<AdminFallback />}>
         <Routes>
-        {/* Public Route */}
+        {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
+        <Route path="/blog" element={<BlogPublicationPage />} />
+        <Route path="/blog/:slug" element={<BlogDetails />} />
         <Route path="/project/:id" element={<ProjectDetails />} />
 
         {/* Admin Login Route */}

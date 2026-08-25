@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Loader2, Plus, Edit2, Trash2, Search, Filter, 
-  List, Grid, RefreshCw, Download, Eye, EyeOff 
+  List, Grid, RefreshCw, Download, Eye, EyeOff, ExternalLink 
 } from 'lucide-react';
 import Modal from '../../components/admin/Modal';
 import ConfirmModal from '../../components/admin/ConfirmModal';
@@ -10,6 +11,9 @@ import ImageUpload from '../../components/admin/ui/ImageUpload';
 import toast from 'react-hot-toast';
 
 export default function Projects() {
+  const [searchParams] = useSearchParams();
+  const editParam = searchParams.get('edit');
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +22,7 @@ export default function Projects() {
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState('core');
   const [editingProject, setEditingProject] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +44,13 @@ export default function Projects() {
     live_link: '',
     github_link: '',
     image_url: '',
+    visual_2: '',
+    visual_3: '',
+    visual_4: '',
+    visual_5: '',
+    dax_code: '',
+    model_notes: '',
+    file_url: '',
     sort_order: 0,
     published: true
   };
@@ -62,6 +74,18 @@ export default function Projects() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Auto-open edit modal if ?edit=id or ?edit=name is in URL
+  useEffect(() => {
+    if (editParam && projects.length > 0) {
+      const match = projects.find(
+        (p) => p.id === editParam || p.title?.toLowerCase().includes(editParam.toLowerCase())
+      );
+      if (match) {
+        openModal(match);
+      }
+    }
+  }, [editParam, projects]);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -108,8 +132,10 @@ export default function Projects() {
   };
 
   const openModal = (project = null) => {
+    setModalTab('core');
     if (project) {
       setEditingProject(project);
+      const visuals = (project.image_url || '').split('|||');
       setFormData({
         title: project.title || '',
         subtitle: project.subtitle || '',
@@ -123,7 +149,14 @@ export default function Projects() {
         tags: Array.isArray(project.tags) ? project.tags.join(', ') : (project.tags || ''),
         live_link: project.live_link || '',
         github_link: project.github_link || '',
-        image_url: project.image_url || '',
+        image_url: visuals[0] || '',
+        visual_2: visuals[1] || '',
+        visual_3: visuals[2] || '',
+        visual_4: visuals[3] || '',
+        visual_5: visuals[4] || '',
+        dax_code: project.dax_code || '',
+        model_notes: project.model_notes || '',
+        file_url: project.file_url || '',
         sort_order: project.sort_order || 0,
         published: project.published
       });
@@ -141,10 +174,29 @@ export default function Projects() {
     e.preventDefault();
     setSaving(true);
 
-    // Tags are edited as a comma-separated string; store as an array
+    const allVisuals = [
+      formData.image_url,
+      formData.visual_2,
+      formData.visual_3,
+      formData.visual_4,
+      formData.visual_5
+    ].map(v => (v || '').trim()).filter(Boolean).join('|||');
+
+    // Clean payload matching PostgreSQL projects schema
     const payload = {
-      ...formData,
-      tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+      title: formData.title || '',
+      problem: formData.problem || '',
+      data: formData.data || '',
+      process: formData.process || '',
+      insight: formData.insight || '',
+      tags: typeof formData.tags === 'string'
+        ? formData.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : Array.isArray(formData.tags) ? formData.tags : [],
+      github_link: formData.github_link || '',
+      live_link: formData.live_link || '',
+      image_url: allVisuals || '',
+      sort_order: Number(formData.sort_order) || 0,
+      published: Boolean(formData.published)
     };
 
     try {
@@ -306,28 +358,43 @@ export default function Projects() {
                           {p.published ? 'Published' : 'Draft'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => handleTogglePublish(p)}
-                          className={`p-1.5 rounded-lg transition-colors ${p.published ? 'text-teal-600 hover:bg-teal-50' : 'text-slate-400 hover:text-teal-600 hover:bg-teal-50'}`}
-                          aria-label={p.published ? "Hide" : "Publish"}
-                        >
-                          {p.published ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </button>
-                        <button 
-                          onClick={() => openModal(p)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors" 
-                          aria-label="Edit"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteClick(p)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" 
-                          aria-label="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => handleTogglePublish(p)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${p.published ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'}`}
+                            title={p.published ? "Click to Hide" : "Click to Publish"}
+                            aria-label={p.published ? "Hide" : "Publish"}
+                          >
+                            {p.published ? <Eye size={16} /> : <EyeOff size={16} />}
+                          </button>
+                          <a
+                            href={`/project/${p.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors inline-flex cursor-pointer"
+                            title="View Public Project Details"
+                            aria-label="View Live Project"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                          <button 
+                            onClick={() => openModal(p)}
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer font-medium inline-flex items-center gap-1" 
+                            title="Edit Project"
+                            aria-label="Edit Project"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteClick(p)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer" 
+                            title="Delete Project"
+                            aria-label="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -384,194 +451,359 @@ export default function Projects() {
         </div>
       )}
 
-      {/* CRUD Modal */}
+      {/* CRUD Modal with Structured Tabs */}
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title={editingProject ? "Edit Project" : "Add New Project"}
+        title={editingProject ? `Edit Project: ${formData.title || 'Project'}` : "Add New Analytics Project"}
       >
-        <form onSubmit={handleSave} className="space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Project Title</label>
-              <input
-                required
-                type="text"
-                value={formData.title}
-                onChange={e => setFormData({...formData, title: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="e.g. Amazon Delivery Performance & Prediction Dashboard"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Subtitle / Executive Summary</label>
-              <input
-                type="text"
-                value={formData.subtitle}
-                onChange={e => setFormData({...formData, subtitle: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="Brief 1-2 sentence executive summary of the case study..."
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Business Problem Statement ("The Question")</label>
-              <textarea
-                value={formData.problem}
-                onChange={e => setFormData({...formData, problem: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
-                placeholder="What business question or operational problem does this project address?"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset Description</label>
-              <input
-                type="text"
-                value={formData.data}
-                onChange={e => setFormData({...formData, data: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="e.g. Amazon Delivery Logistics & Routing Dataset"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset URL (Clickable Kaggle / Source)</label>
-              <input
-                type="url"
-                value={formData.dataset_url}
-                onChange={e => setFormData({...formData, dataset_url: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="https://kaggle.com/... or https://..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Records Count / Scope</label>
-              <input
-                type="text"
-                value={formData.records_count}
-                onChange={e => setFormData({...formData, records_count: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="e.g. 45,000+ Orders or 73,000+ Rows"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Tags (Comma separated)</label>
-              <input
-                type="text"
-                value={formData.tags}
-                onChange={e => setFormData({...formData, tags: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="Power BI, SQL, Python, DAX, KPI"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Analytical Process & Methodology</label>
-              <textarea
-                value={formData.process}
-                onChange={e => setFormData({...formData, process: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
-                placeholder="Describe the steps performed (e.g. Data Cleaning, ETL, Feature Engineering, DAX Modeling, Dashboarding)..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Key Findings / Insights</label>
-              <textarea
-                value={formData.insight}
-                onChange={e => setFormData({...formData, insight: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[70px]"
-                placeholder="Key discovery or takeaway from the data..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Quantified Result / Business Impact</label>
-              <textarea
-                value={formData.result}
-                onChange={e => setFormData({...formData, result: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[70px]"
-                placeholder="Quantified outcome (e.g. Reduced turnaround bottlenecks by 14%)..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Power BI / Live Dashboard Embed URL</label>
-              <input
-                type="url"
-                value={formData.live_link}
-                onChange={e => setFormData({...formData, live_link: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="https://app.powerbi.com/view?r=... or https://..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">GitHub Repository URL</label>
-              <input
-                type="url"
-                value={formData.github_link}
-                onChange={e => setFormData({...formData, github_link: e.target.value})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                placeholder="https://github.com/..."
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <ImageUpload
-                label="Project Image / Cover"
-                folder="projects"
-                accept="image/*,video/*"
-                url={formData.image_url}
-                onUpload={(url) => setFormData({ ...formData, image_url: url })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Sort Order</label>
-              <input
-                required
-                type="number"
-                value={formData.sort_order}
-                onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-              />
-            </div>
-
-            <div className="md:col-span-2 flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100 mt-2">
-              <input
-                type="checkbox"
-                id="published"
-                checked={formData.published}
-                onChange={e => setFormData({...formData, published: e.target.checked})}
-                className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600 cursor-pointer"
-              />
-              <label htmlFor="published" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
-                Publish this project publicly
-              </label>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-slate-100">
+        {/* Modal Internal Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl mb-6 border border-slate-200 overflow-x-auto">
+          {[
+            { id: 'core', label: '📝 Core Details' },
+            { id: 'scope', label: '🎯 Scope & Insights' },
+            { id: 'code', label: '🧮 DAX / SQL Code' },
+            { id: 'media', label: '🖼️ Media & Embeds' },
+            { id: 'files', label: '📥 Download Files' },
+          ].map((tab) => (
             <button
+              key={tab.id}
               type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              onClick={() => setModalTab(tab.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                modalTab === tab.id
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200 font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              Cancel
+              {tab.label}
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00a884] text-white text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50"
-            >
-              {saving && <Loader2 size={16} className="animate-spin" />}
-              {editingProject ? 'Save Changes' : 'Create Project'}
-            </button>
+          ))}
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-5">
+          {/* TAB 1: CORE DETAILS */}
+          {modalTab === 'core' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Project Title</label>
+                <input
+                  required
+                  type="text"
+                  value={formData.title}
+                  onChange={e => setFormData({...formData, title: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                  placeholder="e.g. Amazon Delivery Performance & Prediction Dashboard"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Subtitle / Executive Summary</label>
+                <input
+                  type="text"
+                  value={formData.subtitle}
+                  onChange={e => setFormData({...formData, subtitle: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                  placeholder="Brief 1-2 sentence executive summary of the case study..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Tools & Stack (Comma separated)</label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={e => setFormData({...formData, tags: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                  placeholder="Power BI, SQL, Python, DAX, KPI, Excel"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Sort Order</label>
+                <input
+                  required
+                  type="number"
+                  value={formData.sort_order}
+                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                />
+              </div>
+
+              <div className="md:col-span-2 flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <input
+                  type="checkbox"
+                  id="published"
+                  checked={formData.published}
+                  onChange={e => setFormData({...formData, published: e.target.checked})}
+                  className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600 cursor-pointer"
+                />
+                <label htmlFor="published" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
+                  Publish this project publicly on portfolio and publication index
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: ANALYTICAL SCOPE & INSIGHTS */}
+          {modalTab === 'scope' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Business Problem Statement ("The Question")</label>
+                <textarea
+                  value={formData.problem}
+                  onChange={e => setFormData({...formData, problem: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[90px]"
+                  placeholder="What business question or operational bottleneck does this project solve?"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset Scope & Description</label>
+                  <input
+                    type="text"
+                    value={formData.data}
+                    onChange={e => setFormData({...formData, data: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                    placeholder="e.g. Amazon Delivery Dataset containing routing, weather, and driver logs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Dataset URL (Source / Kaggle link)</label>
+                  <input
+                    type="url"
+                    value={formData.dataset_url}
+                    onChange={e => setFormData({...formData, dataset_url: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                    placeholder="https://kaggle.com/... or https://github.com/..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Analytical Process & Methodology</label>
+                <textarea
+                  value={formData.process}
+                  onChange={e => setFormData({...formData, process: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
+                  placeholder="e.g. Data Cleaning → ETL Normalization → Star-Schema Modeling → DAX Engineering → Dashboard UI"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Key Findings & Statistical Insights</label>
+                  <textarea
+                    value={formData.insight}
+                    onChange={e => setFormData({...formData, insight: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
+                    placeholder="Key discoveries from the data..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Quantified Result / Business Impact</label>
+                  <textarea
+                    value={formData.result}
+                    onChange={e => setFormData({...formData, result: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[80px]"
+                    placeholder="e.g. Identified +48 min delay trigger saving 14% turnaround variance."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: DAX / SQL CODE */}
+          {modalTab === 'code' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Engineered DAX / SQL Measure Snippet</label>
+                <p className="text-xs text-slate-500 mb-2">Display interactive DAX formulas or SQL queries on the case study page.</p>
+                <textarea
+                  value={formData.dax_code || `SLA_Variance_Delta = \nDIVIDE(\n    [Avg_Actual_Delivery_Time] - [Avg_Predicted_Delivery_Time],\n    [Avg_Predicted_Delivery_Time],\n    0\n)`}
+                  onChange={e => setFormData({...formData, dax_code: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-900 text-blue-300 font-mono text-xs focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none min-h-[140px]"
+                  placeholder="Enter DAX or SQL calculations..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-1.5">Data Model Architecture Notes</label>
+                <input
+                  type="text"
+                  value={formData.model_notes || 'Star-Schema with 1-to-many single-directional propagation'}
+                  onChange={e => setFormData({...formData, model_notes: e.target.value})}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                  placeholder="e.g. Star-Schema with Fact deliveries & Dimensions"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: MEDIA & EMBEDS */}
+          {modalTab === 'media' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Power BI / Interactive Embed URL</label>
+                  <input
+                    type="url"
+                    value={formData.live_link}
+                    onChange={e => setFormData({...formData, live_link: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                    placeholder="https://app.powerbi.com/view?r=... or https://..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">GitHub Repository URL</label>
+                  <input
+                    type="url"
+                    value={formData.github_link}
+                    onChange={e => setFormData({...formData, github_link: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                    placeholder="https://github.com/shadow-byte-warrior/..."
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Visuals, Animated GIFs & Video Showcase</h4>
+                    <p className="text-xs text-slate-500">Upload up to 5 multi-format visuals (PNG, JPG, WEBP, GIF, WebM, MP4) with multi-slide gallery support.</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-mono font-bold">
+                    {[formData.image_url, formData.visual_2, formData.visual_3, formData.visual_4, formData.visual_5].filter(Boolean).length} / 5 Uploaded
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Visual 1 */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 font-mono">Visual 01 · Main Dashboard Cover (PNG, JPG, GIF, WebM, MP4)</span>
+                      <span className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Primary</span>
+                    </div>
+                    <ImageUpload
+                      label="Visual 01 (Primary Overview)"
+                      folder="projects"
+                      accept="image/*,video/*"
+                      url={formData.image_url}
+                      onUpload={(url) => setFormData({ ...formData, image_url: url })}
+                    />
+                  </div>
+
+                  {/* Visual 2 */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 font-mono">Visual 02 · Chart Drilldown / Animated GIF</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Slide 2</span>
+                    </div>
+                    <ImageUpload
+                      label="Visual 02 (Drilldown / GIF)"
+                      folder="projects"
+                      accept="image/*,video/*"
+                      url={formData.visual_2}
+                      onUpload={(url) => setFormData({ ...formData, visual_2: url })}
+                    />
+                  </div>
+
+                  {/* Visual 3 */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 font-mono">Visual 03 · Architecture / Star-Schema Model</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Slide 3</span>
+                    </div>
+                    <ImageUpload
+                      label="Visual 03 (Data Model / Schema)"
+                      folder="projects"
+                      accept="image/*,video/*"
+                      url={formData.visual_3}
+                      onUpload={(url) => setFormData({ ...formData, visual_3: url })}
+                    />
+                  </div>
+
+                  {/* Visual 4 */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 font-mono">Visual 04 · Deep-Dive Heatmap / Correlation Plot</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Slide 4</span>
+                    </div>
+                    <ImageUpload
+                      label="Visual 04 (Heatmap / Analysis)"
+                      folder="projects"
+                      accept="image/*,video/*"
+                      url={formData.visual_4}
+                      onUpload={(url) => setFormData({ ...formData, visual_4: url })}
+                    />
+                  </div>
+
+                  {/* Visual 5 */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-slate-700 font-mono">Visual 05 · Video Walkthrough / Executive Summary</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Slide 5</span>
+                    </div>
+                    <ImageUpload
+                      label="Visual 05 (Video / Summary)"
+                      folder="projects"
+                      accept="image/*,video/*"
+                      url={formData.visual_5}
+                      onUpload={(url) => setFormData({ ...formData, visual_5: url })}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: DOWNLOAD FILES */}
+          {modalTab === 'files' && (
+            <div className="space-y-5">
+              <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 leading-relaxed">
+                Upload or link your verified deliverables (.PBIX Power BI models, .CSV datasets, .XLSX spreadsheets, .PDF executive reports, .DOCX).
+              </div>
+
+              <div>
+                <ImageUpload
+                  label="Upload Project File (PBIX, PDF, CSV, XLSX, DOCX)"
+                  folder="projects/files"
+                  accept="*"
+                  url={formData.file_url || ''}
+                  onUpload={(url) => setFormData({ ...formData, file_url: url })}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Form Actions Footer */}
+          <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span>Section:</span>
+              <span className="font-semibold text-slate-600 uppercase font-mono">{modalTab}</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00a884] text-white text-sm font-semibold hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {saving && <Loader2 size={16} className="animate-spin" />}
+                {editingProject ? 'Save Changes' : 'Create Project'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

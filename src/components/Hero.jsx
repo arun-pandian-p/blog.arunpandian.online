@@ -7,6 +7,7 @@ import arunProfile from '../assets/arun-profile.jpg';
 import { useContent } from '../context/ContentProvider';
 import { WordRotator } from '../theme/Modifiers';
 import DoodleGuide from './DoodleGuide';
+import StickyQuoteNote from './StickyQuoteNote';
 
 const GithubIcon = ({ size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -623,6 +624,11 @@ const Hero = () => {
                 {hero.primaryCta?.label}
               </a>
             )}
+
+            {/* Motivational Sticky Note in Hero Empty Space */}
+            <div className="mt-8">
+              <StickyQuoteNote />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4 h-[600px]">
             <div className="flex flex-col gap-4 h-full">
@@ -1056,199 +1062,73 @@ const Hero = () => {
     );
   }
 
-  // ─── DEFAULT PORTFOLIO HERO ───
+  // ─── DEFAULT EDITORIAL COMPACT HERO (FlowingData-Inspired) ───
   return (
-    <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-dvh flex flex-col justify-center overflow-hidden pt-28 sm:pt-36 lg:pt-40 pb-10 sm:pb-12">
-      <div
-        className="absolute inset-0 -z-10"
-        style={{ background: 'radial-gradient(120% 90% at 85% 10%, color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 55%)' }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10 [background-image:linear-gradient(to_right,var(--color-line)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-line)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:radial-gradient(120%_100%_at_50%_0%,black_35%,transparent_80%)]"
-      />
-      
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8 grid lg:grid-cols-12 gap-8 lg:gap-8 items-center">
-        <div className="lg:col-span-7">
-          {isVisible('badge') && (
-            <motion.div custom={0} variants={rise} initial="hidden" animate="show">
-              <div data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full border border-line bg-surface/70 backdrop-blur text-xs sm:text-sm font-medium text-ink-soft">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                {hero.badge}
-              </div>
-            </motion.div>
-          )}
-
-          <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="mt-4 sm:mt-6 font-display font-extrabold text-ink leading-[0.95] tracking-tight text-[clamp(2.1rem,7.5vw,5.25rem)]">
-            {(hero.headline || []).map((line, i) => (
-              <motion.span key={i} custom={i + 1} variants={rise} initial="hidden" animate="show" className="block">{line}</motion.span>
-            ))}
-            {isVisible('headlineAccent') && (
-              <motion.span custom={(hero.headline || []).length + 1} variants={rise} initial="hidden" animate="show" className="block mt-1 sm:mt-0">
-                {animationStyle === 'monolog' ? (
-                  <span className="inline-flex items-center">
-                    <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="italic font-medium text-accent mr-2">{hero.headlineAccent}</span>
-                    <WordRotator words={['with SQL', 'with Python', 'with Power BI', 'with n8n']} />
-                  </span>
-                ) : (
-                  <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="italic font-medium text-accent">{hero.headlineAccent}</span>
-                )}
-              </motion.span>
-            )}
-          </h1>
-
-          {isVisible('subtitle') && (
-            <motion.p
-              data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle"
-              custom={4} variants={rise} initial="hidden" animate="show"
-              className="mt-4 sm:mt-6 max-w-lg text-sm sm:text-base lg:text-lg text-ink-soft leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: hero.subtitle }}
-            />
-          )}
-
-          {isVisible('story') && story.length > 0 && (
-            <motion.div custom={5} variants={rise} initial="hidden" animate="show" className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-2 gap-y-2.5">
-              {story.map((s, i) => (
-                <React.Fragment key={s.k}>
-                  <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-line bg-surface/70 backdrop-blur pl-1.5 pr-3 py-1 sm:pl-2 sm:pr-3.5 sm:py-1.5">
-                    <span className="grid h-5 w-5 sm:h-6 sm:w-6 place-items-center rounded-full bg-ink text-bg text-[10px] sm:text-[11px] font-mono font-bold">{s.k}</span>
-                    <span className="text-xs sm:text-sm font-medium text-ink-soft">{s.label}</span>
-                  </div>
-                  {i < story.length - 1 && <ArrowRight size={14} className="text-ink-soft/40 shrink-0" aria-hidden />}
-                </React.Fragment>
-              ))}
-            </motion.div>
-          )}
-
-          {/* Doodle Art Guide Note for Hero */}
-          <div className="mt-6 sm:mt-7 -mb-1">
-            <DoodleGuide
-              tag="Explore"
-              text="Explore selected work & live data apps"
-              subtext="Click below to see case studies ↓"
-              icon="sparkle"
-              arrow="curved-down-left"
-              arrowPosition="bottom-left"
-              rotation={-1.5}
-              color="var(--color-primary, #2563EB)"
-            />
-          </div>
-
-          <motion.div custom={6} variants={rise} initial="hidden" animate="show" className="mt-4 sm:mt-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            {isVisible('primaryCta') && (
-              <MagneticButton
-                href={hero.primaryCta?.href || '#projects'}
-                data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label"
-                className="group w-full sm:w-auto justify-center min-h-[46px] sm:min-h-[48px] gap-2 rounded-full bg-ink text-bg px-7 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold shadow-[0_10px_30px_-10px_rgba(9,9,11,0.5)] hover:bg-accent hover:text-ink transition-colors duration-300 flex items-center"
-              >
-                {hero.primaryCta?.label || 'View selected work'}
-                <ArrowDownRight size={18} className="group-hover:translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
-              </MagneticButton>
-            )}
-            {isVisible('secondaryCta') && (
-              <MagneticButton
-                href={hero.secondaryCta?.href || '/resume.pdf'} download strength={0.25}
-                data-edit-id="hero.secondaryCta" data-edit-name="Hero · Secondary button" data-edit-kind="button" data-edit-path="hero.secondaryCta.label"
-                className="w-full sm:w-auto justify-center min-h-[46px] sm:min-h-[48px] gap-2 rounded-full border border-ink/15 bg-surface/70 backdrop-blur px-7 sm:px-8 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-ink hover:border-ink/40 transition-colors duration-300 flex items-center"
-              >
-                {hero.secondaryCta?.label || 'Download résumé'}
-                <ArrowUpRight size={16} />
-              </MagneticButton>
-            )}
-          </motion.div>
-
-          <motion.div custom={7} variants={rise} initial="hidden" animate="show" className="mt-8 sm:mt-10 flex flex-wrap items-center justify-between sm:justify-start gap-x-6 sm:gap-x-8 gap-y-4">
-            {isVisible('credentials') && credentials.length > 0 && (
-              <>
-                <div className="flex items-center gap-5 sm:gap-8">
-                  {credentials.map((c) => (
-                    <div key={c.label}>
-                      <div className="font-display font-extrabold text-xl sm:text-3xl text-ink tabular-nums leading-none">{c.value}</div>
-                      <div className="mt-1 text-[10px] sm:text-xs text-ink-soft">{c.label}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="hidden sm:block h-10 w-px bg-line" />
-              </>
-            )}
-            <div className="flex items-center gap-4 text-ink-soft">
-              {socials.github && <a href={socials.github} target="_blank" rel="noopener noreferrer" className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:text-ink transition-colors" aria-label="GitHub"><GithubIcon size={18} /></a>}
-              {socials.linkedin && <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:text-accent transition-colors" aria-label="LinkedIn"><LinkedinIcon size={18} /></a>}
-              {socials.email && <a href={`mailto:${socials.email}`} className="min-w-[40px] min-h-[40px] flex items-center justify-center hover:text-danger transition-colors" aria-label="Email"><Mail size={18} /></a>}
-            </div>
-          </motion.div>
+    <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="pt-24 sm:pt-28 pb-12 sm:pb-16 bg-white border-b border-slate-200/80">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Compact Eyebrow Pill */}
+        <div className="flex items-center gap-2 mb-4 sm:mb-6">
+          <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
+            Data Analyst & BI Specialist • Portfolio & Publication
+          </span>
         </div>
 
-        <Parallax speed={40} className="lg:col-span-5 mt-4 lg:mt-0">
-          <motion.div initial={{ opacity: 0, scale: 0.94, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ duration: 0.8, ease, delay: 0.2 }}>
-            <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }} className="relative mx-auto max-w-sm sm:max-w-md">
-              <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-tr from-accent/20 via-indigo-300/15 to-transparent blur-2xl" />
-              <div className="relative rounded-2xl sm:rounded-[1.75rem] border border-line bg-surface p-1.5 sm:p-2 shadow-[0_20px_50px_-20px_rgba(9,9,11,0.3)] group overflow-hidden">
-                <video
-                  ref={videoRef}
-                  data-edit-id="hero.videoSrc" data-edit-name="Hero · Video" data-edit-kind="image" data-edit-path="hero.videoSrc"
-                  className="w-full rounded-xl sm:rounded-[1.35rem] aspect-square object-cover bg-ink"
-                  src={hero.videoSrc || '/hero-animation.mp4'}
-                  autoPlay muted={isMuted} loop playsInline preload="auto"
-                />
-                <button 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMuted(!isMuted); }}
-                  className="absolute top-4 right-4 sm:top-6 sm:right-6 min-w-[36px] min-h-[36px] p-2 rounded-full bg-surface/85 backdrop-blur text-ink shadow-md transition-opacity z-40 flex items-center justify-center border border-line cursor-pointer"
-                  title={isMuted ? "Unmute" : "Mute"}
-                  aria-label={isMuted ? "Unmute video" : "Mute video"}
-                >
-                  {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                </button>
-                {(isVisible('videoCaption') || isVisible('videoSubCaption')) && (
-                  <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 flex items-center justify-between rounded-xl bg-surface/90 backdrop-blur px-3 py-2 sm:px-4 sm:py-2.5 border border-line">
-                    {isVisible('videoCaption') && <span data-edit-id="hero.videoCaption" data-edit-name="Hero · Video caption" data-edit-kind="text" data-edit-path="hero.videoCaption" className="font-display font-semibold text-ink text-xs sm:text-sm truncate mr-2">{hero.videoCaption || 'Data · in motion'}</span>}
-                    {isVisible('videoSubCaption') && <span data-edit-id="hero.videoSubCaption" data-edit-name="Hero · Video subcaption" data-edit-kind="text" data-edit-path="hero.videoSubCaption" className="text-[10px] sm:text-xs text-ink-soft font-mono shrink-0">{hero.videoSubCaption || 'SQL · Python · BI'}</span>}
-                  </div>
-                )}
-              </div>
-              
-              {(isVisible('name') || isVisible('role')) && (
-                <div className="absolute -top-3 left-2 sm:-top-5 sm:-left-6 flex items-center gap-2.5 sm:gap-3 rounded-2xl bg-surface/95 backdrop-blur border border-line shadow-lg pl-1.5 pr-3.5 py-1.5 sm:pl-2 sm:pr-4 sm:py-2 z-30">
-                  <div className="relative shrink-0">
-                    <div className="absolute -inset-[2px] rounded-full" style={{ background: 'conic-gradient(from 0deg, var(--color-primary), #6366F1, #a5b4fc, var(--color-primary))' }} />
-                    <img fetchPriority="high"
-                      data-edit-id="hero.profileImage" data-edit-name="Hero · Profile image" data-edit-kind="image" data-edit-path="hero.profileImage"
-                      src={hero.profileImage || arunProfile}
-                      alt={hero.name || 'Arun Pandian'}
-                      className="relative h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover border-2 border-surface"
-                      style={{ objectPosition: '50% 22%' }}
-                    />
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full bg-emerald-500 border-2 border-surface" />
-                  </div>
-                  <div className="leading-tight">
-                    {isVisible('name') && <p data-edit-id="hero.profileName" data-edit-name="Hero · Profile name" data-edit-kind="text" data-edit-path="hero.name" className="font-display font-bold text-ink text-xs sm:text-sm">{hero.name || 'Arun Pandian'}</p>}
-                    {isVisible('role') && <p data-edit-id="hero.profileRole" data-edit-name="Hero · Profile role" data-edit-kind="text" data-edit-path="hero.role" className="text-[10px] sm:text-[11px] text-ink-soft font-mono">{hero.role || 'Data Analyst'}</p>}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        </Parallax>
-      </div>
+        {/* Editorial Headline */}
+        <h1 className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight leading-[1.1] mb-4 sm:mb-5">
+          I turn data into decisions.
+        </h1>
 
-      {isVisible('ticker') && ticker.length > 0 && settings.theme?.layout?.scrollStyle !== 'none' && (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.7 }}
-          className="relative z-10 mt-10 sm:mt-14 border-y border-line bg-surface/50 backdrop-blur py-2.5 sm:py-3.5 overflow-hidden w-full [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]"
-        >
-          <div className={settings.theme?.layout?.scrollStyle === 'vertical' ? "flex flex-col h-20 animate-marquee-vertical" : "flex w-max animate-marquee"}>
-            {[...ticker, ...ticker].map((t, i) => (
-              <span key={i} className={`mx-4 sm:mx-6 inline-flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-mono uppercase tracking-wider text-ink-soft ${settings.theme?.layout?.scrollStyle === 'vertical' ? 'py-1' : ''}`}>
-                {t}
-                <span className="h-1 w-1 rounded-full bg-accent/60" />
+        {/* Supporting Narrative */}
+        <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl leading-relaxed font-normal mb-8">
+          Data analysis, business intelligence and visualization projects focused on finding patterns, explaining what matters, and turning analysis into actionable insights.
+        </p>
+
+        {/* Editorial CTAs */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
+          <a
+            href="#projects"
+            className="px-6 py-3 rounded-full bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            View Projects ↓
+          </a>
+          <a
+            href="#analytics"
+            className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs sm:text-sm border border-slate-200 transition-all active:scale-95 cursor-pointer"
+          >
+            Read Analytics →
+          </a>
+          <a
+            href="#visualizations"
+            className="px-6 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm border border-slate-200 transition-all cursor-pointer"
+          >
+            Visualizations
+          </a>
+        </div>
+
+        {/* Motivational Sticky Note in Hero Section */}
+        <div className="my-8">
+          <StickyQuoteNote />
+        </div>
+
+        {/* Core Stack Pills */}
+        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-400 font-bold uppercase text-[11px]">Primary Tools:</span>
+            {['Power BI', 'SQL (PostgreSQL)', 'Python (Pandas)', 'Excel & DAX', 'Statistics'].map((tool) => (
+              <span key={tool} className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[11px]">
+                {tool}
               </span>
             ))}
           </div>
-        </motion.div>
-      )}
+
+          <div className="flex items-center gap-4 text-slate-500">
+            {socials.github && <a href={socials.github} target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors font-medium">GitHub ↗</a>}
+            {socials.linkedin && <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors font-medium">LinkedIn ↗</a>}
+            <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors font-medium">Resume ↓</a>
+          </div>
+        </div>
+      </div>
     </section>
   );
 };
