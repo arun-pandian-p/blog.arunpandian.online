@@ -289,7 +289,7 @@ export default function HomePage() {
             "url": "https://arunpandian.online/",
             "image": projects?.map((p) => p.image_url).filter(Boolean) || [],
             "sameAs": [
-              settings?.hero?.socials?.github || "https://github.com/shadow-byte-warrior",
+              settings?.hero?.socials?.github || "https://github.com/arun-pandian-p",
               settings?.hero?.socials?.linkedin || "https://linkedin.com/in/arunpandianp-dataanalyst"
             ].filter(Boolean)
           })}

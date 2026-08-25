@@ -178,7 +178,7 @@ export default function ProjectDetails() {
     : ['Power BI', 'SQL', 'Data Analytics', 'Data Visualization'];
 
   const powerBiEmbedUrl = project.powerbi_embed_url || project.live_link || project.liveLink || '';
-  const githubUrl = project.github_link || project.githubLink || 'https://github.com/shadow-byte-warrior';
+  const githubUrl = project.github_link || project.githubLink || 'https://github.com/arun-pandian-p';
   const datasetUrl = project.dataset_url || githubUrl;
   
   // Extract up to 5 multi-format visuals (PNG, JPG, GIF, WebM, MP4)
@@ -318,7 +318,7 @@ export default function ProjectDetails() {
 
             <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
               <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
-              <a href="https://github.com/shadow-byte-warrior" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
+              <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
               <a href="/resume.pdf" download className="hover:text-blue-600 transition-colors font-semibold text-blue-600">Résumé ↓</a>
             </div>
           </div>
@@ -866,7 +866,7 @@ CALCULATE(
                 >
                   <span className="text-xs font-mono font-bold text-purple-600">Repository</span>
                   <span className="text-sm font-bold mt-1">GitHub Repo</span>
-                  <span className="text-[10px] font-mono text-slate-400 mt-3">shadow-byte-warrior ↗</span>
+                  <span className="text-[10px] font-mono text-slate-400 mt-3">arun-pandian-p ↗</span>
                 </a>
               </div>
             </div>

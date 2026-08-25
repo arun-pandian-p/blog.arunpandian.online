@@ -34,7 +34,7 @@ content = content.replace(
               "jobTitle": "Data Analyst",
               "url": "https://arunpandian.online/",
               "sameAs": [
-                "https://github.com/shadow-byte-warrior",
+                "https://github.com/arun-pandian-p",
                 "https://linkedin.com/in/arunpandiansh2030"
               ]
             }

@@ -8,7 +8,7 @@ export function parseArticleMetadata(blog) {
     imageCaption: blog.image_caption || '',
     videoUrl: blog.video_url || '',
     powerbiUrl: blog.powerbi_url || '',
-    githubLink: blog.github_link || 'https://github.com/shadow-byte-warrior',
+    githubLink: blog.github_link || 'https://github.com/arun-pandian-p',
     liveLink: blog.live_link || '',
     seoTitle: blog.seo_title || blog.title || '',
     seoDescription: blog.seo_description || blog.excerpt || '',

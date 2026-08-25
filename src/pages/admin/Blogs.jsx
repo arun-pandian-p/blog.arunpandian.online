@@ -48,7 +48,7 @@ export default function Blogs() {
     image_caption: '',
     video_url: '',
     powerbi_url: '',
-    github_link: 'https://github.com/shadow-byte-warrior',
+    github_link: 'https://github.com/arun-pandian-p',
     live_link: '',
     seo_title: '',
     seo_description: '',
@@ -157,7 +157,7 @@ export default function Blogs() {
         image_caption: meta.imageCaption || '',
         video_url: meta.videoUrl || '',
         powerbi_url: meta.powerbiUrl || '',
-        github_link: meta.githubLink || 'https://github.com/shadow-byte-warrior',
+        github_link: meta.githubLink || 'https://github.com/arun-pandian-p',
         live_link: meta.liveLink || '',
         seo_title: meta.seoTitle || blog.title || '',
         seo_description: meta.seoDescription || blog.excerpt || '',
@@ -183,7 +183,7 @@ export default function Blogs() {
         image_caption: '',
         video_url: '',
         powerbi_url: '',
-        github_link: 'https://github.com/shadow-byte-warrior',
+        github_link: 'https://github.com/arun-pandian-p',
         live_link: '',
         seo_title: '',
         seo_description: '',
@@ -214,7 +214,7 @@ export default function Blogs() {
       imageCaption: formData.image_caption || '',
       videoUrl: formData.video_url || '',
       powerbiUrl: formData.powerbi_url || '',
-      githubLink: formData.github_link || 'https://github.com/shadow-byte-warrior',
+      githubLink: formData.github_link || 'https://github.com/arun-pandian-p',
       liveLink: formData.live_link || '',
       seoTitle: formData.seo_title || formData.title,
       seoDescription: formData.seo_description || formData.excerpt,
@@ -824,7 +824,7 @@ export default function Blogs() {
                     value={formData.github_link}
                     onChange={(e) => setFormData({ ...formData, github_link: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-mono"
-                    placeholder="https://github.com/shadow-byte-warrior/..."
+                    placeholder="https://github.com/arun-pandian-p/..."
                   />
                 </div>
 

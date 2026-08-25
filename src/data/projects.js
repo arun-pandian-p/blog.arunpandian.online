@@ -14,7 +14,7 @@ export const projectsData = [
     featured: true,
     image: 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/projects/amazon_delivery.png',
     href: '/project/1',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
   {
     id: '2',
@@ -30,7 +30,7 @@ export const projectsData = [
     year: '2026',
     image: 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
     href: '/project/1',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
   {
     id: '3',
@@ -46,7 +46,7 @@ export const projectsData = [
     year: '2026',
     image: 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/bl6o93ym18c_1784188015054.png',
     href: '/project/7',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
   {
     id: '4',
@@ -62,7 +62,7 @@ export const projectsData = [
     year: '2026',
     image: 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/t8bk7q5eg7g_1784188043415.png',
     href: '/project/3',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
   {
     id: '5',
@@ -77,7 +77,7 @@ export const projectsData = [
     tags: ['SQL', 'Power BI', 'DAX', 'Analytics'],
     year: '2026',
     href: '/project/2',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
   {
     id: '6',
@@ -92,6 +92,6 @@ export const projectsData = [
     tags: ['Python', 'GeoPandas', 'Plotly', 'Streamlit'],
     year: '2026',
     href: '/project/4',
-    github: 'https://github.com/shadow-byte-warrior',
+    github: 'https://github.com/arun-pandian-p',
   },
 ];

@@ -298,7 +298,7 @@ export default function BlogDetails() {
 
   const videoUrl = meta.videoUrl || '';
   const powerbiUrl = meta.powerbiUrl || '';
-  const githubLink = meta.githubLink || 'https://github.com/shadow-byte-warrior';
+  const githubLink = meta.githubLink || 'https://github.com/arun-pandian-p';
   const liveLink = meta.liveLink || '';
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
   const seoDescription = meta.seoDescription || excerpt;
@@ -835,7 +835,7 @@ export default function BlogDetails() {
                   <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:underline">
                     LinkedIn ↗
                   </a>
-                  <a href="https://github.com/shadow-byte-warrior" target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:underline">
                     GitHub ↗
                   </a>
                   <Link to="/#contact" className="hover:underline">
@@ -873,7 +873,7 @@ export default function BlogDetails() {
                     LinkedIn ↗
                   </a>
                   <a
-                    href="https://github.com/shadow-byte-warrior"
+                    href="https://github.com/arun-pandian-p"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-slate-900 transition-colors"

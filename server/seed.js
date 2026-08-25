@@ -15,7 +15,7 @@ const seedData = async () => {
     await Blog.deleteMany({});
 
     // Seed Projects
-    const GH = "https://github.com/shadow-byte-warrior";
+    const GH = "https://github.com/arun-pandian-p";
     const projects = [
       {
         title: "Data Science Job Market Analysis",

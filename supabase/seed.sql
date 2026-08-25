@@ -35,7 +35,7 @@ INSERT INTO site_settings (key, value) VALUES
   ],
   "ticker": ["SQL", "Python", "Excel", "Power BI", "Power Query", "Power Pivot", "DAX", "n8n", "Pandas", "Data Modelling", "EDA", "Automation"],
   "socials": {
-    "github": "https://github.com/shadow-byte-warrior",
+    "github": "https://github.com/arun-pandian-p",
     "linkedin": "https://linkedin.com/in/arunpandiansh2030",
     "email": "arunpandi47777@gmail.com"
   }
@@ -115,7 +115,7 @@ INSERT INTO site_settings (key, value) VALUES
 ('footer', '{
   "name": "Arun Pandian",
   "tagline": "Data Analyst — SQL · Python · Power BI. Turning raw data into decisions.",
-  "github": "https://github.com/shadow-byte-warrior",
+  "github": "https://github.com/arun-pandian-p",
   "linkedin": "https://linkedin.com/in/arunpandiansh2030",
   "email": "arunpandi47777@gmail.com",
   "copyright": "Built with React · Three.js · Node/Express.",
@@ -149,7 +149,7 @@ INSERT INTO projects (title, problem, data, process, insight, tags, github_link,
   'Built an end-to-end Excel analysis: Power Query ETL to clean and shape the data, a Power Pivot data model, and custom DAX measures comparing US vs. non-US median salaries. Linked skill demand to pay with combo PivotCharts.',
   'SQL and Python are the highest-value skill combination — the pairing tops the dataset on both demand and median salary.',
   ARRAY['Excel', 'Power Query', 'Power Pivot', 'DAX'],
-  'https://github.com/shadow-byte-warrior',
+  'https://github.com/arun-pandian-p',
   1
 ),
 (
@@ -159,7 +159,7 @@ INSERT INTO projects (title, problem, data, process, insight, tags, github_link,
   'Built an interactive Excel dashboard driven entirely by dynamic array formulas (MEDIAN + FILTER) and dropdown filters with data validation — charts update automatically with no macros or Power Query.',
   'A fully formula-driven dashboard anyone can open, filter and trust — no add-ins, no refresh steps, no black boxes.',
   ARRAY['Excel', 'Dynamic Arrays', 'Map Charts', 'Data Validation'],
-  'https://github.com/shadow-byte-warrior',
+  'https://github.com/arun-pandian-p',
   2
 ),
 (
@@ -169,7 +169,7 @@ INSERT INTO projects (title, problem, data, process, insight, tags, github_link,
   'Built the workflow entirely in n8n — Gmail extraction, 2-line AI summarization through a locally hosted LLM (Ollama), and structured logging to the Sheets API via a local inference endpoint.',
   'A private, no-cost summarization pipeline that runs on a local model — inbox triage without sending data to a third-party API.',
   ARRAY['n8n', 'Ollama (Local LLM)', 'Google Sheets', 'Automation'],
-  'https://github.com/shadow-byte-warrior',
+  'https://github.com/arun-pandian-p',
   3
 );
 

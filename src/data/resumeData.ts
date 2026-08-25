@@ -6,7 +6,7 @@ export const resumeData = {
     phone: "8248960558",
     email: "arunpandi47777@gmail.com",
     linkedin: "https://linkedin.com/in/arunpandianp-dataanalyst",
-    github: "https://github.com/shadow-byte-warrior",
+    github: "https://github.com/arun-pandian-p",
     website: "https://arun-pandian.netlify.app",
     location: "Coimbatore, Tamil Nadu",
   },
@@ -22,7 +22,7 @@ export const resumeData = {
     {
       title: "Data Science Job Market Analysis",
       stack: ["Excel", "Power Query", "Power Pivot", "DAX"],
-      github: "https://github.com/shadow-byte-warrior",
+      github: "https://github.com/arun-pandian-p",
       bullets: [
         "Built an end-to-end Excel analysis on real 2023 job-posting data answering four salary/skills questions using Power Query ETL and a Power Pivot data model",
         "Wrote custom DAX measures comparing US vs. non-US median salaries and built combo PivotCharts linking skill demand to pay",
@@ -32,7 +32,7 @@ export const resumeData = {
     {
       title: "Data Jobs Salary Dashboard",
       stack: ["Excel", "Map Charts", "Array Formulas"],
-      github: "https://github.com/shadow-byte-warrior",
+      github: "https://github.com/arun-pandian-p",
       bullets: [
         "Built an interactive Excel dashboard to benchmark data-role salaries by title, country, and schedule type using dynamic array formulas (MEDIAN + FILTER)",
         "Designed dropdown-driven filters with data validation so charts update automatically without macros or Power Query"
@@ -41,7 +41,7 @@ export const resumeData = {
     {
       title: "AI Email Summarizer Workflow",
       stack: ["n8n", "Local LLM (Ollama)", "Google Sheets"],
-      github: "https://github.com/shadow-byte-warrior",
+      github: "https://github.com/arun-pandian-p",
       bullets: [
         "Automated Gmail extraction and 2-line AI summarization via a locally hosted LLM, logging structured results to Google Sheets",
         "Built the workflow entirely in n8n, connecting Gmail OAuth2, a local inference endpoint, and the Sheets API"

@@ -665,7 +665,7 @@ export default function Projects() {
                     value={formData.github_link}
                     onChange={e => setFormData({...formData, github_link: e.target.value})}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                    placeholder="https://github.com/shadow-byte-warrior/..."
+                    placeholder="https://github.com/arun-pandian-p/..."
                   />
                 </div>
               </div>
