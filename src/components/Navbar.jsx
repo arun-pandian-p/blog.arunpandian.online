@@ -133,7 +133,7 @@ const Navbar = () => {
                   isDarkTheme ? 'text-slate-400' : 'text-ink-soft'
                 }`}
               >
-                {settings.hero?.role || 'Data Analyst · BI · SQL · Python'}
+                {settings.hero?.role?.replace(/Specialist/gi, '').trim() || 'Data Analyst'}
               </span>
             </div>
           </a>
