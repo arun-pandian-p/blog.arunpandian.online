@@ -45,16 +45,10 @@ const Navbar = () => {
     { name: 'Blog', href: '/blog' },
   ];
 
-  // Mobile drawer links (full comprehensive site navigation)
-  const mobileNavLinks = navbar.links || [
+  // Mobile drawer links (only Home & Blog)
+  const mobileNavLinks = [
     { name: 'Home', href: '/#hero' },
-    { name: 'Projects', href: '/#projects' },
     { name: 'Blog', href: '/blog' },
-    { name: 'Visualizations', href: '/#visualizations' },
-    { name: 'About', href: '/#about' },
-    { name: 'Skills', href: '/#skills' },
-    { name: 'Experience', href: '/#timeline' },
-    { name: 'Contact', href: '/#contact' },
   ];
 
   const ctaLabel = navbar.ctaLabel || 'Resume';
