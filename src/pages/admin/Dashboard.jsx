@@ -1,22 +1,31 @@
 import React, { useEffect, useState } from 'react';
+import { useOutletContext, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   FolderOpen, PenTool, Briefcase, Mail, Loader2, ArrowUp, ArrowDown,
   TrendingUp, BarChart2, HardDrive, Eye, Calendar, Clock, CheckCircle2,
   ExternalLink, Edit2, ShieldCheck, Activity, Users, ArrowUpRight,
-  Database, RefreshCw, Sparkles, Filter, ChevronRight
+  Database, RefreshCw, Sparkles, Filter, ChevronDown, Plus, Search,
+  Bell, Share2, Printer, Download, CheckSquare, Square
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function Dashboard() {
+  const context = useOutletContext();
+  const isDark = context?.isDark || false;
+
   const [stats, setStats] = useState({ projects: 0, blogs: 0, experiences: 0, messages: 0 });
-  const [recentMessages, setRecentMessages] = useState([]);
-  const [recentProjects, setRecentProjects] = useState([]);
-  const [recentBlogs, setRecentBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('30d');
-  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('Overview');
+  const [categoryFilter, setCategoryFilter] = useState('All Categories');
+  
+  // Interactive Checklist State
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Review Amazon Delivery Performance & Prediction Dashboard', date: '24 Aug 2026', tag: 'Due tomorrow', tagColor: 'bg-amber-100 text-amber-800 border-amber-200', done: false },
+    { id: 2, text: 'Publish Data Science Job Market Analysis Case Study', date: '23 Aug 2026', tag: 'Done', tagColor: 'bg-emerald-100 text-emerald-800 border-emerald-200', done: true },
+    { id: 3, text: 'Validate AI Email Summarizer Pipeline on Local Ollama LLM', date: '23 Aug 2026', tag: 'Done', tagColor: 'bg-emerald-100 text-emerald-800 border-emerald-200', done: true },
+    { id: 4, text: 'Update Data Jobs Salary Benchmark Power BI Visuals', date: '22 Aug 2026', tag: 'In review', tagColor: 'bg-blue-100 text-blue-800 border-blue-200', done: false },
+  ]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -25,15 +34,15 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [
-        { count: pCount, data: pData },
-        { count: bCount, data: bData },
+        { count: pCount },
+        { count: bCount },
         { count: eCount },
-        { count: mCount, data: mData }
+        { count: mCount }
       ] = await Promise.all([
-        supabase.from('projects').select('*', { count: 'exact' }).order('sort_order', { ascending: true }).limit(4),
-        supabase.from('blogs').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(4),
+        supabase.from('projects').select('*', { count: 'exact', head: true }),
+        supabase.from('blogs').select('*', { count: 'exact', head: true }),
         supabase.from('experiences').select('*', { count: 'exact', head: true }),
-        supabase.from('contact_messages').select('*', { count: 'exact' }).order('created_at', { ascending: false }).limit(4),
+        supabase.from('contact_messages').select('*', { count: 'exact', head: true }),
       ]);
 
       setStats({
@@ -42,493 +51,493 @@ export default function Dashboard() {
         experiences: eCount || 0,
         messages: mCount || 0,
       });
-
-      if (pData) setRecentProjects(pData);
-      if (bData) setRecentBlogs(bData);
-      if (mData) setRecentMessages(mData);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
-  const handleManualRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-    toast.success('Dashboard metrics updated!', { icon: '🔄' });
+  const toggleTodo = (id) => {
+    setTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    toast.success('Task status updated!', { icon: '✓' });
   };
-
-  // Top KPI Metric Cards
-  const cards = [
-    { title: 'TOTAL PROJECTS', value: stats.projects, icon: FolderOpen, link: '/admin/projects', color: 'text-blue-600', bg: 'bg-blue-50', trend: '12%', spark: [30, 45, 20, 60, 75, 50, 90, 100] },
-    { title: 'PUBLISHED BLOGS', value: stats.blogs, icon: PenTool, link: '/admin/blogs', color: 'text-purple-600', bg: 'bg-purple-50', trend: '8%', spark: [25, 35, 40, 55, 60, 70, 85, 95] },
-    { title: 'EXPERIENCES', value: stats.experiences, icon: Briefcase, link: '/admin/experiences', color: 'text-indigo-600', bg: 'bg-indigo-50', trend: '15%', spark: [40, 45, 50, 65, 70, 80, 85, 90] },
-    { title: 'CONTACT MESSAGES', value: stats.messages, icon: Mail, link: '/admin/inbox', color: 'text-orange-600', bg: 'bg-orange-50', trend: '22%', spark: [20, 30, 45, 60, 50, 75, 90, 100] },
-  ];
-
-  // Simulated Analytics Traffic Data for Line Chart
-  const trafficData = {
-    '7d': {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      views: [180, 240, 310, 290, 420, 380, 510],
-      unique: [120, 160, 210, 190, 280, 250, 340],
-      totalViews: '2,330',
-      uniqueVisitors: '1,550',
-      avgDuration: '3m 15s',
-      bounceRate: '21.4%'
-    },
-    '30d': {
-      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-      views: [850, 1120, 1340, 1680],
-      unique: [560, 780, 920, 1140],
-      totalViews: '4,990',
-      uniqueVisitors: '3,400',
-      avgDuration: '3m 42s',
-      bounceRate: '19.8%'
-    },
-    '90d': {
-      labels: ['Month 1', 'Month 2', 'Month 3'],
-      views: [3200, 4600, 6100],
-      unique: [2100, 3100, 4200],
-      totalViews: '13,900',
-      uniqueVisitors: '9,400',
-      avgDuration: '4m 05s',
-      bounceRate: '18.2%'
-    }
-  };
-
-  const activeTraffic = trafficData[timeRange] || trafficData['30d'];
-
-  // Skills Distribution Bar Chart Data
-  const skillDistribution = [
-    { skill: 'Power BI & DAX Modeling', projects: 4, percentage: 100, color: 'bg-amber-500' },
-    { skill: 'SQL & Database Design', projects: 4, percentage: 100, color: 'bg-blue-600' },
-    { skill: 'Python (Pandas, NumPy, EDA)', projects: 3, percentage: 75, color: 'bg-emerald-500' },
-    { skill: 'Advanced Excel & Power Query', projects: 3, percentage: 75, color: 'bg-teal-500' },
-    { skill: 'ETL Pipelines & Automation', projects: 2, percentage: 50, color: 'bg-indigo-600' },
-  ];
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="animate-spin text-blue-600" size={26} />
+        <Loader2 className="animate-spin text-[#F29F67]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 text-slate-800 font-sans">
+    <div className={`space-y-6 max-w-[1600px] mx-auto font-sans transition-colors ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
       
-      {/* Top Header Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-100">
+      {/* ── 01: TOP GREETING & ACTION CONTROLS (Matching StarAdmin Top Bar) ── */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-2">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Key Metrics Overview</h2>
-          <p className="text-xs text-slate-500 font-mono mt-0.5">
-            Real-time analytics, portfolio health & inbound communication channels
+          <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#1E1E2C]'}`}>
+            Good Morning, <span className="text-[#F29F67]">Arun Pandian</span>
+          </h1>
+          <p className={`text-xs sm:text-sm font-medium mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Your portfolio performance summary this week
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
-            {['7d', '30d', '90d'].map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                  timeRange === range
-                    ? 'bg-white text-blue-700 font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {range.toUpperCase()}
-              </button>
-            ))}
+        {/* Toolbar Controls */}
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
+          {/* Category Dropdown */}
+          <div className="relative">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={`appearance-none pl-3 pr-8 py-2 rounded-xl border text-xs font-semibold outline-none cursor-pointer ${
+                isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-200' : 'bg-white border-[#E2E6EE] text-slate-700'
+              }`}
+            >
+              <option>Select Category</option>
+              <option>Power BI Dashboards</option>
+              <option>SQL Data Modeling</option>
+              <option>Python EDA</option>
+              <option>Machine Learning</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
           </div>
 
+          {/* Date Picker Button */}
           <button
-            onClick={handleManualRefresh}
-            title="Refresh metrics from Supabase"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold ${
+              isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-300' : 'bg-white border-[#E2E6EE] text-slate-700'
+            }`}
           >
-            <RefreshCw size={13} className={refreshing ? 'animate-spin text-blue-600' : 'text-slate-500'} />
-            <span className="hidden sm:inline">Refresh</span>
+            <Calendar size={14} className="text-[#F29F67]" />
+            <span>01 Jan 2026 - 30 Dec 2026</span>
+          </button>
+
+          {/* Quick Search */}
+          <button className={`p-2 rounded-xl border ${isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-300' : 'bg-white border-[#E2E6EE] text-slate-600'}`}>
+            <Search size={14} />
+          </button>
+
+          {/* Notifications */}
+          <button className={`relative p-2 rounded-xl border ${isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-300' : 'bg-white border-[#E2E6EE] text-slate-600'}`}>
+            <Bell size={14} />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#F29F67] ring-2 ring-white" />
           </button>
         </div>
       </div>
 
-      {/* ── 01: TOP 4 METRIC KPI CARDS ── */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <Link
-              key={c.title}
-              to={c.link}
-              className="block bg-white rounded-[1.25rem] p-6 border border-slate-200/90 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-md transition-all relative overflow-hidden group"
+      {/* ── 02: TAB BAR & SHARE/EXPORT ACTIONS ── */}
+      <div className={`flex flex-wrap items-center justify-between gap-3 pb-3 border-b ${isDark ? 'border-[#28283C]' : 'border-[#E8ECF2]'}`}>
+        <div className="flex items-center gap-6 text-xs sm:text-sm font-semibold">
+          {['Overview', 'Audiences', 'Demographics', 'More'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-2 border-b-2 transition-all cursor-pointer ${
+                activeTab === tab
+                  ? 'border-[#F29F67] text-[#F29F67] font-bold'
+                  : isDark
+                  ? 'border-transparent text-slate-400 hover:text-slate-200'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[11px] font-bold text-slate-500 tracking-wider mb-1.5">{c.title}</p>
-                  <h2 className="text-3xl font-black text-slate-900">{c.value}</h2>
-                  
-                  <div className="flex items-center gap-1 mt-2.5">
-                    <span className="flex items-center text-emerald-600 text-xs font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      <ArrowUp size={11} strokeWidth={3} className="mr-0.5" />
-                      {c.trend}
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-medium">vs last month</span>
-                  </div>
-                </div>
-                
-                <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${c.bg} ${c.color} group-hover:scale-105 transition-transform`}>
-                  <Icon size={20} strokeWidth={2.5} />
-                </div>
-              </div>
+              {tab}
+            </button>
+          ))}
+        </div>
 
-              {/* Dynamic Sparkline Bars */}
-              <div className="flex items-end gap-1.5 mt-5 h-7 opacity-50 group-hover:opacity-80 transition-opacity">
-                {c.spark.map((h, i) => (
-                  <div 
-                    key={i} 
-                    className="w-full bg-blue-300 rounded-t-xs transition-all duration-300 group-hover:bg-blue-500" 
-                    style={{ height: `${h}%` }} 
-                  />
-                ))}
-              </div>
-            </Link>
-          );
-        })}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.origin);
+              toast.success('Portfolio URL copied!');
+            }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+              isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-300 hover:bg-[#28283C]' : 'bg-white border-[#E2E6EE] text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Share2 size={13} />
+            <span>Share</span>
+          </button>
+          <button
+            onClick={() => window.print()}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+              isDark ? 'bg-[#1E1E2C] border-[#2E2E42] text-slate-300 hover:bg-[#28283C]' : 'bg-white border-[#E2E6EE] text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            <Printer size={13} />
+            <span>Print</span>
+          </button>
+          <button
+            onClick={() => toast.success('Analytics report generated!')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E1E2C] text-white hover:bg-[#28283C] text-xs font-bold shadow-xs transition-all cursor-pointer"
+          >
+            <Download size={13} />
+            <span>Export</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── 02: TRAFFIC ANALYTICS (LINE CHART) & SKILLS BREAKDOWN (BAR CHART) ── */}
+      {/* ── 03: TOP KPI METRICS ROW (Matching StarAdmin Cards) ── */}
+      <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-5 rounded-2xl border ${
+        isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2] shadow-xs'
+      }`}>
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Bounce Rate</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">32.53%</div>
+          <span className="text-[11px] font-bold text-rose-500 flex items-center gap-0.5">
+            ▼ -0.5%
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Page Views</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">7,682</div>
+          <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-0.5">
+            ▲ +0.1%
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">New Sessions</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">68.8</div>
+          <span className="text-[11px] font-bold text-rose-500 flex items-center gap-0.5">
+            ▼ -2.1%
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Avg. Time on Site</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">2m:35s</div>
+          <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-0.5">
+            ▲ +0.8%
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Projects</span>
+          <div className="text-xl sm:text-2xl font-black text-[#F29F67]">{stats.projects} Active</div>
+          <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-0.5">
+            ▲ +12%
+          </span>
+        </div>
+
+        <div className="space-y-1">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Contact Leads</span>
+          <div className="text-xl sm:text-2xl font-black text-[#34B1AA]">{stats.messages} Inbound</div>
+          <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-0.5">
+            ▲ +22%
+          </span>
+        </div>
+      </div>
+
+      {/* ── 04: ROW 1: PERFORMANCE LINE CHART + STATUS SUMMARY CARD ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Visitor Traffic & Portfolio Views Line Chart */}
-        <div className="lg:col-span-8 bg-white p-6 sm:p-7 rounded-[1.25rem] border border-slate-200/90 shadow-2xs space-y-6">
+        {/* Performance Line Chart (Left 8 Cols) */}
+        <div className={`lg:col-span-8 p-6 sm:p-7 rounded-2xl border space-y-4 ${
+          isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2] shadow-xs'
+        }`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                <TrendingUp size={18} className="text-blue-600" />
-                Portfolio Traffic & Profile Engagement
+              <h3 className={`font-extrabold text-base ${isDark ? 'text-white' : 'text-[#1E1E2C]'}`}>
+                Performance Line Chart
               </h3>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                Total Views: <strong className="text-slate-800">{activeTraffic.totalViews}</strong> | Unique Visitors: <strong className="text-slate-800">{activeTraffic.uniqueVisitors}</strong>
+              <p className="text-xs text-slate-400 font-medium">
+                Portfolio & Dashboard Engagement for Analytics Team
               </p>
             </div>
 
-            <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="flex items-center gap-4 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                <span className="text-slate-600">Page Views</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#F29F67]" />
+                <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>This week</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
-                <span className="text-slate-600">Unique Visitors</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#1E1E2C] dark:bg-slate-400" />
+                <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Last week</span>
               </div>
             </div>
           </div>
 
-          {/* SVG Line Chart */}
-          <div className="h-48 sm:h-56 w-full relative pt-4">
-            <svg viewBox="0 0 500 160" className="w-full h-full overflow-visible">
+          {/* SVG Smooth Curve Area Chart in #F29F67 & #1E1E2C */}
+          <div className="h-56 sm:h-64 w-full relative pt-2">
+            <svg viewBox="0 0 500 180" className="w-full h-full overflow-visible">
               <defs>
-                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="uniqueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#14B8A6" stopOpacity="0.0" />
+                <linearGradient id="coralAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F29F67" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#F29F67" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
 
-              {/* Grid Lines */}
-              <line x1="0" y1="30" x2="500" y2="30" stroke="#F1F5F9" strokeWidth="1" />
-              <line x1="0" y1="70" x2="500" y2="70" stroke="#F1F5F9" strokeWidth="1" />
-              <line x1="0" y1="110" x2="500" y2="110" stroke="#F1F5F9" strokeWidth="1" />
-              <line x1="0" y1="150" x2="500" y2="150" stroke="#E2E8F0" strokeWidth="1" />
+              {/* Horizontal Grid lines */}
+              <line x1="0" y1="30" x2="500" y2="30" stroke={isDark ? '#2C2C40' : '#F1F5F9'} strokeWidth="1" />
+              <line x1="0" y1="75" x2="500" y2="75" stroke={isDark ? '#2C2C40' : '#F1F5F9'} strokeWidth="1" />
+              <line x1="0" y1="120" x2="500" y2="120" stroke={isDark ? '#2C2C40' : '#F1F5F9'} strokeWidth="1" />
+              <line x1="0" y1="165" x2="500" y2="165" stroke={isDark ? '#3C3C54' : '#E2E8F0'} strokeWidth="1" />
 
-              {/* Views Area & Line */}
+              {/* Coral Area Fill & Smooth Curve */}
               <path
-                d="M 0,120 Q 80,70 160,85 T 320,40 T 500,20 L 500,150 L 0,150 Z"
-                fill="url(#viewsGradient)"
+                d="M 0,140 Q 60,110 120,80 T 240,65 T 360,110 T 500,55 L 500,165 L 0,165 Z"
+                fill="url(#coralAreaGrad)"
               />
               <path
-                d="M 0,120 Q 80,70 160,85 T 320,40 T 500,20"
+                d="M 0,140 Q 60,110 120,80 T 240,65 T 360,110 T 500,55"
                 fill="none"
-                stroke="#2563EB"
-                strokeWidth="3"
+                stroke="#F29F67"
+                strokeWidth="3.5"
                 strokeLinecap="round"
               />
 
-              {/* Unique Visitors Area & Line */}
+              {/* Charcoal Last Week Comparison Line */}
               <path
-                d="M 0,140 Q 80,105 160,115 T 320,80 T 500,55 L 500,150 L 0,150 Z"
-                fill="url(#uniqueGradient)"
-              />
-              <path
-                d="M 0,140 Q 80,105 160,115 T 320,80 T 500,55"
+                d="M 0,155 Q 60,135 120,110 T 240,115 T 360,80 T 500,90"
                 fill="none"
-                stroke="#14B8A6"
+                stroke={isDark ? '#94A3B8' : '#1E1E2C'}
                 strokeWidth="2.5"
-                strokeDasharray="4 4"
                 strokeLinecap="round"
               />
 
               {/* Data Points */}
-              <circle cx="160" cy="85" r="4" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2" />
-              <circle cx="320" cy="40" r="4" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2" />
-              <circle cx="500" cy="20" r="5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2" />
+              <circle cx="120" cy="80" r="4.5" fill="#F29F67" stroke="#FFFFFF" strokeWidth="2" />
+              <circle cx="240" cy="65" r="4.5" fill="#F29F67" stroke="#FFFFFF" strokeWidth="2" />
+              <circle cx="360" cy="110" r="4.5" fill="#F29F67" stroke="#FFFFFF" strokeWidth="2" />
+              <circle cx="500" cy="55" r="5" fill="#F29F67" stroke="#FFFFFF" strokeWidth="2" />
             </svg>
 
-            {/* X-Axis Labels */}
+            {/* X-Axis Days */}
             <div className="flex justify-between text-[11px] font-mono text-slate-400 mt-2">
-              {activeTraffic.labels.map((lbl, idx) => (
-                <span key={idx}>{lbl}</span>
+              {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) => (
+                <span key={day}>{day}</span>
               ))}
-            </div>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100 text-center">
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Avg Session</span>
-              <span className="text-sm font-bold text-slate-900 font-mono">{activeTraffic.avgDuration}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Bounce Rate</span>
-              <span className="text-sm font-bold text-slate-900 font-mono">{activeTraffic.bounceRate}</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Resume DL Rate</span>
-              <span className="text-sm font-bold text-emerald-600 font-mono">34.2%</span>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-xl">
-              <span className="text-[10px] font-mono text-slate-400 uppercase block">Conversion Rate</span>
-              <span className="text-sm font-bold text-blue-600 font-mono">8.5%</span>
             </div>
           </div>
         </div>
 
-        {/* Technical Stack & Domain Distribution Bar Chart */}
-        <div className="lg:col-span-4 bg-white p-6 sm:p-7 rounded-[1.25rem] border border-slate-200/90 shadow-2xs space-y-5 flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-              <BarChart2 size={18} className="text-amber-500" />
-              Project Stack Distribution
-            </h3>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              Coverage across published case studies
-            </p>
+        {/* Right 4 Cols: Status Summary & Circular Donut Meters */}
+        <div className="lg:col-span-4 space-y-6 flex flex-col justify-between">
+          
+          {/* Status Summary Card in Deep Navy #1E1E2C with Glowing Teal #34B1AA Wave */}
+          <div className="p-6 rounded-2xl bg-[#1E1E2C] text-white border border-[#2E2E44] shadow-md space-y-3 relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Status Summary</span>
+              <span className="h-2 w-2 rounded-full bg-[#34B1AA] animate-pulse" />
+            </div>
+
+            <div className="flex items-end justify-between pt-2">
+              <div>
+                <span className="text-[11px] text-slate-400 block font-mono">Closed Value / Leads</span>
+                <span className="text-4xl font-black text-[#34B1AA] tracking-tight">357</span>
+              </div>
+
+              {/* Glowing Teal SVG Wave */}
+              <div className="w-32 h-14">
+                <svg viewBox="0 0 120 50" className="w-full h-full">
+                  <path
+                    d="M 0,35 Q 30,10 60,35 T 120,15"
+                    fill="none"
+                    stroke="#34B1AA"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {skillDistribution.map((item) => (
-              <div key={item.skill} className="space-y-1.5">
-                <div className="flex justify-between text-xs font-semibold">
-                  <span className="text-slate-700 truncate">{item.skill}</span>
-                  <span className="font-mono text-slate-500 text-[11px]">{item.projects} projects</span>
-                </div>
-                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${item.color}`}
-                    style={{ width: `${item.percentage}%` }}
+          {/* Dual Donut / Circular Visitor Meters */}
+          <div className={`p-6 rounded-2xl border grid grid-cols-2 gap-4 ${
+            isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2] shadow-xs'
+          }`}>
+            {/* Total Visitors Donut */}
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke={isDark ? '#2C2C40' : '#E2E8F0'}
+                    strokeWidth="4"
                   />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#3B8FF3"
+                    strokeDasharray="26.8, 100"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Total visitors</span>
+                <span className="text-sm font-black text-slate-900 dark:text-white">26.80%</span>
+              </div>
+            </div>
+
+            {/* Visits Per Day Donut */}
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke={isDark ? '#2C2C40' : '#E2E8F0'}
+                    strokeWidth="4"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#34B1AA"
+                    strokeDasharray="75, 100"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase block">Visits Per Day</span>
+                <span className="text-sm font-black text-slate-900 dark:text-white">9,065</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── 05: ROW 2: MARKET OVERVIEW BAR CHART + TO-DO REMINDERS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Market Overview Monthly Stacked Bar Chart */}
+        <div className={`lg:col-span-8 p-6 sm:p-7 rounded-2xl border space-y-4 ${
+          isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2] shadow-xs'
+        }`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className={`font-extrabold text-base ${isDark ? 'text-white' : 'text-[#1E1E2C]'}`}>
+                Market & Analytics Overview
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  $36,2531.00 <span className="text-xs font-semibold text-slate-400">USD</span>
+                </span>
+                <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">
+                  (+1.37%)
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 text-xs font-semibold">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#1E1E2C] dark:bg-slate-300" />
+                  <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>This week</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#F29F67]" />
+                  <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>Last week</span>
+                </div>
+              </div>
+
+              <select className={`px-3 py-1.5 rounded-xl border text-xs font-semibold outline-none ${
+                isDark ? 'bg-[#181824] border-[#2E2E42] text-slate-300' : 'bg-slate-100 border-[#E2E6EE] text-slate-700'
+              }`}>
+                <option>This month</option>
+                <option>Last 6 months</option>
+                <option>This year</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Monthly Stacked Bars */}
+          <div className="h-48 sm:h-56 w-full flex items-end justify-between gap-2 sm:gap-4 pt-6 px-2">
+            {[
+              { month: 'JAN', val1: 45, val2: 25 },
+              { month: 'FEB', val1: 65, val2: 20 },
+              { month: 'MAR', val1: 50, val2: 15 },
+              { month: 'APR', val1: 75, val2: 20 },
+              { month: 'MAY', val1: 55, val2: 25 },
+              { month: 'JUN', val1: 40, val2: 35 },
+              { month: 'JUL', val1: 70, val2: 20 },
+              { month: 'AUG', val1: 50, val2: 25 },
+              { month: 'SEP', val1: 60, val2: 15 },
+              { month: 'OCT', val1: 55, val2: 20 },
+              { month: 'NOV', val1: 45, val2: 20 },
+              { month: 'DEC', val1: 80, val2: 15 },
+            ].map((col) => (
+              <div key={col.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                <div className="w-full max-w-[20px] flex flex-col justify-end gap-1 h-full">
+                  <div
+                    style={{ height: `${col.val2}%` }}
+                    className={`w-full rounded-t-xs transition-all ${isDark ? 'bg-slate-300' : 'bg-[#1E1E2C]'}`}
+                  />
+                  <div
+                    style={{ height: `${col.val1}%` }}
+                    className="w-full bg-[#F29F67] rounded-b-xs transition-all"
+                  />
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">{col.month}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* To-Do / Reminders Card */}
+        <div className={`lg:col-span-4 p-6 sm:p-7 rounded-2xl border space-y-4 flex flex-col justify-between ${
+          isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2] shadow-xs'
+        }`}>
+          <div className="flex items-center justify-between">
+            <h3 className={`font-extrabold text-base ${isDark ? 'text-white' : 'text-[#1E1E2C]'}`}>
+              To-Do / Reminders
+            </h3>
+            <button
+              onClick={() => toast.success('New task added!')}
+              className="p-1 rounded-full bg-[#1E1E2C] text-white hover:bg-[#28283C] cursor-pointer"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+
+          {/* Task Items */}
+          <div className="space-y-3">
+            {todos.map((todo) => (
+              <div
+                key={todo.id}
+                onClick={() => toggleTodo(todo.id)}
+                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
+                  todo.done
+                    ? isDark ? 'bg-[#181824]/50 border-slate-800 opacity-60' : 'bg-slate-50/70 border-slate-100 opacity-60'
+                    : isDark ? 'bg-[#222234] border-[#2E2E44]' : 'bg-white border-slate-200'
+                }`}
+              >
+                <button className="mt-0.5 text-slate-400 hover:text-[#F29F67]">
+                  {todo.done ? <CheckCircle2 size={16} className="text-[#34B1AA]" /> : <Square size={16} />}
+                </button>
+
+                <div className="space-y-1 flex-1">
+                  <p className={`text-xs font-semibold leading-snug ${todo.done ? 'line-through text-slate-400' : isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                    {todo.text}
+                  </p>
+                  <div className="flex items-center gap-2 text-[10px] font-mono">
+                    <span className="text-slate-400">{todo.date}</span>
+                    <span className={`px-2 py-0.5 rounded-md font-bold border ${todo.tagColor}`}>
+                      {todo.tag}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-amber-950 flex items-center gap-2.5">
-            <Sparkles size={16} className="text-amber-600 shrink-0" />
-            <span className="text-[11px] leading-relaxed">
-              100% of projects feature end-to-end SQL transformation and Power BI visualization.
+          <div className="pt-2 text-center">
+            <span className="text-xs text-slate-400 font-mono">
+              All pipeline workflows synced with PostgreSQL
             </span>
           </div>
         </div>
-      </div>
 
-      {/* ── 03: RECENT INBOX MESSAGES & STORAGE/SYSTEM HEALTH ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Recent Contact Messages Inbox Widget */}
-        <div className="lg:col-span-7 bg-white p-6 sm:p-7 rounded-[1.25rem] border border-slate-200/90 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                <Mail size={18} className="text-orange-500" />
-                Recent Inquiries & Contact Messages
-              </h3>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                {stats.messages} total messages received
-              </p>
-            </div>
-            <Link
-              to="/admin/inbox"
-              className="text-xs font-mono font-bold text-blue-600 hover:underline flex items-center gap-1"
-            >
-              <span>View All</span>
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-
-          <div className="divide-y divide-slate-100">
-            {recentMessages.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-xs">
-                No new contact messages in the inbox.
-              </div>
-            ) : (
-              recentMessages.map((msg) => (
-                <div key={msg.id} className="py-3.5 flex items-start justify-between gap-3 hover:bg-slate-50/60 transition-colors rounded-lg px-2">
-                  <div className="space-y-0.5 truncate">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-slate-900">{msg.name || 'Anonymous Recruiter'}</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                        {msg.email}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 truncate max-w-md font-sans">
-                      {msg.message || 'Interested in discussing data analytics opportunity...'}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-mono text-slate-400 shrink-0">
-                    {new Date(msg.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Storage, Database & Cloud System Health Widget */}
-        <div className="lg:col-span-5 bg-white p-6 sm:p-7 rounded-[1.25rem] border border-slate-200/90 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                <HardDrive size={18} className="text-indigo-600" />
-                Storage & Infrastructure Health
-              </h3>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
-                Supabase PostgreSQL + Edge CDN
-              </p>
-            </div>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-mono font-bold border border-emerald-200 flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Healthy
-            </span>
-          </div>
-
-          {/* Storage Meter */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs font-semibold">
-              <span className="text-slate-700">Storage Used</span>
-              <span className="font-mono text-slate-500 text-[11px]">28.4 MB / 1.0 GB (2.8%)</span>
-            </div>
-            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex">
-              <div style={{ width: '1.8%' }} className="bg-blue-600 h-full" title="Images (18 MB)" />
-              <div style={{ width: '0.6%' }} className="bg-amber-500 h-full" title="Dashboards & Code (6 MB)" />
-              <div style={{ width: '0.4%' }} className="bg-purple-500 h-full" title="PDFs (4.4 MB)" />
-            </div>
-            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1">
-              <span>🔵 Images: 18.0 MB</span>
-              <span>🟡 Datasets: 6.0 MB</span>
-              <span>🟣 PDFs: 4.4 MB</span>
-            </div>
-          </div>
-
-          {/* System Services Status List */}
-          <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-slate-600 flex items-center gap-2">
-                <Database size={14} className="text-blue-600" />
-                Supabase PostgreSQL
-              </span>
-              <span className="font-mono text-[11px] text-emerald-600 font-bold">Online (22ms)</span>
-            </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-slate-600 flex items-center gap-2">
-                <Activity size={14} className="text-emerald-600" />
-                Vercel Web Analytics
-              </span>
-              <span className="font-mono text-[11px] text-emerald-600 font-bold">Connected</span>
-            </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-slate-600 flex items-center gap-2">
-                <ShieldCheck size={14} className="text-indigo-600" />
-                GitHub Repository Sync
-              </span>
-              <a
-                href="https://github.com/arun-pandian-p"
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-[11px] text-blue-600 hover:underline flex items-center gap-0.5 font-bold"
-              >
-                <span>arun-pandian-p</span>
-                <ArrowUpRight size={12} />
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 04: RECENT CONTENT OVERVIEW & QUICK ACTIONS ── */}
-      <div className="bg-white p-6 sm:p-7 rounded-[1.25rem] border border-slate-200/90 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-bold text-base text-slate-900">Recently Updated Case Studies & Publications</h3>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              Live status and quick editing shortcuts
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              to="/admin/projects"
-              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
-            >
-              All Projects ({stats.projects})
-            </Link>
-            <Link
-              to="/admin/blogs"
-              className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
-            >
-              All Blogs ({stats.blogs})
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {recentProjects.map((p) => (
-            <div key={p.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
-              <div className="truncate">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <h4 className="font-bold text-sm text-slate-900 truncate">{p.title}</h4>
-                </div>
-                <span className="text-xs font-mono text-slate-500 block mt-0.5">Order #{p.sort_order || 1} • Project</span>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Link
-                  to={`/project/${p.id}`}
-                  target="_blank"
-                  className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-blue-600 text-xs shadow-2xs"
-                  title="View Live"
-                >
-                  <Eye size={14} />
-                </Link>
-                <Link
-                  to={`/admin/projects?edit=${p.id}`}
-                  className="p-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100 text-xs shadow-2xs"
-                  title="Edit in Admin"
-                >
-                  <Edit2 size={14} />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
     </div>
