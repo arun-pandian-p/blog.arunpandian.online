@@ -716,7 +716,7 @@ export default function BlogPublicationPage() {
               </p>
               <div className="flex items-center gap-3 pt-2 text-xs font-mono text-slate-500 border-t border-slate-200">
                 <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
-                <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
+                <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
                 <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors font-semibold text-blue-600">Resume ↓</a>
               </div>
             </div>
@@ -859,7 +859,7 @@ export default function BlogPublicationPage() {
           </div>
           <div className="flex items-center gap-4 text-slate-500">
             <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
-            <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
+            <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
             <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors">Resume ↓</a>
             <Link to="/admin" className="hover:text-slate-900 transition-colors">Admin</Link>
           </div>

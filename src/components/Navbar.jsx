@@ -4,14 +4,16 @@ import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import Logo from './Logo';
 import { useContent } from '../context/ContentProvider';
+import { useThemeStore } from '../theme/store';
 import { LetterRoll } from '../theme/Modifiers';
 
 const Navbar = () => {
   const { settings } = useContent();
+  const { theme } = useThemeStore();
   const location = useLocation();
   const navbar = settings.navbar || {};
   const brandName = settings.hero?.name || 'Arun Pandian';
-  const animationStyle = settings.theme?.layout?.animationStyle || 'default';
+  const animationStyle = theme?.layout?.animationStyle || settings.theme?.layout?.animationStyle || 'default';
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
@@ -54,7 +56,7 @@ const Navbar = () => {
   const ctaLabel = navbar.ctaLabel || 'Resume';
   const ctaHref = navbar.ctaHref || '/resume.pdf';
   
-  const navbarStyle = settings.theme?.layout?.navbarStyle || 'minimal';
+  const navbarStyle = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'minimal';
 
   // Determine structural classes based on the selected navbarStyle
   let containerClasses = "relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90";

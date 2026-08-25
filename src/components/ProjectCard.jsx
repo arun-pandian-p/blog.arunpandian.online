@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ExternalLink, FileText, ArrowUpRight } from 'lucide-react';
 import { useContent } from '../context/ContentProvider';
+import { useThemeStore } from '../theme/store';
 
 const GithubIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -21,8 +22,9 @@ const flow = [
 const ProjectCard = ({ project, index = 0 }) => {
   const { title, tags, githubLink, caseStudyLink, demoLink, insight } = project;
   const { settings } = useContent();
-  const animationStyle = settings?.theme?.layout?.animationStyle || 'default';
-  const cardStyle = settings?.theme?.layout?.cardStyle || 'default';
+  const { theme } = useThemeStore();
+  const animationStyle = theme?.layout?.animationStyle || settings?.theme?.layout?.animationStyle || 'default';
+  const cardStyle = theme?.layout?.cardStyle || settings?.theme?.layout?.cardStyle || 'default';
 
   // ─── 3D Tilt Logic (default card) ───
   const ref = useRef(null);

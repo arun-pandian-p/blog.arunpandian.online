@@ -5,7 +5,7 @@ export const resumeData = {
     summary: "Final-year B.Tech AI & Data Science student who works across the full data lifecycle – wrangling, EDA, dashboarding, and automation. Built end-to-end Excel/Power Query analyses on real-world job market data and an n8n-based AI automation pipeline. Comfortable turning messy structured and unstructured data into decisions.",
     phone: "8248960558",
     email: "arunpandi47777@gmail.com",
-    linkedin: "https://linkedin.com/in/arunpandianp-dataanalyst",
+    linkedin: "https://www.linkedin.com/in/arunpandianp-dataanalyst/",
     github: "https://github.com/arun-pandian-p",
     website: "https://arun-pandian.netlify.app",
     location: "Coimbatore, Tamil Nadu",

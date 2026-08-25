@@ -33,7 +33,7 @@ const fallbackSettings = {
     ticker: ['SQL', 'Python', 'Excel', 'Power BI', 'Power Query', 'Power Pivot', 'DAX', 'n8n', 'Pandas', 'Data Modelling', 'EDA', 'Automation'],
     socials: {
       github: 'https://github.com/arun-pandian-p',
-      linkedin: 'https://linkedin.com/in/arunpandianp-dataanalyst',
+      linkedin: 'https://www.linkedin.com/in/arunpandianp-dataanalyst/',
       email: 'arunpandi47777@gmail.com',
     },
   },
@@ -105,7 +105,7 @@ const fallbackSettings = {
     name: 'Arun Pandian',
     tagline: 'Data Analyst — SQL · Python · Power BI. Turning raw data into decisions.',
     github: 'https://github.com/arun-pandian-p',
-    linkedin: 'https://linkedin.com/in/arunpandianp-dataanalyst',
+    linkedin: 'https://www.linkedin.com/in/arunpandianp-dataanalyst/',
     email: 'arunpandi47777@gmail.com',
     copyright: 'Built with React · Three.js · Node/Express.',
     designYear: '2026',
@@ -473,11 +473,12 @@ export function ContentProvider({ children }) {
         for (const row of rows) {
           let val = row.value;
           if (val && typeof val === 'object' && !Array.isArray(val)) {
-            // Sanitize any legacy github username or outdated title
+            // Sanitize any legacy github username or outdated title/links
             val = JSON.parse(
               JSON.stringify(val)
                 .replace(/shadow-byte-warrior/g, 'arun-pandian-p')
                 .replace(/Data Analyst Specialist/g, 'Data Analyst')
+                .replace(/arunpandiansh2030/g, 'arunpandianp-dataanalyst')
             );
             // Map legacy hidden object if it exists
             if (val.hidden && typeof val.hidden === 'object') {

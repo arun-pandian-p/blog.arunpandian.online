@@ -832,7 +832,7 @@ export default function BlogDetails() {
                   Specializing in data pipelines, SQL transformations, DAX analytics, and dashboard architecture.
                 </p>
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-blue-600 font-mono text-[11px] font-bold">
-                  <a href="https://linkedin.com/in/arunpandiansh2030" target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:underline">
                     LinkedIn ↗
                   </a>
                   <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:underline">
@@ -865,7 +865,7 @@ export default function BlogDetails() {
                 </div>
                 <div className="flex items-center gap-2">
                   <a
-                    href="https://linkedin.com/in/arunpandiansh2030"
+                    href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-colors"

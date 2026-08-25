@@ -294,7 +294,7 @@ export default function HomePage() {
             "image": projects?.map((p) => p.image_url).filter(Boolean) || [],
             "sameAs": [
               settings?.hero?.socials?.github || "https://github.com/arun-pandian-p",
-              settings?.hero?.socials?.linkedin || "https://linkedin.com/in/arunpandianp-dataanalyst"
+              settings?.hero?.socials?.linkedin || "https://www.linkedin.com/in/arunpandianp-dataanalyst/"
             ].filter(Boolean)
           })}
         </script>

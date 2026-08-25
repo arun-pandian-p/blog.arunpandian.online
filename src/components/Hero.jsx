@@ -5,6 +5,7 @@ import MagneticButton from './MagneticButton';
 import Parallax from './Parallax';
 import arunProfile from '../assets/arun-profile.jpg';
 import { useContent } from '../context/ContentProvider';
+import { useThemeStore } from '../theme/store';
 import { WordRotator } from '../theme/Modifiers';
 import DoodleGuide from './DoodleGuide';
 import StickyQuoteNote from './StickyQuoteNote';
@@ -31,6 +32,7 @@ const rise = {
 
 const Hero = () => {
   const { settings } = useContent();
+  const { theme } = useThemeStore();
   const [isMuted, setIsMuted] = React.useState(true);
   const videoRef = React.useRef(null);
 
@@ -44,7 +46,7 @@ const Hero = () => {
     }
   }, [isMuted]);
   const hero = settings.hero || {};
-  const animationStyle = settings.theme?.layout?.animationStyle || 'default';
+  const animationStyle = theme?.layout?.animationStyle || settings.theme?.layout?.animationStyle || 'default';
 
   const story = hero.story || [];
   const credentials = hero.credentials || [];
@@ -54,7 +56,7 @@ const Hero = () => {
   const gallery = hero.gallery || [];
   const isVisible = (field) => !hiddenFields.includes(field);
 
-  const heroStyle = settings.theme?.layout?.heroStyle || 'default';
+  const heroStyle = theme?.layout?.heroStyle || settings.theme?.layout?.heroStyle || 'default';
 
   // ─── HERO STYLE: KAROL BINKOWSKI (Massive Split Typography) ───
   if (heroStyle === 'karolbinkowski') {
