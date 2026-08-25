@@ -91,13 +91,13 @@ const Navbar = () => {
 
           {/* Center Nav: Home & Blog (Centered horizontally in Navbar) */}
           <div className="hidden md:flex items-center justify-center gap-2 absolute left-1/2 -translate-x-1/2">
-            {desktopNavLinks.map((link, idx) => {
+            {desktopNavLinks.map((link) => {
               const targetSection = link.href.split('#')[1] || 'hero';
               const isActive = link.href === '/blog' ? isBlogPage : (!isBlogPage && activeSection === targetSection);
               return (
-                <a
+                <Link
                   key={link.name}
-                  href={link.href}
+                  to={link.href}
                   className={`px-4 py-1.5 text-xs sm:text-sm font-semibold transition-all rounded-full ${
                     isActive
                       ? 'text-blue-600 bg-blue-50/90 font-bold shadow-2xs'
@@ -105,7 +105,7 @@ const Navbar = () => {
                   }`}
                 >
                   {link.name}
-                </a>
+                </Link>
               );
             })}
           </div>
@@ -136,7 +136,7 @@ const Navbar = () => {
       {/* Scroll progress bar */}
       <motion.div style={{ scaleX: progress }} className="origin-left h-0.5 bg-accent mt-1 mx-auto max-w-7xl" />
 
-      {/* Mobile Drawer Dropdown (Full Menu on Mobile) */}
+      {/* Mobile Drawer Dropdown (Home & Blog on Mobile) */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -157,9 +157,9 @@ const Navbar = () => {
                   const targetSection = link.href.split('#')[1] || 'hero';
                   const isActive = link.href === '/blog' ? isBlogPage : (!isBlogPage && activeSection === targetSection);
                   return (
-                    <a
+                    <Link
                       key={link.name}
-                      href={link.href}
+                      to={link.href}
                       onClick={() => setIsOpen(false)}
                       data-edit-id={`navbar.links.mobile.${idx}`}
                       data-edit-name={`Navbar · Link ${idx + 1} (Mobile)`}
@@ -173,7 +173,7 @@ const Navbar = () => {
                     >
                       <span>{link.name}</span>
                       {isActive && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
-                    </a>
+                    </Link>
                   );
                 })}
               </div>

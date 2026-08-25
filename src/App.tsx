@@ -57,8 +57,11 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/blog" element={<BlogPublicationPage />} />
+        <Route path="/blogs" element={<BlogPublicationPage />} />
         <Route path="/blog/:slug" element={<BlogDetails />} />
+        <Route path="/blogs/:slug" element={<BlogDetails />} />
         <Route path="/project/:id" element={<ProjectDetails />} />
+        <Route path="/projects/:id" element={<ProjectDetails />} />
 
         {/* Admin Login Route */}
         <Route path="/admin/login" element={<Login />} />
