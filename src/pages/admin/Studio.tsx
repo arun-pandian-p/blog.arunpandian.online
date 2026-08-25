@@ -3,7 +3,8 @@ import {
   Monitor, Laptop, Tablet, Smartphone, Save,
   Palette, Layout, Zap, Wand2, Loader2,
   Grid3X3, RefreshCw, X, PanelLeft, PanelRight,
-  CheckCircle2, Sparkles, ChevronRight, MousePointer2, Eye
+  CheckCircle2, Sparkles, ChevronRight, MousePointer2, Eye,
+  Sliders, ShieldCheck, ArrowUpRight
 } from 'lucide-react';
 import { useThemeStore } from '../../theme/store';
 import { useEditorStore } from '../../editor/editorStore';
@@ -27,10 +28,10 @@ const DEVICES: { id: DeviceKey; icon: any; label: string; width: number | null }
 ];
 
 const RIGHT_TABS: { id: Tab; icon: any; label: string; activeClass: string }[] = [
-  { id: 'theme',     icon: Palette,  label: 'Theme',     activeClass: 'text-blue-600 border-blue-500' },
-  { id: 'structure', icon: Layout,   label: 'Structure', activeClass: 'text-purple-600 border-purple-500' },
-  { id: 'motion',    icon: Zap,      label: 'Motion',    activeClass: 'text-amber-600 border-amber-500' },
-  { id: 'scraper',   icon: Wand2,    label: 'Scraper',   activeClass: 'text-emerald-600 border-emerald-500' },
+  { id: 'theme',     icon: Palette,  label: 'Theme',     activeClass: 'text-[#F29F67]' },
+  { id: 'structure', icon: Layout,   label: 'Structure', activeClass: 'text-purple-600' },
+  { id: 'motion',    icon: Zap,      label: 'Motion',    activeClass: 'text-amber-500' },
+  { id: 'scraper',   icon: Wand2,    label: 'Scraper',   activeClass: 'text-emerald-500' },
 ];
 
 function isPlainObject(x: any) {
@@ -52,9 +53,9 @@ function PublishToast({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(t);
   }, [onClose]);
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 bg-slate-900 text-white rounded-2xl shadow-2xl text-sm font-medium animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <CheckCircle2 size={16} className="text-emerald-400" />
-      Theme published successfully!
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-6 py-3.5 bg-[#1E1E2C] text-white rounded-2xl shadow-[8px_8px_20px_rgba(0,0,0,0.25)] border border-[#2E2E44] text-xs font-bold animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <CheckCircle2 size={16} className="text-[#34B1AA]" />
+      <span>Theme published successfully!</span>
     </div>
   );
 }
@@ -140,169 +141,186 @@ export default function Studio() {
   const deviceWidth = DEVICES.find((d) => d.id === device)?.width;
   const canvasWidth = deviceWidth ? `${deviceWidth}px` : '100%';
 
-  // Detect which preset is currently active for the left panel quick access
+  // Detect which preset is currently active
   const activePresetName = Object.entries(presets).find(([, p]) =>
     p.colors.primary === theme.colors.primary &&
     p.colors.background === theme.colors.background
   )?.[0] ?? null;
 
   return (
-    <div className="flex h-full w-full bg-slate-100/80 overflow-hidden select-none">
+    <div className="flex h-full w-full bg-[#EBF0F7] text-slate-800 font-sans select-none overflow-hidden p-2 sm:p-3 gap-3">
 
-      {/* ── LEFT PANEL — Navigation + Quick Presets ── */}
+      {/* ── LEFT PANEL — Neumorphic Navigation & Quick Presets ── */}
       {leftOpen && (
-        <aside className="w-52 bg-white border-r border-slate-200/80 flex flex-col shrink-0 z-20 shadow-[1px_0_0_0_rgba(0,0,0,0.04)]">
+        <aside className="w-56 bg-[#EEF2F8] rounded-3xl p-3 flex flex-col shrink-0 z-20 shadow-[6px_6px_14px_#D0D7E3,-6px_-6px_14px_#FFFFFF] border border-white/60">
+          
           {/* Brand header */}
-          <div className="flex items-center justify-between px-3.5 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between px-2 py-2 mb-2">
             <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 shadow-sm" />
-              <span className="text-[12px] font-bold text-slate-800 tracking-tight">Design OS</span>
+              <div className="h-6 w-6 rounded-xl bg-gradient-to-br from-[#F29F67] to-[#E8824A] shadow-[2px_2px_5px_rgba(242,159,103,0.4)] flex items-center justify-center text-white font-bold text-xs">
+                ✦
+              </div>
+              <span className="text-xs font-black text-[#1E1E2C] tracking-tight">Design OS</span>
             </div>
             <button
               onClick={() => setLeftOpen(false)}
-              className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+              className="p-1.5 rounded-xl bg-[#EEF2F8] text-slate-400 hover:text-slate-700 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all cursor-pointer"
+              title="Close Panel"
             >
               <PanelLeft size={13} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto py-2">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
             {/* Section jump nav */}
-            <div className="px-3 pt-1.5 pb-1">
-              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">Navigate</span>
+            <div>
+              <div className="px-2 pb-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Jump to Section
+              </div>
+              <div className="space-y-1">
+                {[
+                  { anchor: '#hero',     label: 'Hero',       dot: 'bg-[#F29F67]' },
+                  { anchor: '#about',    label: 'About',      dot: 'bg-purple-500' },
+                  { anchor: '#skills',   label: 'Skills',     dot: 'bg-[#E0B50F]' },
+                  { anchor: '#timeline', label: 'Experience', dot: 'bg-[#34B1AA]' },
+                  { anchor: '#projects', label: 'Projects',   dot: 'bg-rose-500' },
+                  { anchor: '#blog',     label: 'Blog',       dot: 'bg-[#3B8FF3]' },
+                  { anchor: 'footer',    label: 'Footer',     dot: 'bg-slate-500' },
+                ].map(({ anchor, label, dot }) => (
+                  <button
+                    key={anchor}
+                    onClick={() => iframeRef.current?.contentWindow?.postMessage({ type: 'PREVIEW_SCROLL', anchor }, '*')}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-[#1E1E2C] rounded-xl bg-[#EEF2F8] hover:shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all text-left cursor-pointer"
+                  >
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${dot}`} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            {[
-              { anchor: '#hero',     label: 'Hero',       dot: 'bg-blue-500' },
-              { anchor: '#about',    label: 'About',      dot: 'bg-purple-500' },
-              { anchor: '#skills',   label: 'Skills',     dot: 'bg-amber-500' },
-              { anchor: '#timeline', label: 'Experience', dot: 'bg-emerald-500' },
-              { anchor: '#projects', label: 'Projects',   dot: 'bg-red-400' },
-              { anchor: '#blog',     label: 'Blog',       dot: 'bg-cyan-500' },
-              { anchor: 'footer',    label: 'Footer',     dot: 'bg-slate-400' },
-            ].map(({ anchor, label, dot }) => (
-              <button
-                key={anchor}
-                onClick={() => iframeRef.current?.contentWindow?.postMessage({ type: 'PREVIEW_SCROLL', anchor }, '*')}
-                className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all text-left rounded-lg mx-0.5"
-              >
-                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${dot}`} />
-                {label}
-              </button>
-            ))}
 
             {/* Quick preset access */}
-            <div className="px-3 pt-4 pb-1">
-              <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">Presets</span>
+            <div>
+              <div className="px-2 pb-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Theme Presets
+              </div>
+              <div className="space-y-1">
+                {Object.entries(presets).slice(0, 8).map(([name, preset]) => {
+                  const isActive = activePresetName === name;
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => applyPreset(name)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-all text-left rounded-xl cursor-pointer ${
+                        isActive
+                          ? 'text-[#F29F67] font-bold shadow-[inset_3px_3px_6px_#CBD5E1,inset_-3px_-3px_6px_#FFFFFF] bg-[#E8EDF5]'
+                          : 'text-slate-600 hover:text-slate-900 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] hover:shadow-[4px_4px_8px_#D0D7E3,-4px_-4px_8px_#FFFFFF] bg-[#EEF2F8]'
+                      }`}
+                    >
+                      <span className="flex gap-0.5 shrink-0">
+                        {[preset.colors.background, preset.colors.primary, preset.colors.text].map((c, i) => (
+                          <span key={i} className="h-2.5 w-2.5 rounded-full border border-black/10 shadow-xs" style={{ background: c }} />
+                        ))}
+                      </span>
+                      <span className="truncate">{name.split(' (')[0]}</span>
+                      {isActive && <ChevronRight size={12} className="ml-auto text-[#F29F67] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            {Object.entries(presets).slice(0, 8).map(([name, preset]) => {
-              const isActive = activePresetName === name;
-              return (
-                <button
-                  key={name}
-                  onClick={() => applyPreset(name)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[11px] transition-all text-left rounded-lg mx-0.5 ${
-                    isActive
-                      ? 'text-blue-600 bg-blue-50 font-semibold'
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                  }`}
-                >
-                  {/* Mini color dot group */}
-                  <span className="flex gap-0.5 shrink-0">
-                    {[preset.colors.background, preset.colors.primary, preset.colors.text].map((c, i) => (
-                      <span key={i} className="h-2.5 w-2.5 rounded-full border border-black/10" style={{ background: c }} />
-                    ))}
-                  </span>
-                  <span className="truncate">{name.split(' (')[0]}</span>
-                  {isActive && <ChevronRight size={10} className="ml-auto text-blue-400 shrink-0" />}
-                </button>
-              );
-            })}
           </div>
 
           {/* Bottom: current palette preview */}
-          <div className="p-3 border-t border-slate-100">
-            <div className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-2">Active Palette</div>
-            <div className="flex gap-1">
+          <div className="pt-3 border-t border-slate-200/60 mt-2">
+            <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-2 px-1">Active Palette</div>
+            <div className="flex gap-1 p-1.5 rounded-xl bg-[#E8EDF5] shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF]">
               {[theme.colors.background, theme.colors.primary, theme.colors.surface, theme.colors.text, theme.colors.muted, theme.colors.border].map((c, i) => (
-                <span key={i} className="flex-1 h-4 rounded border border-black/8 shadow-sm" style={{ background: c }} title={c} />
+                <span key={i} className="flex-1 h-4 rounded-md shadow-xs" style={{ background: c }} title={c} />
               ))}
             </div>
           </div>
         </aside>
       )}
 
-      {/* ── CENTER ── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      {/* ── CENTER WORKSPACE ── */}
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 gap-3">
 
-        {/* Top Toolbar */}
-        <header className="flex items-center gap-2 px-3 h-11 bg-white border-b border-slate-200/80 shrink-0 shadow-[0_1px_0_0_rgba(0,0,0,0.04)]">
-          {/* Left — toggle sidebar & editing */}
+        {/* Top Neumorphic Toolbar Header */}
+        <header className="flex items-center justify-between gap-3 px-4 py-2.5 bg-[#EEF2F8] rounded-2xl shadow-[6px_6px_12px_#D0D7E3,-6px_-6px_12px_#FFFFFF] border border-white/60 shrink-0">
+          
+          {/* Left Controls */}
           <div className="flex items-center gap-2">
             {!leftOpen && (
               <button
                 onClick={() => setLeftOpen(true)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all"
+                className="p-2 rounded-xl bg-[#EEF2F8] text-slate-500 hover:text-slate-800 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all cursor-pointer"
+                title="Open Navigation"
               >
                 <PanelLeft size={14} />
               </button>
             )}
-            {!leftOpen && <div className="h-4 w-px bg-slate-200 mx-1" />}
-            
+
+            {/* Editing / Preview Mode Toggle */}
             <button
               onClick={toggleEnabled}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors ${
-                enabled ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800'
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                enabled
+                  ? 'bg-[#F29F67] text-white shadow-[inset_2px_2px_4px_rgba(0,0,0,0.15)]'
+                  : 'bg-[#EEF2F8] text-slate-600 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF]'
               }`}
             >
               {enabled ? <MousePointer2 size={13} /> : <Eye size={13} />}
-              {enabled ? 'Editing' : 'Preview'}
+              <span>{enabled ? 'Editing Mode' : 'Preview'}</span>
             </button>
           </div>
 
-          {/* Center: Device switcher */}
-          <div className="flex-1 flex items-center justify-center gap-0.5">
-            <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
-              {DEVICES.map(({ id, icon: Icon, label }) => (
+          {/* Center: Neumorphic Device Switcher Capsule */}
+          <div className="flex items-center p-1 bg-[#E8EDF5] rounded-2xl shadow-[inset_3px_3px_6px_#D0D7E3,inset_-3px_-3px_6px_#FFFFFF]">
+            {DEVICES.map(({ id, icon: Icon, label }) => {
+              const isSelected = device === id;
+              return (
                 <button
                   key={id}
                   onClick={() => setDevice(id)}
                   title={label}
-                  className={`p-1.5 rounded-lg transition-all ${
-                    device === id
-                      ? 'bg-white text-slate-800 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-600'
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#EEF2F8] text-[#F29F67] shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF]'
+                      : 'text-slate-400 hover:text-slate-700'
                   }`}
                 >
-                  <Icon size={13} />
+                  <Icon size={14} />
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-1.5">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setIframeKey(k => k + 1)}
-              title="Refresh preview"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
+              onClick={() => setIframeKey((k) => k + 1)}
+              className="p-2 rounded-xl bg-[#EEF2F8] text-slate-500 hover:text-slate-800 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all cursor-pointer"
+              title="Refresh Preview"
             >
-              <RefreshCw size={13} />
+              <RefreshCw size={14} />
             </button>
-            <div className="h-4 w-px bg-slate-200" />
+
+            {/* Publish Theme Button */}
             <button
               onClick={handlePublish}
               disabled={isSaving}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 disabled:opacity-50 text-white text-[11px] font-bold transition-all shadow-sm shadow-emerald-500/30 active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#F29F67] to-[#E8824A] text-white text-xs font-extrabold shadow-[4px_4px_10px_rgba(242,159,103,0.4),-2px_-2px_6px_#FFFFFF] hover:scale-[1.02] active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
-              {isSaving
-                ? <><Loader2 size={12} className="animate-spin" /> Saving…</>
-                : <><Save size={12} /> Publish</>
-              }
+              {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              <span>{isSaving ? 'Saving...' : 'Publish'}</span>
             </button>
+
             {!rightOpen && (
               <button
                 onClick={() => setRightOpen(true)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all ml-1"
+                className="p-2 rounded-xl bg-[#EEF2F8] text-slate-500 hover:text-slate-800 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all cursor-pointer"
+                title="Open Settings Inspector"
               >
                 <PanelRight size={14} />
               </button>
@@ -310,103 +328,82 @@ export default function Studio() {
           </div>
         </header>
 
-        {/* Canvas Area */}
-        <div
-          className="flex-1 overflow-auto flex items-start justify-center p-6"
-          style={{
-            background: '#f1f5f9',
-            backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)',
-            backgroundSize: '22px 22px',
-          }}
-        >
+        {/* ── Neumorphic Frame & Embedded Live Viewport ── */}
+        <div className="flex-1 min-h-0 bg-[#E8EDF5] rounded-3xl p-3 shadow-[inset_6px_6px_14px_#D0D7E3,inset_-6px_-6px_14px_#FFFFFF] border border-white/60 flex flex-col items-center justify-center overflow-hidden relative">
+          
           <div
-            className="relative bg-white overflow-hidden transition-all duration-300"
-            style={{
-              width: canvasWidth,
-              maxWidth: canvasWidth,
-              minHeight: '100%',
-              borderRadius: device === 'mobile' ? '32px' : '10px',
-              boxShadow: device === 'mobile'
-                ? '0 0 0 8px #1a1a1a, 0 24px 80px rgba(0,0,0,0.25)'
-                : '0 0 0 1px rgba(0,0,0,0.06), 0 20px 60px rgba(0,0,0,0.14)',
-            }}
+            style={{ width: canvasWidth }}
+            className="h-full bg-white rounded-2xl overflow-hidden shadow-[8px_8px_20px_#D0D7E3,-8px_-8px_20px_#FFFFFF] border border-slate-200 transition-all duration-300 flex flex-col"
           >
-            {/* Mobile notch */}
-            {device === 'mobile' && (
-              <div className="absolute top-0 inset-x-0 flex justify-center z-10 pointer-events-none">
-                <div className="h-7 w-28 bg-[#1a1a1a] rounded-b-3xl" />
-              </div>
-            )}
             <iframe
               key={iframeKey}
               ref={iframeRef}
               src="/?preview=1"
               onLoad={handleIframeLoad}
-              className="w-full border-0"
-              style={{
-                height: device === 'mobile' ? '844px' : device === 'tablet' ? '1024px' : '100vh',
-                minHeight: '600px',
-                paddingTop: device === 'mobile' ? '28px' : undefined,
-              }}
+              className="w-full h-full border-0"
               title="Design OS Preview"
             />
           </div>
-        </div>
 
-        {/* Status Bar */}
-        <footer className="flex items-center justify-between px-4 h-6 bg-white border-t border-slate-200/80 shrink-0">
-          <div className="flex items-center gap-3 text-[9px] text-slate-400">
-            <span className="font-mono">{device === 'desktop' ? 'Full Width' : `${deviceWidth}px`}</span>
-            <span>·</span>
-            <span className="text-slate-500 font-medium">
-              {activePresetName ? activePresetName.split(' (')[0] : 'Custom'} palette
+          {/* Bottom Status Bar */}
+          <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-[11px] font-mono text-slate-500 pointer-events-none">
+            <span className="bg-[#EEF2F8]/90 backdrop-blur px-2.5 py-1 rounded-lg shadow-sm border border-white/80">
+              {device === 'desktop' ? 'Full Width Responsive' : `${canvasWidth} Canvas`}
+            </span>
+            <span className="bg-[#EEF2F8]/90 backdrop-blur px-2.5 py-1 rounded-lg shadow-sm border border-white/80 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#34B1AA] animate-pulse" />
+              Design OS · Live Sync
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[9px] text-slate-400">
-            <Sparkles size={9} className="text-blue-400" />
-            <span>Design OS · Live Preview</span>
-          </div>
-        </footer>
+        </div>
+
       </main>
 
-      {/* ── RIGHT PANEL — Theme Controls ── */}
+      {/* ── RIGHT PANEL — Neumorphic Customization Inspector ── */}
       {rightOpen && (
-        <aside className="w-72 bg-white border-l border-slate-200/80 flex flex-col shrink-0 z-20 shadow-[-1px_0_0_0_rgba(0,0,0,0.04)]">
-          {/* Tab Bar */}
-          <div className="flex items-center border-b border-slate-100 px-1 pt-1 gap-0.5 shrink-0 bg-white">
-            {RIGHT_TABS.map(({ id, icon: Icon, label, activeClass }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-t-lg border-b-2 transition-all text-[9px] font-bold uppercase tracking-wider ${
-                  activeTab === id
-                    ? `bg-slate-50 ${activeClass}`
-                    : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <Icon size={12} />
-                {label}
-              </button>
-            ))}
+        <aside className="w-80 bg-[#EEF2F8] rounded-3xl p-3 flex flex-col shrink-0 z-20 shadow-[6px_6px_14px_#D0D7E3,-6px_-6px_14px_#FFFFFF] border border-white/60">
+          
+          {/* Top Tab Bar (Neumorphic Segmented Capsule) */}
+          <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60">
+            <div className="flex items-center gap-1 p-1 bg-[#E8EDF5] rounded-2xl shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF]">
+              {RIGHT_TABS.map(({ id, icon: Icon, label, activeClass }) => {
+                const isActive = activeTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? `bg-[#EEF2F8] ${activeClass} shadow-[2px_2px_5px_#D0D7E3,-2px_-2px_5px_#FFFFFF]`
+                        : 'text-slate-400 hover:text-slate-700'
+                    }`}
+                  >
+                    <Icon size={12} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <button
               onClick={() => setRightOpen(false)}
-              className="ml-1 px-2 pb-1 text-slate-300 hover:text-slate-600 transition-colors self-start mt-1.5"
+              className="p-1.5 rounded-xl bg-[#EEF2F8] text-slate-400 hover:text-slate-700 shadow-[3px_3px_6px_#D0D7E3,-3px_-3px_6px_#FFFFFF] active:shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] transition-all cursor-pointer"
+              title="Close Inspector"
             >
-              <X size={11} />
+              <PanelRight size={13} />
             </button>
           </div>
 
-          {/* Panel Content */}
-          <div className="flex-1 overflow-y-auto p-3">
-            {activeTab === 'theme'     && <ThemePanel />}
+          {/* Active Tab Body */}
+          <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+            {activeTab === 'theme' && <ThemePanel />}
             {activeTab === 'structure' && <StructurePanel />}
-            {activeTab === 'motion'    && <ScrollStudio />}
-            {activeTab === 'scraper'   && <ScraperPanel />}
+            {activeTab === 'motion' && <ScrollStudio />}
+            {activeTab === 'scraper' && <ScraperPanel />}
           </div>
         </aside>
       )}
 
-      {/* Publish toast */}
       {published && <PublishToast onClose={() => setPublished(false)} />}
     </div>
   );
