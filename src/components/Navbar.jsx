@@ -26,22 +26,29 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+
       if (isBlogPage) return;
-      const sections = ['hero', 'about', 'skills', 'timeline', 'projects', 'blog', 'contact'];
-      const scrollPosition = window.scrollY + 120;
+      const sections = ['hero', 'about', 'projects', 'experience', 'skills', 'faq', 'contact'];
+      const scrollPosition = window.scrollY + 200;
+
       for (const section of sections) {
         const el = document.getElementById(section);
-        if (el && scrollPosition >= el.offsetTop && scrollPosition < el.offsetTop + el.offsetHeight) {
-          setActiveSection(section);
-          break;
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveSection(section);
+            break;
+          }
         }
       }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isBlogPage]);
 
-  // Desktop navigation links (Home, Blog)
+  // Desktop Navbar links (only Home & Blog)
   const desktopNavLinks = [
     { name: 'Home', href: '/#hero' },
     { name: 'Blog', href: '/blog' },
@@ -56,15 +63,51 @@ const Navbar = () => {
   const ctaLabel = navbar.ctaLabel || 'Resume';
   const ctaHref = navbar.ctaHref || '/resume.pdf';
   
-  const navbarStyle = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'minimal';
+  const navbarStyle = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'default';
 
-  // Determine structural classes based on the selected navbarStyle
-  let containerClasses = "relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90";
-  let navWrapperClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-xs' : ''}`;
+  // ── Structural classes based on selected navbarStyle ──
+  let navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300';
+  let containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90';
+  let innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
+  let isDarkTheme = false;
+
+  if (navbarStyle === 'capsule') {
+    navWrapperClasses = 'fixed top-3 sm:top-5 inset-x-0 z-50 transition-all duration-300 flex justify-center px-4 pointer-events-none';
+    innerWrapper = 'w-full max-w-4xl pointer-events-auto';
+    containerClasses = `relative flex items-center justify-between px-5 sm:px-7 py-2.5 rounded-full bg-white/90 backdrop-blur-xl border border-slate-200/80 transition-shadow ${
+      scrolled ? 'shadow-xl' : 'shadow-md'
+    }`;
+  } else if (navbarStyle === 'minimal') {
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300';
+    innerWrapper = 'max-w-7xl mx-auto w-full px-6 sm:px-10';
+    containerClasses = `relative flex items-center justify-between py-4 bg-transparent transition-all ${
+      scrolled ? 'bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-2xs' : ''
+    }`;
+  } else if (navbarStyle === 'karolbinkowski') {
+    isDarkTheme = true;
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-[#111111] text-white border-b-2 border-[#222222] transition-all';
+    innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
+    containerClasses = 'relative flex items-center justify-between py-3.5';
+  } else if (navbarStyle === 'pelizzari') {
+    isDarkTheme = true;
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-black/60 backdrop-blur-xl text-white border-b border-white/10 transition-all';
+    innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
+    containerClasses = 'relative flex items-center justify-between py-4';
+  } else if (navbarStyle === 'vividmotion') {
+    navWrapperClasses = 'fixed top-3 sm:top-4 inset-x-3 sm:inset-x-6 z-50 transition-all pointer-events-none';
+    innerWrapper = 'max-w-7xl mx-auto w-full pointer-events-auto';
+    containerClasses = `relative flex items-center justify-between px-6 py-3.5 rounded-2xl bg-white/75 backdrop-blur-2xl border border-white/80 shadow-lg ${
+      scrolled ? 'shadow-2xl' : ''
+    }`;
+  } else {
+    // default
+    navWrapperClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-xs' : ''}`;
+    containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90';
+  }
 
   return (
     <nav data-edit-id="navbar" data-edit-name="Navbar" data-edit-kind="section" className={navWrapperClasses}>
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+      <div className={innerWrapper}>
         <div className={containerClasses}>
           {/* Left Brand */}
           <a href="/#hero" className="flex items-center gap-2.5 group" aria-label={`${brandName} — home`}>
@@ -75,7 +118,9 @@ const Navbar = () => {
                 data-edit-name="Navbar · Brand name"
                 data-edit-kind="text"
                 data-edit-path="hero.name"
-                className="font-display font-extrabold tracking-tight text-sm sm:text-base text-ink block leading-none"
+                className={`font-display font-extrabold tracking-tight text-sm sm:text-base block leading-none ${
+                  isDarkTheme ? 'text-white' : 'text-ink'
+                }`}
               >
                 {brandName}
               </span>
@@ -84,7 +129,9 @@ const Navbar = () => {
                 data-edit-name="Navbar · Role"
                 data-edit-kind="text"
                 data-edit-path="hero.role"
-                className="text-[10px] sm:text-[11px] font-mono text-ink-soft block mt-0.5"
+                className={`text-[10px] sm:text-[11px] font-mono block mt-0.5 ${
+                  isDarkTheme ? 'text-slate-400' : 'text-ink-soft'
+                }`}
               >
                 {settings.hero?.role || 'Data Analyst · BI · SQL · Python'}
               </span>
@@ -101,7 +148,11 @@ const Navbar = () => {
                   key={link.name}
                   to={link.href}
                   className={`px-4 py-1.5 text-xs sm:text-sm font-semibold transition-all rounded-full ${
-                    isActive
+                    isDarkTheme
+                      ? isActive
+                        ? 'text-white bg-white/20 font-bold shadow-2xs'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                      : isActive
                       ? 'text-blue-600 bg-blue-50/90 font-bold shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   }`}
@@ -117,7 +168,11 @@ const Navbar = () => {
             <a
               href={ctaHref}
               download
-              className="hidden md:inline-flex px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full bg-slate-900 text-white hover:bg-blue-600 transition-colors shadow-2xs cursor-pointer items-center gap-1.5"
+              className={`hidden md:inline-flex px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-colors shadow-2xs cursor-pointer items-center gap-1.5 ${
+                isDarkTheme
+                  ? 'bg-white text-black hover:bg-slate-200'
+                  : 'bg-slate-900 text-white hover:bg-blue-600'
+              }`}
             >
               <span>{ctaLabel}</span>
               <span className="text-[10px] opacity-70">↓</span>
@@ -125,7 +180,9 @@ const Navbar = () => {
 
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-ink p-2 rounded-xl active:bg-muted/80 transition-colors"
+              className={`md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl transition-colors ${
+                isDarkTheme ? 'text-white active:bg-white/10' : 'text-ink active:bg-muted/80'
+              }`}
               aria-label="Toggle menu"
               aria-expanded={isOpen}
             >

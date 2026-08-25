@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectChartPreview from './ProjectChartPreview';
+import { useThemeStore } from '../theme/store';
 
 const GithubIcon = ({ size = 16 }) => (
   <svg
@@ -82,11 +83,20 @@ const getAnalyticalQuestion = (project) => {
 };
 
 export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
+  const { theme } = useThemeStore();
+  const themeProjectsScroll = theme?.layout?.projectsScroll;
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
-  const [layoutMode, setLayoutMode] = useState('horizontal'); // 'horizontal' | 'vertical'
+  const [layoutMode, setLayoutMode] = useState(themeProjectsScroll === 'vertical' || themeProjectsScroll === 'grid' ? 'vertical' : 'horizontal');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const scrollContainerRef = useRef(null);
+
+  // Sync with theme store changes from Theme Studio
+  useEffect(() => {
+    if (themeProjectsScroll) {
+      setLayoutMode(themeProjectsScroll === 'vertical' || themeProjectsScroll === 'grid' ? 'vertical' : 'horizontal');
+    }
+  }, [themeProjectsScroll]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
