@@ -281,7 +281,7 @@ export default function BlogDetails() {
     'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png';
   const authorBio =
     settings?.about?.bio ||
-    "Hi, I'm Arun Pandian — an entry-level Data Analyst querying, modeling and storytelling with SQL, Python, Excel & Power BI.";
+    "Hi, I'm Arun Pandian — a Data Analyst & BI Specialist transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
 
   const category = meta.category || 'Data Analytics';
   const tags = Array.isArray(blog.tags) && blog.tags.length > 0
