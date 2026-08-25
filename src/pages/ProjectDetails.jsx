@@ -224,8 +224,8 @@ export default function ProjectDetails() {
               to="/blog"
               className="inline-flex items-center gap-1.5 text-xs font-mono tracking-wider uppercase text-slate-600 hover:text-blue-600 font-semibold transition-colors"
             >
-              <ArrowLeft size={14} />
-              <span>← Blog & Publication Index</span>
+              <ChevronLeft size={14} />
+              <span>Blog & Publication Index</span>
             </Link>
             
             <div className="flex flex-wrap items-center gap-3">
