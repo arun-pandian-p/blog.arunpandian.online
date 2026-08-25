@@ -6,6 +6,7 @@ import { useContent } from '../context/ContentProvider';
 import Navbar from '../components/Navbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
+import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import {
   ArrowLeft,
@@ -833,13 +834,23 @@ export default function BlogDetails() {
                   Specializing in data pipelines, SQL transformations, DAX analytics, and dashboard architecture.
                 </p>
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-blue-600 font-mono text-[11px] font-bold">
-                  <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    LinkedIn ↗
+                  <a
+                    href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:underline text-[#0077B5]"
+                  >
+                    <FaLinkedin className="text-xs" /> LinkedIn
                   </a>
-                  <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    GitHub ↗
+                  <a
+                    href="https://github.com/arun-pandian-p"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:underline text-slate-800"
+                  >
+                    <FaGithub className="text-xs" /> GitHub
                   </a>
-                  <Link to="/#contact" className="hover:underline">
+                  <Link to="/#contact" className="hover:underline text-blue-600">
                     Contact ✉
                   </Link>
                 </div>
@@ -869,17 +880,19 @@ export default function BlogDetails() {
                     href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-[#0077B5] hover:border-[#0077B5]/30 transition-colors"
                   >
-                    LinkedIn ↗
+                    <FaLinkedin className="text-sm text-[#0077B5]" />
+                    <span>LinkedIn</span>
                   </a>
                   <a
                     href="https://github.com/arun-pandian-p"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-slate-900 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-slate-950 hover:border-slate-400 transition-colors"
                   >
-                    GitHub ↗
+                    <FaGithub className="text-sm text-slate-900" />
+                    <span>GitHub</span>
                   </a>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import { useContent } from '../context/ContentProvider';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
+import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 import {
   Loader2,
   ArrowLeft,
@@ -319,9 +320,35 @@ export default function ProjectDetails() {
             </div>
 
             <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
-              <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
-              <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
-              <a href="/resume.pdf" download className="hover:text-blue-600 transition-colors font-semibold text-blue-600">Résumé ↓</a>
+              <a
+                href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 hover:text-[#0077B5] transition-colors"
+                title="LinkedIn Profile"
+              >
+                <FaLinkedin className="text-sm text-[#0077B5]" />
+                <span>LinkedIn</span>
+              </a>
+              <a
+                href="https://github.com/arun-pandian-p"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors"
+                title="GitHub Profile"
+              >
+                <FaGithub className="text-sm text-slate-800" />
+                <span>GitHub</span>
+              </a>
+              <a
+                href="/resume.pdf"
+                download
+                className="inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors font-semibold text-blue-600"
+                title="Download Résumé"
+              >
+                <FileText size={13} />
+                <span>Résumé</span>
+              </a>
             </div>
           </div>
         </header>
