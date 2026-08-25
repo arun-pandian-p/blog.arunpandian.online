@@ -21,10 +21,12 @@ export default function StickyQuoteNote({ className = '' }) {
   };
 
   const handleCopy = () => {
-    const textToCopy = `"${quote.tamil}"\n"${quote.english}"\n— ${quote.author}`;
+    const textToCopy = quote.tamil
+      ? `"${quote.tamil}"\n"${quote.english}"\n— ${quote.author}`
+      : `"${quote.english}"\n— ${quote.author}`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast.success('Tamil Quote & Translation Copied!', {
+    toast.success('Quote Copied!', {
       icon: '📌',
       style: {
         borderRadius: '12px',
@@ -69,7 +71,7 @@ export default function StickyQuoteNote({ className = '' }) {
         <div className="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-yellow-600/20 text-xs font-mono">
           <div className="flex items-center gap-1.5 text-yellow-950 font-bold tracking-wider uppercase text-[10px]">
             <Sparkles size={13} className="text-amber-700 animate-spin-slow" />
-            <span>தினசரி ஊக்கம் • Daily Note</span>
+            <span>{quote.tamil ? 'தினசரி ஊக்கம் • Daily Note' : 'Daily Inspiration • Note'}</span>
           </div>
 
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-950/10 text-yellow-950 font-sans font-bold">
@@ -85,15 +87,17 @@ export default function StickyQuoteNote({ className = '' }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="space-y-2.5 my-1"
+            className="space-y-2 my-1"
           >
-            {/* Tamil Slogan */}
-            <p className="font-sans font-bold text-sm sm:text-base text-yellow-950 leading-snug tracking-tight">
-              "{quote.tamil}"
-            </p>
+            {/* Tamil Slogan if available */}
+            {quote.tamil && (
+              <p className="font-sans font-bold text-sm sm:text-base text-yellow-950 leading-snug tracking-tight">
+                "{quote.tamil}"
+              </p>
+            )}
 
-            {/* English Meaning */}
-            <p className="text-xs sm:text-[13px] text-yellow-900/90 font-serif italic leading-relaxed">
+            {/* English Meaning / Quote */}
+            <p className={`${quote.tamil ? 'text-xs sm:text-[13px] font-serif italic text-yellow-900/90' : 'text-sm sm:text-base font-bold font-sans text-yellow-950'} leading-relaxed`}>
               "{quote.english}"
             </p>
 
