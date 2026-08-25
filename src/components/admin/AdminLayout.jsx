@@ -302,7 +302,7 @@ function AdminShell() {
                     Arun Pandian
                   </div>
                   <div className={`text-[10px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Data Analyst Specialist
+                    Data Analyst
                   </div>
                 </div>
               </div>

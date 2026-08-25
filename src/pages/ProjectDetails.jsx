@@ -311,7 +311,7 @@ export default function ProjectDetails() {
                   data-edit-path="hero.title"
                   className="text-[11px] font-mono text-slate-500"
                 >
-                  Data Analyst · BI & Modeling Specialist
+                  Data Analyst
                 </span>
               </div>
             </div>

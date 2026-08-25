@@ -363,7 +363,7 @@ export default function BlogPublicationPage() {
   // Dynamic Sidebar & Author Configurations (Editable via Admin)
   const sidebarSectionTitle = settings?.sections?.blog?.sidebarName || 'Made by Arun Pandian';
   const authorName = settings?.hero?.name || 'Arun Pandian';
-  const authorBio = settings?.about?.bio || settings?.sections?.blog?.authorBio || "Hi, I'm Arun Pandian — a Data Analyst & BI Specialist transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
+  const authorBio = settings?.about?.bio || settings?.sections?.blog?.authorBio || "Hi, I'm Arun Pandian — a Data Analyst transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-600 selection:text-white">

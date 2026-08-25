@@ -1070,7 +1070,7 @@ const Hero = () => {
         <div className="flex items-center gap-2 mb-4 sm:mb-6">
           <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
-            Data Analyst & BI Specialist • Portfolio & Publication
+            Data Analyst • Portfolio & Publication
           </span>
         </div>
 

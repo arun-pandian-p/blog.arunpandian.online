@@ -274,14 +274,14 @@ export default function BlogDetails() {
   const title = blog.title || 'Technical Data Analytics Investigation';
   const excerpt = blog.excerpt || blog.summary || 'An in-depth data analytics investigation.';
   const authorName = blog.author_name || settings?.about?.name || 'Arun Pandian';
-  const authorRole = settings?.about?.role || 'Data Analyst · BI & Modeling Specialist';
+  const authorRole = settings?.about?.role || 'Data Analyst';
   const authorAvatar =
     blog.author_avatar ||
     settings?.about?.profileImage ||
     'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png';
   const authorBio =
     settings?.about?.bio ||
-    "Hi, I'm Arun Pandian — a Data Analyst & BI Specialist transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
+    "Hi, I'm Arun Pandian — a Data Analyst transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
 
   const category = meta.category || 'Data Analytics';
   const tags = Array.isArray(blog.tags) && blog.tags.length > 0

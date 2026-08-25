@@ -473,8 +473,12 @@ export function ContentProvider({ children }) {
         for (const row of rows) {
           let val = row.value;
           if (val && typeof val === 'object' && !Array.isArray(val)) {
-            // Sanitize any legacy github username
-            val = JSON.parse(JSON.stringify(val).replace(/shadow-byte-warrior/g, 'arun-pandian-p'));
+            // Sanitize any legacy github username or outdated title
+            val = JSON.parse(
+              JSON.stringify(val)
+                .replace(/shadow-byte-warrior/g, 'arun-pandian-p')
+                .replace(/Data Analyst Specialist/g, 'Data Analyst')
+            );
             // Map legacy hidden object if it exists
             if (val.hidden && typeof val.hidden === 'object') {
               const extraHiddenFields = Object.entries(val.hidden)
