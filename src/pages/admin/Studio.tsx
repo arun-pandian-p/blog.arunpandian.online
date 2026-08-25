@@ -7,7 +7,7 @@ import {
   Sliders, ShieldCheck, ArrowUpRight
 } from 'lucide-react';
 import { useThemeStore } from '../../theme/store';
-import { useEditorStore } from '../../editor/editorStore';
+import { useEditorStore, overridesToCss } from '../../editor/editorStore';
 import { supabase } from '../../lib/supabaseClient';
 import { useSiteSettings } from '../../components/admin/hooks/useSiteSettings';
 import { useContent } from '../../context/ContentProvider';
@@ -16,8 +16,9 @@ import ThemePanel from './studio/ThemePanel';
 import StructurePanel from './studio/StructurePanel';
 import ScrollStudio from './studio/ScrollStudio';
 import ScraperPanel from './studio/ScraperPanel';
+import Inspector from './canvas/Inspector';
 
-type Tab = 'theme' | 'structure' | 'motion' | 'scraper';
+type Tab = 'theme' | 'inspector' | 'structure' | 'motion' | 'scraper';
 type DeviceKey = 'desktop' | 'laptop' | 'tablet' | 'mobile';
 
 const DEVICES: { id: DeviceKey; icon: any; label: string; width: number | null }[] = [
@@ -29,6 +30,7 @@ const DEVICES: { id: DeviceKey; icon: any; label: string; width: number | null }
 
 const RIGHT_TABS: { id: Tab; icon: any; label: string; activeClass: string }[] = [
   { id: 'theme',     icon: Palette,  label: 'Theme',     activeClass: 'text-[#F29F67]' },
+  { id: 'inspector', icon: Sliders,  label: 'Element',   activeClass: 'text-blue-600' },
   { id: 'structure', icon: Layout,   label: 'Structure', activeClass: 'text-purple-600' },
   { id: 'motion',    icon: Zap,      label: 'Motion',    activeClass: 'text-amber-500' },
   { id: 'scraper',   icon: Wand2,    label: 'Scraper',   activeClass: 'text-emerald-500' },
@@ -81,6 +83,9 @@ export default function Studio() {
   const toggleEnabled = useEditorStore((s) => s.toggleEnabled);
   const content = useEditorStore((s) => s.content);
   const setContent = useEditorStore((s) => s.setContent);
+  const setSelected = useEditorStore((s) => s.setSelected);
+  const setStyle = useEditorStore((s) => s.setStyle);
+  const overrides = useEditorStore((s) => s.overrides);
 
   // Push the full theme to the iframe — also retry once after 300 ms
   // in case the iframe's message listener hasn't registered yet.
@@ -105,21 +110,37 @@ export default function Studio() {
   // Listen for iframe ready signals and content updates
   useEffect(() => {
     const handle = (e: MessageEvent) => {
-      if (e.data?.type === 'THEME_STUDIO_READY') pushTheme();
-      else if (e.data?.type === 'EDITOR_CONTENT') setContent(e.data.path, e.data.value);
-      else if (e.data?.type === 'PREVIEW_READY' || e.data?.type === 'EDITOR_RUNTIME_READY') {
+      const d = e.data || {};
+      if (d.type === 'THEME_STUDIO_READY') pushTheme();
+      else if (d.type === 'EDITOR_SELECTED') {
+        setSelected(d.info);
+        setActiveTab('inspector');
+        setRightOpen(true);
+      }
+      else if (d.type === 'EDITOR_CLEARED') setSelected(null);
+      else if (d.type === 'EDITOR_CONTENT' || d.type === 'EDITOR_CONTENT_LIVE') setContent(d.path, d.value);
+      else if (d.type === 'EDITOR_RESIZE_COMMIT' || d.type === 'EDITOR_RESIZE_LIVE') {
+        if (d.id) {
+          if (d.width) setStyle(d.id, 'width', d.width);
+          if (d.height) setStyle(d.id, 'height', d.height);
+        }
+      }
+      else if (d.type === 'PREVIEW_READY' || d.type === 'EDITOR_RUNTIME_READY') {
         pushTheme();
         iframeRef.current?.contentWindow?.postMessage({ type: 'EDITOR_MODE', enabled }, '*');
+        iframeRef.current?.contentWindow?.postMessage({ type: 'EDITOR_STYLE', css: overridesToCss(overrides) });
+        iframeRef.current?.contentWindow?.postMessage({ type: 'PREVIEW_OVERRIDE', payload: { settings: content } });
       }
     };
     window.addEventListener('message', handle);
     return () => window.removeEventListener('message', handle);
-  }, [pushTheme, enabled, setContent]);
+  }, [pushTheme, enabled, setContent, setSelected, setStyle, overrides, content]);
 
-  // Push editor mode when it changes
+  // Push editor mode and style overrides when they change
   useEffect(() => {
     iframeRef.current?.contentWindow?.postMessage({ type: 'EDITOR_MODE', enabled }, '*');
-  }, [enabled]);
+    iframeRef.current?.contentWindow?.postMessage({ type: 'EDITOR_STYLE', css: overridesToCss(overrides) });
+  }, [enabled, overrides]);
 
   const handleIframeLoad = () => {
     pushTheme();
@@ -406,6 +427,11 @@ export default function Studio() {
           {/* Active Tab Body */}
           <div className="flex-1 overflow-y-auto pr-1 space-y-4">
             {activeTab === 'theme' && <ThemePanel />}
+            {activeTab === 'inspector' && (
+              <div className="rounded-2xl bg-white overflow-hidden shadow-sm border border-slate-200 h-full">
+                <Inspector />
+              </div>
+            )}
             {activeTab === 'structure' && <StructurePanel />}
             {activeTab === 'motion' && <ScrollStudio />}
             {activeTab === 'scraper' && <ScraperPanel />}

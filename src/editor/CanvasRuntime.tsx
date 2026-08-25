@@ -130,8 +130,64 @@ export default function CanvasRuntime() {
     // ── Helpers ──
     const findEditable = (target: EventTarget | null): HTMLElement | null => {
       if (!(target instanceof Element)) return null;
-      const el = target.closest('[data-edit-id]');
-      return el instanceof HTMLElement ? el : null;
+      if (target.closest('[data-canvas-overlay]')) return null;
+
+      // 1. Direct check: if target itself has data-edit-id
+      if (target.hasAttribute('data-edit-id') && target instanceof HTMLElement) {
+        return target;
+      }
+
+      // 2. Check inner semantic element under cursor
+      let cur: HTMLElement | null = target instanceof HTMLElement ? target : null;
+      while (cur && cur !== document.body && cur !== document.documentElement) {
+        const tag = cur.tagName.toLowerCase();
+        
+        // If element explicitly has data-edit-id (and is not an outer section/container when a more specific child was clicked)
+        if (cur.hasAttribute('data-edit-id')) {
+          const kind = cur.getAttribute('data-edit-kind');
+          if (kind !== 'section' && kind !== 'container') {
+            return cur;
+          }
+        }
+
+        // Detect text, headings, buttons, links, images, cards, spans
+        if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'button', 'img', 'span', 'strong', 'em', 'blockquote', 'li'].includes(tag)) {
+          if (!cur.hasAttribute('data-edit-id')) {
+            const parentId = cur.closest('[data-edit-id]')?.getAttribute('data-edit-id') || 'el';
+            const kind = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)
+              ? 'heading'
+              : ['a', 'button'].includes(tag)
+              ? (tag === 'a' ? 'link' : 'button')
+              : tag === 'img'
+              ? 'image'
+              : 'text';
+            const index = Array.from(cur.parentElement?.children || []).indexOf(cur);
+            const autoId = `${parentId}.${tag}_${index >= 0 ? index : 0}`;
+            cur.setAttribute('data-edit-id', autoId);
+            cur.setAttribute('data-edit-kind', kind);
+            cur.setAttribute('data-edit-name', `${tag.toUpperCase()} · ${cur.textContent?.trim().slice(0, 18) || kind}`);
+          }
+          return cur;
+        }
+
+        cur = cur.parentElement;
+      }
+
+      // 3. Fallback to closest element with data-edit-id
+      const closest = target.closest<HTMLElement>('[data-edit-id]');
+      if (closest) return closest;
+
+      // 4. Fallback to target if it is an HTMLElement
+      if (target instanceof HTMLElement && target !== document.body && target !== document.documentElement) {
+        const tag = target.tagName.toLowerCase();
+        const autoId = `el.${tag}_${Math.random().toString(36).slice(2, 6)}`;
+        target.setAttribute('data-edit-id', autoId);
+        target.setAttribute('data-edit-kind', 'container');
+        target.setAttribute('data-edit-name', tag.toUpperCase());
+        return target;
+      }
+
+      return null;
     };
 
     const nameOf = (el: HTMLElement) =>

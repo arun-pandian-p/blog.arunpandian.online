@@ -1065,39 +1065,61 @@ const Hero = () => {
     <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="pt-24 sm:pt-28 pb-12 sm:pb-16 bg-white border-b border-slate-200/80">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Compact Eyebrow Pill */}
-        <div className="flex items-center gap-2 mb-4 sm:mb-6">
+        <div data-edit-id="hero.badge" data-edit-name="Hero · Badge" data-edit-kind="text" data-edit-path="hero.badge" className="inline-flex items-center gap-2 mb-4 sm:mb-6">
           <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-slate-500">
-            Data Analyst • Portfolio & Publication
+            {hero.badge || 'Data Analyst • Portfolio & Publication'}
           </span>
         </div>
 
         {/* Editorial Headline */}
-        <h1 className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight leading-[1.1] mb-4 sm:mb-5">
-          I turn data into decisions.
+        <h1
+          data-edit-id="hero.headline"
+          data-edit-name="Hero · Headline"
+          data-edit-kind="heading"
+          data-edit-path="hero.headline"
+          className="font-display font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight leading-[1.1] mb-4 sm:mb-5"
+        >
+          {Array.isArray(hero.headline) ? hero.headline.join(' ') : (hero.headline || 'I turn data into decisions.')}
         </h1>
 
         {/* Supporting Narrative */}
-        <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl leading-relaxed font-normal mb-8">
-          Data analysis, business intelligence and visualization projects focused on finding patterns, explaining what matters, and turning analysis into actionable insights.
+        <p
+          data-edit-id="hero.subtitle"
+          data-edit-name="Hero · Subtitle"
+          data-edit-kind="text"
+          data-edit-path="hero.subtitle"
+          className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-3xl leading-relaxed font-normal mb-8"
+        >
+          {hero.subtitle?.replace(/<[^>]*>/g, '') || 'Data analysis, business intelligence and visualization projects focused on finding patterns, explaining what matters, and turning analysis into actionable insights.'}
         </p>
 
         {/* Editorial CTAs */}
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
           <a
-            href="#projects"
+            href={hero.primaryCta?.href || "#projects"}
+            data-edit-id="hero.primaryCta"
+            data-edit-name="Hero · Primary CTA"
+            data-edit-kind="button"
+            data-edit-path="hero.primaryCta.label"
             className="px-6 py-3 rounded-full bg-slate-900 hover:bg-blue-600 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm active:scale-95 cursor-pointer"
           >
-            View Projects ↓
+            {hero.primaryCta?.label || 'View Projects ↓'}
           </a>
           <a
             href="#analytics"
+            data-edit-id="hero.analyticsCta"
+            data-edit-name="Hero · Analytics Button"
+            data-edit-kind="button"
             className="px-6 py-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs sm:text-sm border border-slate-200 transition-all active:scale-95 cursor-pointer"
           >
             Read Analytics →
           </a>
           <a
             href="#visualizations"
+            data-edit-id="hero.vizCta"
+            data-edit-name="Hero · Visualizations Button"
+            data-edit-kind="button"
             className="px-6 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm border border-slate-200 transition-all cursor-pointer"
           >
             Visualizations
@@ -1105,16 +1127,16 @@ const Hero = () => {
         </div>
 
         {/* Motivational Sticky Note in Hero Section */}
-        <div className="my-8">
+        <div className="my-8" data-edit-id="hero.stickynote" data-edit-name="Hero · Sticky Note" data-edit-kind="container">
           <StickyQuoteNote />
         </div>
 
         {/* Core Stack Pills */}
-        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500">
+        <div data-edit-id="hero.toolstack" data-edit-name="Hero · Tools Stack" data-edit-kind="container" className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-500">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-400 font-bold uppercase text-[11px]">Primary Tools:</span>
-            {['Power BI', 'SQL (PostgreSQL)', 'Python (Pandas)', 'Excel & DAX', 'Statistics'].map((tool) => (
-              <span key={tool} className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[11px]">
+            {['Power BI', 'SQL (PostgreSQL)', 'Python (Pandas)', 'Excel & DAX', 'Statistics'].map((tool, idx) => (
+              <span key={tool} data-edit-id={`hero.tool.${idx}`} data-edit-name={`Tool · ${tool}`} data-edit-kind="badge" className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700 font-semibold text-[11px]">
                 {tool}
               </span>
             ))}
