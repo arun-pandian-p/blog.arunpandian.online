@@ -142,6 +142,68 @@ export default function InspectorPanel() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
+            <label className="text-xs text-slate-400 block">Width</label>
+            <input 
+              type="text" 
+              placeholder="e.g. 100% or 320px"
+              value={selectedNode.style.width || ''}
+              onChange={(e) => handleStyleChange('width', e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded text-xs p-2 text-slate-300 outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400 block">Height</label>
+            <input 
+              type="text" 
+              placeholder="e.g. auto or 200px"
+              value={selectedNode.style.height || ''}
+              onChange={(e) => handleStyleChange('height', e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700 rounded text-xs p-2 text-slate-300 outline-none focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400 block">Text Color</label>
+            <div className="flex items-center gap-2">
+              <input 
+                type="color" 
+                value={selectedNode.style.color || '#ffffff'}
+                onChange={(e) => handleStyleChange('color', e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+              />
+              <input 
+                type="text" 
+                placeholder="#ffffff"
+                value={selectedNode.style.color || ''}
+                onChange={(e) => handleStyleChange('color', e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-700 rounded text-xs p-1 text-slate-300 outline-none"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400 block">Background</label>
+            <div className="flex items-center gap-2">
+              <input 
+                type="color" 
+                value={selectedNode.style.backgroundColor || '#000000'}
+                onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+              />
+              <input 
+                type="text" 
+                placeholder="transparent"
+                value={selectedNode.style.backgroundColor || ''}
+                onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-700 rounded text-xs p-1 text-slate-300 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
             <label className="text-xs text-slate-400 block">Border Radius</label>
             <input 
               type="text" 

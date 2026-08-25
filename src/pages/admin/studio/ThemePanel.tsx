@@ -233,9 +233,24 @@ const PANEL_TABS: { id: PanelTab; label: string; icon: any }[] = [
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ThemePanel() {
-  const { theme, updateColors, updateTypography, updateLayout, applyPreset } = useThemeStore();
+  const {
+    theme,
+    customPresets,
+    updateColors,
+    updateTypography,
+    updateLayout,
+    applyPreset,
+    saveCustomPreset,
+    deleteCustomPreset,
+    loadCustomPresetsFromDb,
+  } = useThemeStore();
   const [activeTab, setActiveTab] = useState<PanelTab>('colors');
   const [presetsOpen, setPresetsOpen] = useState(true);
+  const [newPresetName, setNewPresetName] = useState('');
+
+  useEffect(() => {
+    loadCustomPresetsFromDb();
+  }, [loadCustomPresetsFromDb]);
 
   const activePreset = Object.entries(presets).find(([, p]) =>
     p.colors.primary === theme.colors.primary &&
@@ -296,16 +311,72 @@ export default function ThemePanel() {
           </div>
 
           {presetsOpen && (
-            <div className="grid grid-cols-2 gap-2 pb-2">
-              {Object.entries(presets).map(([name, preset]) => (
-                <PresetCard
-                  key={name}
-                  name={name}
-                  preset={preset}
-                  isActive={activePreset === name}
-                  onApply={() => applyPreset(name)}
-                />
-              ))}
+            <div className="space-y-3 pb-2">
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(presets).map(([name, preset]) => (
+                  <PresetCard
+                    key={name}
+                    name={name}
+                    preset={preset as ThemeState}
+                    isActive={activePreset === name}
+                    onApply={() => applyPreset(name)}
+                  />
+                ))}
+              </div>
+
+              {/* Custom Presets Section */}
+              {Object.keys(customPresets).length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-200">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Custom Saved Presets</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(customPresets).map(([name, preset]) => (
+                      <div key={name} className="relative group">
+                        <PresetCard
+                          name={name}
+                          preset={preset as ThemeState}
+                          isActive={activePreset === name}
+                          onApply={() => applyPreset(name)}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCustomPreset(name);
+                          }}
+                          title="Delete custom preset"
+                          className="absolute right-1.5 top-1.5 p-0.5 rounded bg-red-100 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-[9px]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Save Current Preset Form */}
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Save Current as Preset</div>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Preset Name (e.g. Neon Horizon)"
+                    value={newPresetName}
+                    onChange={(e) => setNewPresetName(e.target.value)}
+                    className="flex-1 text-xs font-medium rounded-xl px-2.5 py-1.5 bg-[#EEF2F8] text-slate-800 shadow-[inset_2px_2px_4px_#D0D7E3,inset_-2px_-2px_4px_#FFFFFF] outline-none"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newPresetName.trim()) return;
+                      await saveCustomPreset(newPresetName.trim(), theme);
+                      setNewPresetName('');
+                    }}
+                    disabled={!newPresetName.trim()}
+                    className="px-3 py-1.5 bg-[#F29F67] hover:bg-[#e08f58] text-white text-[11px] font-bold rounded-xl shadow-[2px_2px_4px_#D0D7E3,-2px_-2px_4px_#FFFFFF] disabled:opacity-50 cursor-pointer transition-all"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

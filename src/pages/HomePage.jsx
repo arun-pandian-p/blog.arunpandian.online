@@ -20,6 +20,7 @@ import Logo from '../components/Logo';
 import { ArrowUp, Lock, ArrowRight, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useContent } from '../context/ContentProvider';
+import { useThemeStore } from '../theme/store';
 import CanvasRuntime from '../editor/CanvasRuntime';
 import StyleOverrides from '../editor/StyleOverrides';
 import { TopMarquee, PreloaderCounter, GrainOverlay, RadianScrollNav, Scanlines, toRoman } from '../theme/Modifiers';
@@ -27,6 +28,7 @@ import DoodleGuide from '../components/DoodleGuide';
 
 export default function HomePage() {
   const { settings, projects, blogs } = useContent();
+  const { theme: studioTheme } = useThemeStore();
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // When rendered inside the admin live-preview iframe, skip the intro animation
@@ -35,11 +37,11 @@ export default function HomePage() {
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('preview') === '1';
 
-  const theme = settings?.theme;
-  const animationStyle = theme?.layout?.animationStyle || 'default';
-  const footerStyle = theme?.layout?.footerStyle || 'default';
-  const projectsScroll = theme?.layout?.projectsScroll || 'grid';
-  const blogScroll = theme?.layout?.blogScroll || 'horizontal';
+  const theme = studioTheme || settings?.theme;
+  const animationStyle = theme?.layout?.animationStyle || settings?.theme?.layout?.animationStyle || 'default';
+  const footerStyle = theme?.layout?.footerStyle || settings?.theme?.layout?.footerStyle || 'default';
+  const projectsScroll = theme?.layout?.projectsScroll || settings?.theme?.layout?.projectsScroll || 'horizontal';
+  const blogScroll = theme?.layout?.blogScroll || settings?.theme?.layout?.blogScroll || 'horizontal';
 
   const alreadySeenIntro =
     typeof window !== 'undefined' &&
@@ -97,7 +99,7 @@ export default function HomePage() {
   // ─── Custom Cursor State ───
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [hovered, setHovered] = useState(false);
-  const layout = settings?.theme?.layout || {};
+  const layout = theme?.layout || settings?.theme?.layout || {};
   const cursorStyle = layout.cursorStyle || 'default';
 
   useEffect(() => {
@@ -419,7 +421,7 @@ export default function HomePage() {
           </div>
         </footer>
       ) : (
-        <footer className="bg-ink text-bg">
+        <footer data-edit-id="footer.section" data-edit-name="Footer Section" data-edit-kind="footer" className="bg-ink text-bg">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 py-12 sm:py-16">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8">
               <div>

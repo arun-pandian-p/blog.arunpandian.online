@@ -77,17 +77,25 @@ export default function Canvas() {
   }, [setEnabled, setSelected]);
 
   // Receive events from the iframe runtime.
+  const setStyle = useEditorStore((s) => s.setStyle);
+
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
       const d = e.data || {};
       if (d.type === 'EDITOR_SELECTED') setSelected(d.info);
       else if (d.type === 'EDITOR_CLEARED') setSelected(null);
-      else if (d.type === 'EDITOR_CONTENT') setContent(d.path, d.value);
+      else if (d.type === 'EDITOR_CONTENT' || d.type === 'EDITOR_CONTENT_LIVE') setContent(d.path, d.value);
+      else if (d.type === 'EDITOR_RESIZE_COMMIT' || d.type === 'EDITOR_RESIZE_LIVE') {
+        if (d.id) {
+          if (d.width) setStyle(d.id, 'width', d.width);
+          if (d.height) setStyle(d.id, 'height', d.height);
+        }
+      }
       else if (d.type === 'EDITOR_RUNTIME_READY' || d.type === 'PREVIEW_READY') resendAll();
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
-  }, [setSelected, setContent, resendAll]);
+  }, [setSelected, setContent, setStyle, resendAll]);
 
   // Push state changes down to the iframe.
   useEffect(() => { post({ type: 'EDITOR_MODE', enabled }); }, [enabled, post]);

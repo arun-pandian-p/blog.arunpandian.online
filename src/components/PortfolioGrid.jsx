@@ -169,18 +169,18 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
   };
 
   return (
-    <section id="projects" className="py-12 sm:py-20 bg-[#FAFAFC] text-slate-900 border-b border-slate-200/80 relative">
+    <section id="projects" data-edit-id="projects.section" data-edit-name="Portfolio / Projects Section" data-edit-kind="section" className="py-12 sm:py-20 bg-[#FAFAFC] text-slate-900 border-b border-slate-200/80 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* ── Section Header ── */}
         <div className="mb-6 sm:mb-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-200">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
+              <div data-edit-id="projects.badge" data-edit-name="Projects Badge" data-edit-kind="text" className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
                 <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
                 Analytical Case Studies & Projects
               </div>
-              <h2 className="font-display font-black text-2xl sm:text-4xl text-slate-900 tracking-tight">
+              <h2 data-edit-id="projects.title" data-edit-name="Projects Title" data-edit-kind="heading" data-edit-path="sections.projects.title" className="font-display font-black text-2xl sm:text-4xl text-slate-900 tracking-tight">
                 Project Index
               </h2>
             </div>
@@ -282,6 +282,9 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                 return (
                   <article
                     key={id || title}
+                    data-edit-id={`projects.card.${id || index}`}
+                    data-edit-name={`Project Card · ${title}`}
+                    data-edit-kind="card"
                     className="w-[min(88vw,330px)] sm:w-[380px] lg:w-[420px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
                   >
                     <div>
@@ -418,6 +421,9 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
               return (
                 <article
                   key={id || title}
+                  data-edit-id={`projects.vertical_card.${id || index}`}
+                  data-edit-name={`Project Card · ${title}`}
+                  data-edit-kind="card"
                   className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
                 >
                   <div>

@@ -91,11 +91,15 @@ const Navbar = () => {
 
   /* ── Shared desktop link list ── (hidden on mobile header, shown only on sm+) */
   const DesktopLinks = () => (
-    <div className="hidden sm:flex items-center justify-center gap-1">
-      {navLinks.map(({ name, href }) => (
+    <div data-edit-id="navbar.links" data-edit-name="Navbar Links" data-edit-kind="container" className="hidden sm:flex items-center justify-center gap-1">
+      {navLinks.map(({ name, href }, idx) => (
         <Link
           key={name}
           to={href}
+          data-edit-id={`navbar.link.${idx}`}
+          data-edit-name={`Nav Link · ${name}`}
+          data-edit-kind="link"
+          data-edit-path={`navbar.links.${idx}.name`}
           className="px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 whitespace-nowrap"
           style={isLinkActive(href) ? activeLink : idleLink}
         >
@@ -110,6 +114,10 @@ const Navbar = () => {
     <a
       href={ctaHref}
       download
+      data-edit-id="navbar.cta"
+      data-edit-name="Navbar · CTA Button"
+      data-edit-kind="button"
+      data-edit-path="navbar.ctaLabel"
       className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full transition-colors whitespace-nowrap min-h-[34px] ${className}`}
       style={ctaBtn}
     >
@@ -195,20 +203,23 @@ const Navbar = () => {
   ══════════════════════════════════════════════════════════════════════════ */
   if (navbarStyle === 'capsule') {
     return (
-      <nav className="fixed top-2.5 sm:top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
+      <nav data-edit-id="navbar.section" data-edit-name="Navbar Section" data-edit-kind="navbar" className="fixed top-2.5 sm:top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
         <div
+          data-edit-id="navbar.container"
+          data-edit-name="Navbar Capsule"
+          data-edit-kind="container"
           className={`pointer-events-auto relative w-full max-w-[880px] rounded-full border backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-xl' : 'shadow-sm sm:shadow-md'}`}
           style={surfaceBg}
         >
           <NavGrid>
             {/* Col 1 — Brand (left-aligned) */}
-            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0" aria-label={`${brandName} home`}>
+            <a href="/#hero" data-edit-id="navbar.brand" data-edit-name="Navbar Brand" data-edit-kind="link" className="flex items-center gap-2 sm:gap-2.5 group min-w-0" aria-label={`${brandName} home`}>
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
               <div className="min-w-0">
-                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+                <span data-edit-id="navbar.name" data-edit-name="Navbar · Name" data-edit-kind="text" data-edit-path="hero.name" className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   {brandName}
                 </span>
-                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
+                <span data-edit-id="navbar.role" data-edit-name="Navbar · Role" data-edit-kind="text" data-edit-path="hero.role" className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
                   {role}
                 </span>
               </div>

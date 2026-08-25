@@ -5,6 +5,7 @@ import {
   FileText, FileSpreadsheet, Presentation, File as FileIcon,
 } from 'lucide-react';
 import { useContent } from '../context/ContentProvider';
+import { useThemeStore } from '../theme/store';
 import { getFileKind, isPdf, isImage, isOfficeDoc, officeViewerUrl } from '../utils/fileType';
 
 // Icon shown on a certificate card when the attachment isn't a previewable image.
@@ -20,6 +21,7 @@ const iconMap = { Database, Sigma, BarChart3, Wrench };
 
 const Skills = () => {
   const { settings } = useContent();
+  const { theme } = useThemeStore();
   const skills = settings.skills;
 
   const categories = skills.categories || [];
