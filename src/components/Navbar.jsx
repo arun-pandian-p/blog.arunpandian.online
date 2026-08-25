@@ -66,43 +66,44 @@ const Navbar = () => {
   const navbarStyle = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'default';
 
   // ── Structural classes based on selected navbarStyle ──
-  let navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300';
-  let containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90';
+  let navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center';
+  let containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90 w-full';
   let innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
   let isDarkTheme = false;
 
   if (navbarStyle === 'capsule') {
-    navWrapperClasses = 'fixed top-3 sm:top-5 inset-x-0 z-50 transition-all duration-300 flex justify-center px-4 pointer-events-none';
-    innerWrapper = 'w-full max-w-4xl pointer-events-auto';
-    containerClasses = `relative flex items-center justify-between px-5 sm:px-7 py-2.5 rounded-full bg-white/90 backdrop-blur-xl border border-slate-200/80 transition-shadow ${
+    navWrapperClasses = 'fixed top-3 sm:top-5 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center px-3 sm:px-6 pointer-events-none';
+    innerWrapper = 'w-full max-w-3xl sm:max-w-4xl mx-auto pointer-events-auto';
+    containerClasses = `relative flex items-center justify-between px-4 sm:px-7 py-2.5 rounded-full bg-white/95 backdrop-blur-xl border border-slate-200/80 transition-shadow ${
       scrolled ? 'shadow-xl' : 'shadow-md'
     }`;
   } else if (navbarStyle === 'minimal') {
-    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300';
-    innerWrapper = 'max-w-7xl mx-auto w-full px-6 sm:px-10';
-    containerClasses = `relative flex items-center justify-between py-4 bg-transparent transition-all ${
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center';
+    innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
+    containerClasses = `relative flex items-center justify-between py-3.5 sm:py-4 bg-transparent transition-all w-full ${
       scrolled ? 'bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-2xs' : ''
     }`;
   } else if (navbarStyle === 'karolbinkowski') {
     isDarkTheme = true;
-    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-[#111111] text-white border-b-2 border-[#222222] transition-all';
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-[#111111] text-white border-b-2 border-[#222222] transition-all w-full flex justify-center';
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
-    containerClasses = 'relative flex items-center justify-between py-3.5';
+    containerClasses = 'relative flex items-center justify-between py-3.5 w-full';
   } else if (navbarStyle === 'pelizzari') {
     isDarkTheme = true;
-    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-black/60 backdrop-blur-xl text-white border-b border-white/10 transition-all';
+    navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-black/60 backdrop-blur-xl text-white border-b border-white/10 transition-all w-full flex justify-center';
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
-    containerClasses = 'relative flex items-center justify-between py-4';
+    containerClasses = 'relative flex items-center justify-between py-3.5 sm:py-4 w-full';
   } else if (navbarStyle === 'vividmotion') {
-    navWrapperClasses = 'fixed top-3 sm:top-4 inset-x-3 sm:inset-x-6 z-50 transition-all pointer-events-none';
-    innerWrapper = 'max-w-7xl mx-auto w-full pointer-events-auto';
-    containerClasses = `relative flex items-center justify-between px-6 py-3.5 rounded-2xl bg-white/75 backdrop-blur-2xl border border-white/80 shadow-lg ${
+    navWrapperClasses = 'fixed top-3 sm:top-4 inset-x-0 z-50 transition-all w-full flex justify-center px-3 sm:px-6 pointer-events-none';
+    innerWrapper = 'max-w-4xl mx-auto w-full pointer-events-auto';
+    containerClasses = `relative flex items-center justify-between px-5 sm:px-7 py-3 rounded-2xl bg-white/80 backdrop-blur-2xl border border-white/80 shadow-lg ${
       scrolled ? 'shadow-2xl' : ''
     }`;
   } else {
     // default
-    navWrapperClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'shadow-xs' : ''}`;
-    containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90';
+    navWrapperClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center ${scrolled ? 'shadow-xs' : ''}`;
+    innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
+    containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90 w-full';
   }
 
   return (
@@ -110,15 +111,15 @@ const Navbar = () => {
       <div className={innerWrapper}>
         <div className={containerClasses}>
           {/* Left Brand */}
-          <a href="/#hero" className="flex items-center gap-2.5 group" aria-label={`${brandName} — home`}>
-            <Logo size={32} className="transition-transform duration-300 group-hover:scale-105" title={`${brandName} logo`} />
+          <a href="/#hero" className="flex items-center gap-2.5 group shrink-0" aria-label={`${brandName} — home`}>
+            <Logo size={30} className="transition-transform duration-300 group-hover:scale-105" title={`${brandName} logo`} />
             <div>
               <span
                 data-edit-id="nav.brand"
                 data-edit-name="Navbar · Brand name"
                 data-edit-kind="text"
                 data-edit-path="hero.name"
-                className={`font-display font-extrabold tracking-tight text-sm sm:text-base block leading-none ${
+                className={`font-display font-extrabold tracking-tight text-xs sm:text-sm block leading-none ${
                   isDarkTheme ? 'text-white' : 'text-ink'
                 }`}
               >
@@ -129,7 +130,7 @@ const Navbar = () => {
                 data-edit-name="Navbar · Role"
                 data-edit-kind="text"
                 data-edit-path="hero.role"
-                className={`text-[10px] sm:text-[11px] font-mono block mt-0.5 ${
+                className={`text-[9px] sm:text-[10px] font-mono block mt-0.5 ${
                   isDarkTheme ? 'text-slate-400' : 'text-ink-soft'
                 }`}
               >
@@ -139,7 +140,7 @@ const Navbar = () => {
           </a>
 
           {/* Center Nav: Home & Blog (Centered horizontally in Navbar) */}
-          <div className="hidden md:flex items-center justify-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden md:flex items-center justify-center gap-1.5 absolute left-1/2 -translate-x-1/2">
             {desktopNavLinks.map((link) => {
               const targetSection = link.href.split('#')[1] || 'hero';
               const isActive = link.href === '/blog' ? isBlogPage : (!isBlogPage && activeSection === targetSection);
@@ -147,7 +148,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className={`px-4 py-1.5 text-xs sm:text-sm font-semibold transition-all rounded-full ${
+                  className={`px-3.5 py-1.5 text-xs font-semibold transition-all rounded-full ${
                     isDarkTheme
                       ? isActive
                         ? 'text-white bg-white/20 font-bold shadow-2xs'
@@ -164,11 +165,11 @@ const Navbar = () => {
           </div>
 
           {/* Right Action: Resume Button & Mobile Toggle */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <a
               href={ctaHref}
               download
-              className={`hidden md:inline-flex px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-colors shadow-2xs cursor-pointer items-center gap-1.5 ${
+              className={`hidden md:inline-flex px-3.5 py-1.5 text-xs font-semibold rounded-full transition-colors shadow-2xs cursor-pointer items-center gap-1.5 ${
                 isDarkTheme
                   ? 'bg-white text-black hover:bg-slate-200'
                   : 'bg-slate-900 text-white hover:bg-blue-600'
@@ -180,20 +181,20 @@ const Navbar = () => {
 
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className={`md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl transition-colors ${
+              className={`md:hidden min-w-[36px] min-h-[36px] flex items-center justify-center p-1.5 rounded-xl transition-colors ${
                 isDarkTheme ? 'text-white active:bg-white/10' : 'text-ink active:bg-muted/80'
               }`}
               aria-label="Toggle menu"
               aria-expanded={isOpen}
             >
-              {isOpen ? <X size={22} /> : <Menu size={22} />}
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
       </div>
 
       {/* Scroll progress bar */}
-      <motion.div style={{ scaleX: progress }} className="origin-left h-0.5 bg-accent mt-1 mx-auto max-w-7xl" />
+      <motion.div style={{ scaleX: progress }} className="origin-left h-0.5 bg-accent mt-0.5 mx-auto max-w-7xl w-full" />
 
       {/* Mobile Drawer Dropdown (Home & Blog on Mobile) */}
       <AnimatePresence>
