@@ -553,14 +553,14 @@ export default function DoodleGuide({
           </div>
         )}
 
-      {/* Right/Left inline arrows */}
+      {/* Right/Left inline arrows (hidden on small mobile to avoid overflow) */}
       {arrow !== 'none' && arrowPosition === 'right' && (
-        <div className="absolute -right-14 top-1/2 -translate-y-1/2">
+        <div className="hidden sm:block absolute -right-14 top-1/2 -translate-y-1/2">
           <DoodleArrow variant={arrow} color={arrowColor} width={50} height={30} />
         </div>
       )}
       {arrow !== 'none' && arrowPosition === 'left' && (
-        <div className="absolute -left-14 top-1/2 -translate-y-1/2">
+        <div className="hidden sm:block absolute -left-14 top-1/2 -translate-y-1/2">
           <DoodleArrow variant={arrow} color={arrowColor} width={50} height={30} />
         </div>
       )}

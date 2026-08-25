@@ -10,15 +10,14 @@ import { useThemeStore } from '../theme/store';
    Shared helpers
 ───────────────────────────────────────────────────────────────────────────── */
 
-/** Responsive navbar container.
- *  Desktop: CSS Grid (1fr auto 1fr) — logo left, links perfectly centered, cta right.
- *  Mobile:  same grid but with minmax(0,auto) so columns compress gracefully.
+/** Responsive navbar container:
+ *  - Mobile  (<sm): flex items-center justify-between — Logo+Name on left, Hamburger on right
+ *  - Desktop (sm+): CSS Grid (1fr auto 1fr) — Logo left, Links centered, CTA right
  */
-function NavGrid({ children, px = 'px-4 sm:px-7', py = 'py-2.5', extra = '' }) {
+function NavGrid({ children, px = 'px-3.5 sm:px-7', py = 'py-2 sm:py-2.5', extra = '' }) {
   return (
     <div
-      className={`grid items-center gap-x-2 ${px} ${py} ${extra}`}
-      style={{ gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)' }}
+      className={`flex items-center justify-between sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-x-4 ${px} ${py} ${extra}`}
     >
       {children}
     </div>
@@ -77,7 +76,7 @@ const Navbar = () => {
 
   /* ── CSS-var–driven color tokens so every theme preset works ── */
   const surfaceBg = {
-    backgroundColor : 'color-mix(in srgb, var(--color-surface) 93%, transparent)',
+    backgroundColor : 'color-mix(in srgb, var(--color-surface) 94%, transparent)',
     borderColor     : 'var(--color-border)',
     color           : 'var(--color-text)',
   };
@@ -86,11 +85,11 @@ const Navbar = () => {
     borderColor     : 'var(--color-border)',
     color           : 'var(--color-text)',
   };
-  const activeLink  = { color: 'var(--color-primary)', background: 'color-mix(in srgb, var(--color-primary) 9%, transparent)' };
+  const activeLink  = { color: 'var(--color-primary)', background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' };
   const idleLink    = { color: 'var(--color-muted)'   };
   const ctaBtn      = { background: 'var(--color-text)', color: 'var(--color-background)' };
 
-  /* ── Shared desktop link list ── hidden on mobile (shown in drawer) */
+  /* ── Shared desktop link list ── (hidden on mobile header, shown only on sm+) */
   const DesktopLinks = () => (
     <div className="hidden sm:flex items-center justify-center gap-1">
       {navLinks.map(({ name, href }) => (
@@ -106,12 +105,12 @@ const Navbar = () => {
     </div>
   );
 
-  /* ── Shared CTA button ── */
+  /* ── Shared CTA button ── (hidden on mobile header, shown only on sm+) */
   const CtaButton = ({ className = '' }) => (
     <a
       href={ctaHref}
       download
-      className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full transition-colors whitespace-nowrap ${className}`}
+      className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full transition-colors whitespace-nowrap min-h-[34px] ${className}`}
       style={ctaBtn}
     >
       {ctaLabel}
@@ -125,15 +124,15 @@ const Navbar = () => {
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/25 backdrop-blur-xs"
             onClick={() => setIsOpen(false)}
           />
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            initial={{ opacity: 0, y: -8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0,  scale: 1    }}
-            exit   ={{ opacity: 0, y: -8, scale: 0.97 }}
-            transition={{ duration: 0.18 }}
-            className="absolute top-[calc(100%+8px)] left-4 right-4 z-50 rounded-2xl border backdrop-blur-2xl shadow-2xl p-3"
+            exit   ={{ opacity: 0, y: -8, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-[calc(100%+8px)] left-2 right-2 sm:left-4 sm:right-4 z-50 rounded-2xl border backdrop-blur-2xl shadow-2xl p-3"
             style={bg}
           >
             <div className="space-y-1 mb-2">
@@ -142,12 +141,12 @@ const Navbar = () => {
                   key={name}
                   to={href}
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between min-h-[44px] px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                  className="flex items-center justify-between min-h-[46px] px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
                   style={isLinkActive(href) ? activeLink : idleLink}
                 >
                   <span>{name}</span>
                   {isLinkActive(href) && (
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'var(--color-primary)' }} />
+                    <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-primary)' }} />
                   )}
                 </Link>
               ))}
@@ -157,10 +156,10 @@ const Navbar = () => {
                 href={ctaHref}
                 download
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center min-h-[44px] px-4 rounded-xl font-bold text-sm"
+                className="flex items-center justify-center min-h-[46px] px-4 rounded-xl font-bold text-sm"
                 style={ctaBtn}
               >
-                {ctaLabel}
+                {ctaLabel} ↓
               </a>
             </div>
           </motion.div>
@@ -169,16 +168,16 @@ const Navbar = () => {
     </AnimatePresence>
   );
 
-  /* ── Hamburger toggle ── */
+  /* ── Hamburger toggle (minimum 44x44px touch target) ── */
   const HamburgerBtn = ({ color = 'var(--color-text)' }) => (
     <button
       onClick={() => setIsOpen(!isOpen)}
-      className="sm:hidden flex items-center justify-center w-9 h-9 rounded-full transition-colors"
+      className="sm:hidden flex items-center justify-center min-w-[44px] min-h-[44px] w-11 h-11 rounded-full transition-colors cursor-pointer"
       style={{ color }}
-      aria-label="Toggle menu"
+      aria-label="Toggle navigation menu"
       aria-expanded={isOpen}
     >
-      {isOpen ? <X size={18} /> : <Menu size={18} />}
+      {isOpen ? <X size={20} /> : <Menu size={20} />}
     </button>
   );
 
@@ -186,45 +185,41 @@ const Navbar = () => {
   const ProgressBar = ({ color = 'var(--color-primary)' }) => (
     <motion.div
       style={{ scaleX: progress, background: color }}
-      className="absolute bottom-0 left-0 right-0 h-[2px] origin-left"
+      className="absolute bottom-0 left-0 right-0 h-[2px] origin-left pointer-events-none"
     />
   );
 
   /* ══════════════════════════════════════════════════════════════════════════
-     CAPSULE  (default for most presets)
-     Floating pill centered in viewport, full page-width up to 880 px.
+     CAPSULE
+     Floating pill centered in viewport, full width up to 880 px.
   ══════════════════════════════════════════════════════════════════════════ */
   if (navbarStyle === 'capsule') {
     return (
-      <nav className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+      <nav className="fixed top-2.5 sm:top-4 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
         <div
-          className={`pointer-events-auto relative w-full max-w-[880px] rounded-full border backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-2xl' : 'shadow-md'}`}
+          className={`pointer-events-auto relative w-full max-w-[880px] rounded-full border backdrop-blur-xl transition-shadow duration-300 ${scrolled ? 'shadow-xl' : 'shadow-sm sm:shadow-md'}`}
           style={surfaceBg}
         >
-          {/* ── 3-column grid: logo | links | cta ── */}
           <NavGrid>
             {/* Col 1 — Brand (left-aligned) */}
-            <a href="/#hero" className="flex items-center gap-2 group" aria-label={`${brandName} home`}>
+            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0" aria-label={`${brandName} home`}>
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
-              {/* Name always visible — grid column handles spacing */}
               <div className="min-w-0">
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
+                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   {brandName}
                 </span>
-                <span className="block text-[9px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
+                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
                   {role}
                 </span>
               </div>
             </a>
 
-            {/* Col 2 — Links (centered by the grid) */}
+            {/* Col 2 — Links (centered on desktop, hidden on mobile header) */}
             <DesktopLinks />
 
-            {/* Col 3 — CTA (right-aligned) */}
-            <div className="flex items-center justify-end gap-2">
-              <div className="hidden sm:block">
-                <CtaButton />
-              </div>
+            {/* Col 3 — CTA (right-aligned on desktop, hamburger on mobile) */}
+            <div className="flex items-center justify-end gap-2 shrink-0">
+              <CtaButton />
               <HamburgerBtn />
             </div>
           </NavGrid>
@@ -245,20 +240,17 @@ const Navbar = () => {
         style={scrolled ? solidBg : { color: 'var(--color-text)' }}
       >
         <div className="relative w-full max-w-7xl">
-          <NavGrid px="px-6 sm:px-10" py="py-4">
-            {/* Brand */}
-            <a href="/#hero" className="flex items-center gap-2.5 group">
-              <Logo size={28} className="transition-transform duration-300 group-hover:scale-105" />
-              <div>
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
-                <span className="block text-[9px] font-mono mt-0.5" style={{ color: 'var(--color-muted)' }}>{role}</span>
+          <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-4">
+            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+              <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
+              <div className="min-w-0">
+                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
+                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>{role}</span>
               </div>
             </a>
-            {/* Links */}
             <DesktopLinks />
-            {/* CTA */}
-            <div className="flex justify-end gap-2">
-              <div className="hidden sm:block"><CtaButton /></div>
+            <div className="flex items-center justify-end gap-2 shrink-0">
+              <CtaButton />
               <HamburgerBtn />
             </div>
           </NavGrid>
@@ -274,20 +266,18 @@ const Navbar = () => {
   ══════════════════════════════════════════════════════════════════════════ */
   if (navbarStyle === 'karolbinkowski') {
     const darkBg = { backgroundColor: '#111111', borderColor: '#222222', color: '#ffffff' };
-    const darkActive = { color: '#ffffff', background: 'rgba(255,255,255,0.18)' };
-    const darkIdle   = { color: 'rgba(255,255,255,0.55)' };
     return (
       <nav className="fixed top-0 inset-x-0 z-50 border-b-2 flex justify-center" style={darkBg}>
         <div className="relative w-full max-w-7xl">
-          <NavGrid px="px-6 sm:px-10" py="py-3.5">
-            <a href="/#hero" className="flex items-center gap-2.5">
-              <Logo size={28} className="invert" />
-              <div>
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none text-white">{brandName}</span>
-                <span className="block text-[9px] font-mono mt-0.5 text-slate-400">{role}</span>
+          <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-3.5">
+            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <Logo size={28} className="invert shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight text-white truncate">{brandName}</span>
+                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 text-slate-400 truncate">{role}</span>
               </div>
             </a>
-            <div className="flex items-center justify-center gap-1">
+            <div className="hidden sm:flex items-center justify-center gap-1">
               {navLinks.map(({ name, href }) => (
                 <Link key={name} to={href}
                   className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors whitespace-nowrap"
@@ -295,23 +285,13 @@ const Navbar = () => {
                 >{name}</Link>
               ))}
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 shrink-0">
               <a href={ctaHref} download className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-white text-black hover:bg-slate-100 transition-colors whitespace-nowrap">{ctaLabel} ↓</a>
-              <button onClick={() => setIsOpen(!isOpen)} className="sm:hidden w-9 h-9 flex items-center justify-center text-white" aria-label="Toggle menu">{isOpen ? <X size={18}/> : <Menu size={18}/>}</button>
+              <HamburgerBtn color="#ffffff" />
             </div>
           </NavGrid>
           <ProgressBar color="#ffffff" />
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                className="sm:hidden absolute top-full left-0 right-0 border-b-2 p-4" style={darkBg}>
-                {navLinks.map(({ name, href }) => (
-                  <Link key={name} to={href} onClick={() => setIsOpen(false)} className="block py-3 font-bold text-sm uppercase tracking-wider border-b" style={{ color: '#fff', borderColor: '#333' }}>{name}</Link>
-                ))}
-                <a href={ctaHref} download onClick={() => setIsOpen(false)} className="block mt-3 py-3 text-center font-bold text-sm bg-white text-black">{ctaLabel}</a>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <MobileDrawer bg={darkBg} />
         </div>
       </nav>
     );
@@ -322,42 +302,31 @@ const Navbar = () => {
   ══════════════════════════════════════════════════════════════════════════ */
   if (navbarStyle === 'pelizzari') {
     return (
-      <nav className="fixed top-0 inset-x-0 z-50 flex justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+      <nav className="fixed top-0 inset-x-0 z-50 flex justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
         <div className="relative w-full max-w-7xl">
-          <NavGrid px="px-6 sm:px-10" py="py-4">
-            <a href="/#hero" className="flex items-center gap-2.5">
-              <Logo size={28} className="invert" />
-              <div>
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none text-white">{brandName}</span>
-                <span className="block text-[9px] font-mono mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>{role}</span>
+          <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-4">
+            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <Logo size={28} className="invert shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight text-white truncate">{brandName}</span>
+                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{role}</span>
               </div>
             </a>
-            <div className="flex items-center justify-center gap-1">
+            <div className="hidden sm:flex items-center justify-center gap-1">
               {navLinks.map(({ name, href }) => (
                 <Link key={name} to={href}
                   className="px-4 py-1.5 text-xs font-semibold italic transition-all whitespace-nowrap"
-                  style={isLinkActive(href) ? { color: '#fff' } : { color: 'rgba(255,255,255,0.5)' }}
+                  style={isLinkActive(href) ? { color: '#fff' } : { color: 'rgba(255,255,255,0.55)' }}
                 >{name}</Link>
               ))}
             </div>
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 shrink-0">
               <a href={ctaHref} download className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full border border-white text-white hover:bg-white hover:text-black transition-colors whitespace-nowrap">{ctaLabel} ↓</a>
-              <button onClick={() => setIsOpen(!isOpen)} className="sm:hidden w-9 h-9 flex items-center justify-center text-white" aria-label="Toggle menu">{isOpen ? <X size={18}/> : <Menu size={18}/>}</button>
+              <HamburgerBtn color="#ffffff" />
             </div>
           </NavGrid>
           <ProgressBar color="rgba(255,255,255,0.7)" />
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                className="sm:hidden absolute top-full left-0 right-0 p-4"
-                style={{ backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                {navLinks.map(({ name, href }) => (
-                  <Link key={name} to={href} onClick={() => setIsOpen(false)} className="block py-3 font-semibold text-sm" style={{ color: 'rgba(255,255,255,0.75)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>{name}</Link>
-                ))}
-                <a href={ctaHref} download onClick={() => setIsOpen(false)} className="block mt-3 py-3 text-center font-bold text-sm border border-white rounded-full text-white">{ctaLabel}</a>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <MobileDrawer bg={{ backgroundColor: 'rgba(15,15,15,0.95)', color: '#fff', borderColor: 'rgba(255,255,255,0.15)' }} />
         </div>
       </nav>
     );
@@ -368,22 +337,22 @@ const Navbar = () => {
   ══════════════════════════════════════════════════════════════════════════ */
   if (navbarStyle === 'vividmotion') {
     return (
-      <nav className="fixed top-3 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+      <nav className="fixed top-2.5 sm:top-3 inset-x-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
         <div
-          className={`pointer-events-auto relative w-full max-w-[800px] rounded-2xl border backdrop-blur-2xl transition-shadow duration-300 ${scrolled ? 'shadow-2xl' : 'shadow-lg'}`}
+          className={`pointer-events-auto relative w-full max-w-[800px] rounded-2xl border backdrop-blur-2xl transition-shadow duration-300 ${scrolled ? 'shadow-xl' : 'shadow-md'}`}
           style={surfaceBg}
         >
-          <NavGrid px="px-5 sm:px-7" py="py-3">
-            <a href="/#hero" className="flex items-center gap-2.5 group">
-              <Logo size={28} className="transition-transform duration-300 group-hover:scale-105" />
-              <div>
-                <span className="block text-[11px] font-extrabold tracking-tight leading-none" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
-                <span className="block text-[9px] font-mono mt-0.5" style={{ color: 'var(--color-muted)' }}>{role}</span>
+          <NavGrid px="px-3.5 sm:px-7" py="py-2 sm:py-3">
+            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+              <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
+              <div className="min-w-0">
+                <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
+                <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>{role}</span>
               </div>
             </a>
             <DesktopLinks />
-            <div className="flex items-center justify-end gap-2">
-              <div className="hidden sm:block"><CtaButton /></div>
+            <div className="flex items-center justify-end gap-2 shrink-0">
+              <CtaButton />
               <HamburgerBtn />
             </div>
           </NavGrid>
@@ -395,47 +364,42 @@ const Navbar = () => {
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
-     DEFAULT  (standard full-width pill / the design in the screenshot)
-     This is the one shown in the attached image — off-white pill, centered.
+     DEFAULT  (standard full-width navbar)
   ══════════════════════════════════════════════════════════════════════════ */
   return (
     <nav
-      className={`fixed top-0 inset-x-0 z-50 flex justify-center border-b transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}
+      className={`fixed top-0 inset-x-0 z-50 flex justify-center border-b transition-all duration-300 ${scrolled ? 'shadow-xs' : ''}`}
       style={solidBg}
     >
       <div className="relative w-full max-w-7xl">
-        <NavGrid px="px-4 sm:px-8" py="py-3.5">
+        <NavGrid px="px-4 sm:px-8" py="py-2.5 sm:py-3.5">
           {/* Col 1 — Brand */}
-          <a href="/#hero" className="flex items-center gap-2 group shrink-0" aria-label={`${brandName} home`}>
-            <Logo size={30} className="transition-transform duration-300 group-hover:scale-105" />
+          <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0" aria-label={`${brandName} home`}>
+            <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105 sm:w-[30px] sm:h-[30px]" />
             <div className="min-w-0">
               <span
-                className="block text-[11px] sm:text-[12px] font-extrabold tracking-tight leading-none truncate"
+                className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate"
                 style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}
               >
                 {brandName}
               </span>
-              <span className="block text-[9px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
+              <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
                 {role}
               </span>
             </div>
           </a>
 
-          {/* Col 2 — Nav links (grid centers this automatically) */}
+          {/* Col 2 — Nav links (centered on desktop, hidden on mobile header) */}
           <DesktopLinks />
 
           {/* Col 3 — CTA + mobile toggle */}
-          <div className="flex items-center justify-end gap-2">
-            <div className="hidden sm:block">
-              <CtaButton />
-            </div>
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            <CtaButton />
             <HamburgerBtn />
           </div>
         </NavGrid>
 
         <ProgressBar />
-
-        {/* Mobile drawer */}
         <MobileDrawer bg={solidBg} />
       </div>
     </nav>

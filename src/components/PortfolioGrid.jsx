@@ -282,7 +282,7 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                 return (
                   <article
                     key={id || title}
-                    className="w-[85vw] max-w-[340px] sm:max-w-[400px] lg:max-w-[440px] shrink-0 snap-center bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                    className="w-[min(88vw,330px)] sm:w-[380px] lg:w-[420px] shrink-0 snap-start bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
                   >
                     <div>
                       {/* Visual Header (Clean Mobile Resize Ratio) */}

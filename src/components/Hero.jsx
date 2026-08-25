@@ -143,9 +143,9 @@ const Hero = () => {
   // ─── HERO STYLE: RUSSELL NUMO (Monospace Grid) ───
   if (heroStyle === 'russellnumo') {
     return (
-      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col pt-32 pb-12 bg-surface text-ink border-b border-ink">
-        <div className="w-full h-full flex flex-col md:flex-row border-t border-ink border-b border-ink mx-6 max-w-[calc(100%-3rem)]">
-          <div className="w-full md:w-2/3 p-8 border-r border-ink flex flex-col justify-center bg-bg">
+      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col pt-24 sm:pt-32 pb-8 sm:pb-12 bg-surface text-ink border-b border-ink">
+        <div className="w-full h-full flex flex-col md:flex-row border-t border-ink border-b border-ink mx-3 sm:mx-6 max-w-[calc(100%-1.5rem)] sm:max-w-[calc(100%-3rem)]">
+          <div className="w-full md:w-2/3 p-4 sm:p-8 border-b md:border-b-0 md:border-r border-ink flex flex-col justify-center bg-bg">
             <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-mono uppercase text-4xl sm:text-6xl font-bold leading-tight">
               {(hero.headline || []).map((line, i) => (
                 <span key={i} className="block">{line}</span>
@@ -571,16 +571,16 @@ const Hero = () => {
               )}
             </div>
           </div>
-          <div className="relative flex justify-center items-center h-full min-h-[500px]">
-             <div className="absolute w-[400px] h-[400px] rounded-full border border-white/10 flex items-center justify-center">
-               <div className="w-[300px] h-[300px] rounded-full bg-gradient-to-tr from-[#4c84ff] to-[#ff4c84] flex items-center justify-center overflow-hidden p-1 shadow-2xl">
+          <div className="relative flex justify-center items-center h-full min-h-[340px] sm:min-h-[500px]">
+             <div className="absolute w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] rounded-full border border-white/10 flex items-center justify-center">
+               <div className="w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] rounded-full bg-gradient-to-tr from-[#4c84ff] to-[#ff4c84] flex items-center justify-center overflow-hidden p-1 shadow-2xl">
                  <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Profile" className="w-full h-full object-cover rounded-full bg-[#151722]" />
                </div>
              </div>
-             <div className="absolute top-[20%] right-[15%] w-16 h-16 rounded-full overflow-hidden border-2 border-[#151722] shadow-lg animate-[bounce_3s_ease-in-out_infinite]" style={{ opacity: gallery.length === 1 ? 0 : 1 }}>
+             <div className="absolute top-[10%] right-[10%] w-12 h-12 sm:w-16 sm:h-16 rounded-full overflow-hidden border-2 border-[#151722] shadow-lg animate-[bounce_3s_ease-in-out_infinite]" style={{ opacity: gallery.length === 1 ? 0 : 1 }}>
                 <img fetchPriority="high" src={gallery[1]?.url || gallery[0]?.url || arunProfile} alt="Float" className="w-full h-full object-cover" />
              </div>
-             <div className="absolute bottom-[25%] left-[10%] w-14 h-14 rounded-full overflow-hidden border-2 border-[#151722] shadow-lg animate-[bounce_4s_ease-in-out_infinite]" style={{ opacity: (gallery.length === 1 || gallery.length === 2) ? 0 : 1 }}>
+             <div className="absolute bottom-[15%] left-[5%] w-11 h-11 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-[#151722] shadow-lg animate-[bounce_4s_ease-in-out_infinite]" style={{ opacity: (gallery.length === 1 || gallery.length === 2) ? 0 : 1 }}>
                 <img fetchPriority="high" src={gallery[2]?.url || gallery[0]?.url || arunProfile} alt="Float" className="w-full h-full object-cover" />
              </div>
              {credentials.length > 0 && (
