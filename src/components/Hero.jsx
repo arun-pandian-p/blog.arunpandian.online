@@ -600,13 +600,13 @@ const Hero = () => {
   // ─── HERO STYLE: LOVE & RESPECT (Grid & Video) ───
   if (heroStyle === 'loveandrespect') {
     return (
-      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center bg-[#f7f5f2] text-[#2c2b29] pt-32 pb-12 overflow-hidden">
+      <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-0 lg:min-h-screen flex flex-col justify-center bg-[#f7f5f2] text-[#2c2b29] pt-20 sm:pt-28 pb-8 sm:pb-12 overflow-hidden">
         <div className="absolute left-[35%] top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none opacity-[0.03] -z-10">
           <span className="font-serif text-[40rem] leading-none">&amp;</span>
         </div>
-        <div className="w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center z-10">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center z-10">
           <div className="max-w-lg">
-            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-serif italic font-light text-5xl sm:text-7xl leading-[1.1] mb-8">
+            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-serif italic font-light text-3xl sm:text-5xl lg:text-7xl leading-[1.15] mb-4 sm:mb-6">
               {(hero.headline || []).map((line, i) => (
                 <span key={i} className="block">{line}</span>
               ))}
@@ -615,54 +615,54 @@ const Hero = () => {
               )}
             </h1>
             {isVisible('subtitle') && (
-              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="text-lg opacity-80 mb-10 leading-relaxed font-sans">
+              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="text-sm sm:text-base lg:text-lg opacity-80 mb-6 sm:mb-8 leading-relaxed font-sans">
                 {hero.subtitle?.replace(/<[^>]*>/g, '')}
               </p>
             )}
             {isVisible('primaryCta') && (
-              <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="inline-block border-b-2 border-[#2c2b29] pb-1 uppercase tracking-widest text-sm font-bold hover:opacity-60 transition-opacity">
+              <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="inline-block border-b-2 border-[#2c2b29] pb-1 uppercase tracking-widest text-xs sm:text-sm font-bold hover:opacity-60 transition-opacity">
                 {hero.primaryCta?.label}
               </a>
             )}
 
             {/* Motivational Sticky Note in Hero Empty Space */}
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
               <StickyQuoteNote />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 h-[600px]">
-            <div className="flex flex-col gap-4 h-full">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 h-[260px] sm:h-[360px] lg:h-[540px] max-w-md mx-auto lg:max-w-none w-full">
+            <div className="flex flex-col gap-3 sm:gap-4 h-full">
               {gallery.length <= 1 ? (
-                <div className="bg-[#e4e2de] rounded-sm overflow-hidden flex-1 relative">
+                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
                   <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover filter grayscale" />
                 </div>
               ) : (
                 <>
-                  <div className="bg-[#e4e2de] rounded-sm overflow-hidden flex-1 relative">
+                  <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
                     <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover filter grayscale" />
                   </div>
                   {gallery.length >= 3 && (
-                    <div className="bg-[#e4e2de] rounded-sm overflow-hidden h-1/3 relative">
+                    <div className="bg-[#e4e2de] rounded-2xl overflow-hidden h-1/3 relative shadow-sm">
                       <img fetchPriority="high" src={gallery[1]?.url || arunProfile} alt="Grid 2" className="w-full h-full object-cover" />
                     </div>
                   )}
                 </>
               )}
             </div>
-            <div className="flex flex-col gap-4 h-full pt-12">
-              <div className={`bg-[#2c2b29] rounded-sm overflow-hidden relative group ${(gallery.length === 2 || gallery.length >= 3) ? 'h-1/2' : 'h-full flex-1'}`}>
+            <div className="flex flex-col gap-3 sm:gap-4 h-full pt-4 sm:pt-8 lg:pt-12">
+              <div className={`bg-[#2c2b29] rounded-2xl overflow-hidden relative group shadow-sm ${(gallery.length === 2 || gallery.length >= 3) ? 'h-1/2' : 'h-full flex-1'}`}>
                 <video ref={videoRef} src={hero.videoSrc || '/hero-animation.mp4'} autoPlay muted={isMuted} loop playsInline className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMuted(!isMuted); }}
                   className="absolute inset-0 w-full h-full flex items-center justify-center transition-opacity bg-black/10 hover:bg-black/20 cursor-pointer"
                 >
-                  <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/40 text-white">
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/40 text-white">
+                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </div>
                 </button>
               </div>
               {(gallery.length === 2 || gallery.length >= 3 || !gallery.length) && (
-                <div className="bg-[#e4e2de] rounded-sm overflow-hidden flex-1 relative">
+                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
                   <img fetchPriority="high" src={gallery.length === 2 ? gallery[1]?.url : (gallery[2]?.url || gallery[0]?.url || arunProfile)} alt="Grid 3" className="w-full h-full object-cover" />
                 </div>
               )}
