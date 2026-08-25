@@ -55,13 +55,13 @@ const About = () => {
             <SliceReveal className="lg:col-span-2 h-full">
               <motion.div
                 custom={0} variants={rise} initial="hidden" whileInView="show" viewport={{ once: true }}
-                className="group relative h-full overflow-hidden rounded-2xl sm:rounded-3xl border border-line bg-ink"
+                className="group relative h-[320px] sm:h-[380px] lg:h-full overflow-hidden rounded-2xl sm:rounded-3xl border border-line bg-ink shadow-sm"
               >
                 <img loading="lazy"
                   data-edit-id="about.profileImage" data-edit-name="About · Profile image" data-edit-kind="image" data-edit-path="about.profileImage"
                   src={about.profileImage || arunProfile}
                   alt={about.profileCaption || 'Arun Pandian'}
-                  className="h-full w-full min-h-[240px] sm:min-h-[260px] object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                  className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 sm:p-5 pt-12">
                   <p data-edit-id="about.profileCaption" data-edit-name="About · Profile caption" data-edit-kind="text" data-edit-path="about.profileCaption" className="font-display font-bold text-white text-base sm:text-lg leading-tight">{about.profileCaption}</p>

@@ -630,28 +630,28 @@ const Hero = () => {
               <StickyQuoteNote />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 h-[260px] sm:h-[360px] lg:h-[540px] max-w-md mx-auto lg:max-w-none w-full">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 h-[380px] sm:h-[460px] lg:h-[560px] max-w-md mx-auto lg:max-w-none w-full">
             <div className="flex flex-col gap-3 sm:gap-4 h-full">
               {gallery.length <= 1 ? (
-                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
-                  <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover filter grayscale" />
+                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden h-full relative shadow-sm">
+                  <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover object-center filter grayscale" />
                 </div>
               ) : (
                 <>
                   <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
-                    <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover filter grayscale" />
+                    <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Grid 1" className="w-full h-full object-cover object-center filter grayscale" />
                   </div>
                   {gallery.length >= 3 && (
                     <div className="bg-[#e4e2de] rounded-2xl overflow-hidden h-1/3 relative shadow-sm">
-                      <img fetchPriority="high" src={gallery[1]?.url || arunProfile} alt="Grid 2" className="w-full h-full object-cover" />
+                      <img fetchPriority="high" src={gallery[1]?.url || arunProfile} alt="Grid 2" className="w-full h-full object-cover object-center" />
                     </div>
                   )}
                 </>
               )}
             </div>
-            <div className="flex flex-col gap-3 sm:gap-4 h-full pt-4 sm:pt-8 lg:pt-12">
-              <div className={`bg-[#2c2b29] rounded-2xl overflow-hidden relative group shadow-sm ${(gallery.length === 2 || gallery.length >= 3) ? 'h-1/2' : 'h-full flex-1'}`}>
-                <video ref={videoRef} src={hero.videoSrc || '/hero-animation.mp4'} autoPlay muted={isMuted} loop playsInline className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="flex flex-col gap-3 sm:gap-4 h-full">
+              <div className={`bg-[#2c2b29] rounded-2xl overflow-hidden relative group shadow-sm ${(gallery.length === 2 || gallery.length >= 3) ? 'flex-1 h-1/2' : 'h-full flex-1'}`}>
+                <video ref={videoRef} src={hero.videoSrc || '/hero-animation.mp4'} autoPlay muted={isMuted} loop playsInline className="w-full h-full object-cover object-center opacity-80 group-hover:opacity-100 transition-opacity" />
                 <button 
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMuted(!isMuted); }}
                   className="absolute inset-0 w-full h-full flex items-center justify-center transition-opacity bg-black/10 hover:bg-black/20 cursor-pointer"
@@ -662,8 +662,8 @@ const Hero = () => {
                 </button>
               </div>
               {(gallery.length === 2 || gallery.length >= 3 || !gallery.length) && (
-                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 relative shadow-sm">
-                  <img fetchPriority="high" src={gallery.length === 2 ? gallery[1]?.url : (gallery[2]?.url || gallery[0]?.url || arunProfile)} alt="Grid 3" className="w-full h-full object-cover" />
+                <div className="bg-[#e4e2de] rounded-2xl overflow-hidden flex-1 h-1/2 relative shadow-sm">
+                  <img fetchPriority="high" src={gallery.length === 2 ? gallery[1]?.url : (gallery[2]?.url || gallery[0]?.url || arunProfile)} alt="Grid 3" className="w-full h-full object-cover object-center" />
                 </div>
               )}
             </div>
