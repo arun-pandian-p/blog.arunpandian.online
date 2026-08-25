@@ -82,16 +82,25 @@ export default function Studio() {
   const content = useEditorStore((s) => s.content);
   const setContent = useEditorStore((s) => s.setContent);
 
-  // Push the full theme to the iframe
+  // Push the full theme to the iframe — also retry once after 300 ms
+  // in case the iframe's message listener hasn't registered yet.
   const pushTheme = useCallback(() => {
-    iframeRef.current?.contentWindow?.postMessage(
-      { type: 'SYNC_THEME', theme: themeRef.current },
-      '*'
-    );
+    const send = () =>
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'SYNC_THEME', theme: themeRef.current },
+        '*'
+      );
+    send();
+    // Retry after 350ms for slow iframe boots
+    const t = setTimeout(send, 350);
+    return () => clearTimeout(t);
   }, []);
 
   // Push on every theme change (real-time)
   useEffect(() => { pushTheme(); }, [theme, pushTheme]);
+
+  // Re-push when user switches device (new canvas size triggers re-layout)
+  useEffect(() => { setTimeout(() => pushTheme(), 100); }, [device, pushTheme]);
 
   // Listen for iframe ready signals and content updates
   useEffect(() => {

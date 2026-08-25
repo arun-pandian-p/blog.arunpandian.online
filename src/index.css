@@ -63,6 +63,34 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* Subtle film grain overlay for the "hyperrealism" texture */
+/* ── Theme Engine: Ensure runtime CSS vars always win ──────────────────────── */
+/* These rules apply the vars that ThemeProvider.tsx sets at runtime.          */
+/* They must use !important to beat Tailwind utility specificity on some tags. */
+body {
+  font-family: var(--font-primary, 'Space Grotesk', system-ui, sans-serif) !important;
+  font-size: var(--font-size-base, 16px);
+  font-weight: var(--font-weight-base, 400);
+  background-color: var(--color-background, #FAFAFA) !important;
+  color: var(--color-text, #09090B) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display, var(--font-primary, 'Space Grotesk', system-ui, sans-serif)) !important;
+  font-weight: var(--font-weight-heading, 700);
+}
+
+.font-display {
+  font-family: var(--font-display, var(--font-primary, 'Space Grotesk', system-ui, sans-serif)) !important;
+}
+
+.font-sans {
+  font-family: var(--font-primary, 'Space Grotesk', system-ui, sans-serif) !important;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Space Mono', ui-monospace, monospace;
+}
+
 .grain::before {
   content: "";
   position: fixed;

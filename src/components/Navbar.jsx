@@ -66,50 +66,59 @@ const Navbar = () => {
   const navbarStyle = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'default';
 
   // ── Structural classes based on selected navbarStyle ──
+  // Use CSS variables for colors so theme presets instantly update the navbar.
   let navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center';
-  let containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90 w-full';
+  let containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 backdrop-blur border-b w-full';
   let innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
   let isDarkTheme = false;
+  // These inline styles will read the CSS vars set by ThemeProvider
+  let navBgStyle = { backgroundColor: 'color-mix(in srgb, var(--color-surface) 95%, transparent)', borderColor: 'var(--color-border)', color: 'var(--color-text)' };
 
   if (navbarStyle === 'capsule') {
     navWrapperClasses = 'fixed top-3 sm:top-5 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center px-3 sm:px-6 pointer-events-none';
     innerWrapper = 'w-full max-w-3xl sm:max-w-4xl mx-auto pointer-events-auto';
-    containerClasses = `relative flex items-center justify-between px-4 sm:px-7 py-2.5 rounded-full bg-white/95 backdrop-blur-xl border border-slate-200/80 transition-shadow ${
+    containerClasses = `relative flex items-center justify-between px-4 sm:px-7 py-2.5 rounded-full backdrop-blur-xl border transition-shadow ${
       scrolled ? 'shadow-xl' : 'shadow-md'
     }`;
+    navBgStyle = { backgroundColor: 'color-mix(in srgb, var(--color-surface) 95%, transparent)', borderColor: 'var(--color-border)', color: 'var(--color-text)' };
   } else if (navbarStyle === 'minimal') {
     navWrapperClasses = 'fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center';
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
     containerClasses = `relative flex items-center justify-between py-3.5 sm:py-4 bg-transparent transition-all w-full ${
-      scrolled ? 'bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-2xs' : ''
+      scrolled ? 'backdrop-blur-md border-b shadow-2xs' : ''
     }`;
+    navBgStyle = scrolled ? { backgroundColor: 'color-mix(in srgb, var(--color-surface) 90%, transparent)', borderColor: 'var(--color-border)', color: 'var(--color-text)' } : { color: 'var(--color-text)' };
   } else if (navbarStyle === 'karolbinkowski') {
     isDarkTheme = true;
     navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-[#111111] text-white border-b-2 border-[#222222] transition-all w-full flex justify-center';
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
     containerClasses = 'relative flex items-center justify-between py-3.5 w-full';
+    navBgStyle = {};
   } else if (navbarStyle === 'pelizzari') {
     isDarkTheme = true;
     navWrapperClasses = 'fixed top-0 inset-x-0 z-50 bg-black/60 backdrop-blur-xl text-white border-b border-white/10 transition-all w-full flex justify-center';
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-8';
     containerClasses = 'relative flex items-center justify-between py-3.5 sm:py-4 w-full';
+    navBgStyle = {};
   } else if (navbarStyle === 'vividmotion') {
     navWrapperClasses = 'fixed top-3 sm:top-4 inset-x-0 z-50 transition-all w-full flex justify-center px-3 sm:px-6 pointer-events-none';
     innerWrapper = 'max-w-4xl mx-auto w-full pointer-events-auto';
-    containerClasses = `relative flex items-center justify-between px-5 sm:px-7 py-3 rounded-2xl bg-white/80 backdrop-blur-2xl border border-white/80 shadow-lg ${
+    containerClasses = `relative flex items-center justify-between px-5 sm:px-7 py-3 rounded-2xl backdrop-blur-2xl border shadow-lg ${
       scrolled ? 'shadow-2xl' : ''
     }`;
+    navBgStyle = { backgroundColor: 'color-mix(in srgb, var(--color-surface) 80%, transparent)', borderColor: 'var(--color-border)', color: 'var(--color-text)' };
   } else {
     // default
     navWrapperClasses = `fixed top-0 inset-x-0 z-50 transition-all duration-300 w-full flex justify-center ${scrolled ? 'shadow-xs' : ''}`;
     innerWrapper = 'max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8';
-    containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 bg-white/95 backdrop-blur border-b border-slate-200/90 w-full';
+    containerClasses = 'relative flex items-center justify-between px-4 sm:px-8 py-3.5 backdrop-blur border-b w-full';
+    navBgStyle = { backgroundColor: 'color-mix(in srgb, var(--color-surface) 95%, transparent)', borderColor: 'var(--color-border)', color: 'var(--color-text)' };
   }
 
   return (
     <nav data-edit-id="navbar" data-edit-name="Navbar" data-edit-kind="section" className={navWrapperClasses}>
       <div className={innerWrapper}>
-        <div className={containerClasses}>
+        <div className={containerClasses} style={navBgStyle}>
           {/* Left Brand */}
           <a href="/#hero" className="flex items-center gap-2.5 group shrink-0" aria-label={`${brandName} — home`}>
             <Logo size={30} className="transition-transform duration-300 group-hover:scale-105" title={`${brandName} logo`} />
