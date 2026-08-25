@@ -222,7 +222,11 @@ export default function HomePage() {
     setMeta('name', 'twitter:site', seo.twitterHandle);
   }, [seo]);
 
-  const footerData = settings?.footer || {};
+  const rawFooter = settings?.footer || {};
+  const footerData = {
+    ...rawFooter,
+    github: (rawFooter.github || 'https://github.com/arun-pandian-p').replace('shadow-byte-warrior', 'arun-pandian-p'),
+  };
   const projectsSection = settings?.sections?.projects || {};
   const blogSection = settings?.sections?.blog || {};
 

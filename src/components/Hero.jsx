@@ -1123,7 +1123,7 @@ const Hero = () => {
           </div>
 
           <div className="flex items-center gap-4 text-slate-500">
-            {socials.github && <a href={socials.github} target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors font-medium">GitHub ↗</a>}
+            {socials.github && <a href={socials.github.replace('shadow-byte-warrior', 'arun-pandian-p')} target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors font-medium">GitHub ↗</a>}
             {socials.linkedin && <a href={socials.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors font-medium">LinkedIn ↗</a>}
             <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors font-medium">Resume ↓</a>
           </div>
