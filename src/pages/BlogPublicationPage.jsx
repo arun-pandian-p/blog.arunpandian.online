@@ -41,6 +41,7 @@ import StyleOverrides from '../editor/StyleOverrides';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
 import { supabase } from '../lib/supabaseClient';
+import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 
 const VERIFIED_FALLBACK_IMAGES = [
   'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
@@ -715,9 +716,35 @@ export default function BlogPublicationPage() {
                 {authorBio}
               </p>
               <div className="flex items-center gap-3 pt-2 text-xs font-mono text-slate-500 border-t border-slate-200">
-                <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
-                <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
-                <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors font-semibold text-blue-600">Resume ↓</a>
+                <a
+                  href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-[#0077B5] transition-colors"
+                  title="LinkedIn Profile"
+                >
+                  <FaLinkedin className="text-sm text-[#0077B5]" />
+                  <span>LinkedIn</span>
+                </a>
+                <a
+                  href="https://github.com/arun-pandian-p"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors"
+                  title="GitHub Profile"
+                >
+                  <FaGithub className="text-sm text-slate-800" />
+                  <span>GitHub</span>
+                </a>
+                <a
+                  href="/resume.pdf"
+                  download
+                  className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors font-semibold text-blue-600"
+                  title="Download Résumé"
+                >
+                  <FileText size={13} />
+                  <span>Résumé</span>
+                </a>
               </div>
             </div>
           </aside>
@@ -858,9 +885,29 @@ export default function BlogPublicationPage() {
             <span>· Data Analyst Publication</span>
           </div>
           <div className="flex items-center gap-4 text-slate-500">
-            <a href="https://github.com/arun-pandian-p" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 transition-colors">GitHub ↗</a>
-            <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LinkedIn ↗</a>
-            <a href="/resume.pdf" download className="hover:text-slate-900 transition-colors">Resume ↓</a>
+            <a
+              href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 hover:text-[#0077B5] transition-colors"
+            >
+              <FaLinkedin className="text-xs text-[#0077B5]" /> LinkedIn
+            </a>
+            <a
+              href="https://github.com/arun-pandian-p"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 hover:text-slate-900 transition-colors"
+            >
+              <FaGithub className="text-xs text-slate-800" /> GitHub
+            </a>
+            <a
+              href="/resume.pdf"
+              download
+              className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors"
+            >
+              <FileText size={12} /> Résumé
+            </a>
             <Link to="/admin" className="hover:text-slate-900 transition-colors">Admin</Link>
           </div>
         </div>
