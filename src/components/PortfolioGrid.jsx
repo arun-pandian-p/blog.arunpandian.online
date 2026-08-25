@@ -4,6 +4,8 @@ import {
   ExternalLink,
   ArrowUpRight,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   X,
   Sparkles,
   Filter,
@@ -15,14 +17,15 @@ import {
   Wrench,
   Layers,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   Code2,
   BookOpen,
-  ArrowRight
+  LayoutGrid,
+  Columns
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectChartPreview from './ProjectChartPreview';
-import DoodleGuide from './DoodleGuide';
 
 const GithubIcon = ({ size = 16 }) => (
   <svg
@@ -49,7 +52,6 @@ const CATEGORIES = [
   { id: 'machine learning', label: 'Machine Learning' },
 ];
 
-// Helper to determine analytical question
 const getAnalyticalQuestion = (project) => {
   if (project.analytical_question || project.question) {
     return project.analytical_question || project.question;
@@ -82,7 +84,9 @@ const getAnalyticalQuestion = (project) => {
 export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
-  const projectRefs = useRef([]);
+  const [layoutMode, setLayoutMode] = useState('horizontal'); // 'horizontal' | 'vertical'
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const scrollContainerRef = useRef(null);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -101,7 +105,7 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
     }
   }, [selectedProject]);
 
-  // Normalize and filter projects
+  // Filter projects
   const filteredProjects = useMemo(() => {
     if (!projects || projects.length === 0) return [];
     if (activeCategory === 'all') return projects;
@@ -129,63 +133,103 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
     });
   }, [projects, activeCategory]);
 
-  const scrollToNextProject = (currentIndex) => {
-    const nextIdx = currentIndex + 1;
-    if (nextIdx < filteredProjects.length && projectRefs.current[nextIdx]) {
-      projectRefs.current[nextIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else if (projectRefs.current[0]) {
-      projectRefs.current[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, clientWidth } = scrollContainerRef.current;
+    const index = Math.round(scrollLeft / (clientWidth * 0.85));
+    setActiveSlideIndex(Math.min(index, filteredProjects.length - 1));
+  };
+
+  const scrollLeftAction = () => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollBy({ left: -360, behavior: 'smooth' });
+  };
+
+  const scrollRightAction = () => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollBy({ left: 360, behavior: 'smooth' });
+  };
+
+  const scrollToSlide = (index) => {
+    if (!scrollContainerRef.current) return;
+    const child = scrollContainerRef.current.children[index];
+    if (child) {
+      child.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   };
 
   return (
-    <section id="projects" className="py-16 sm:py-24 bg-[#FAFAFC] text-slate-900 border-b border-slate-200/80 relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="projects" className="py-12 sm:py-20 bg-[#FAFAFC] text-slate-900 border-b border-slate-200/80 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* ── Section Header ── */}
-        <div className="mb-10 sm:mb-14">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
+        <div className="mb-6 sm:mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-200">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-xs font-mono font-bold uppercase tracking-wider mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-[11px] font-mono font-bold uppercase tracking-wider mb-2">
                 <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
                 Analytical Case Studies & Projects
               </div>
-              <h2 className="font-display font-black text-3xl sm:text-5xl text-slate-900 tracking-tight">
+              <h2 className="font-display font-black text-2xl sm:text-4xl text-slate-900 tracking-tight">
                 Project Index
               </h2>
             </div>
 
-            <div className="flex flex-col md:items-end gap-2">
+            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3">
               <p className="text-xs sm:text-sm text-slate-600 font-mono">
                 Showing <strong className="text-slate-900">{filteredProjects.length}</strong> data projects with interactive reports
               </p>
-              
-              {/* Guided Arrow Scroll Indicator */}
-              <button
-                onClick={() => scrollToNextProject(-1)}
-                className="inline-flex items-center gap-2 text-xs font-mono font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer group"
-              >
-                <span>Explore Case Studies</span>
-                <span className="p-1 rounded-full bg-blue-100 text-blue-600 group-hover:translate-y-0.5 transition-transform">
-                  <ArrowDown size={13} className="animate-bounce" />
-                </span>
-              </button>
+
+              {/* View Switcher & Guided Arrow Controls */}
+              <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                {/* Horizontal Scroll Arrows */}
+                <button
+                  onClick={scrollLeftAction}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Scroll Left (Previous)"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  onClick={scrollRightAction}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Scroll Right (Next)"
+                >
+                  <ChevronRight size={16} />
+                </button>
+
+                <div className="h-4 w-px bg-slate-200 mx-0.5" />
+
+                {/* Layout Mode Toggle */}
+                <button
+                  onClick={() => setLayoutMode(layoutMode === 'horizontal' ? 'vertical' : 'horizontal')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    layoutMode === 'horizontal'
+                      ? 'bg-blue-50 text-blue-700 font-bold'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                  title={layoutMode === 'horizontal' ? 'Switch to Vertical Grid' : 'Switch to Horizontal Slider'}
+                >
+                  {layoutMode === 'horizontal' ? <Columns size={13} /> : <LayoutGrid size={13} />}
+                  <span className="hidden sm:inline">{layoutMode === 'horizontal' ? 'Horizontal' : 'Vertical'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── Category Filter Tabs ── */}
-        <div className="flex justify-start mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="inline-flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-xs">
+        <div className="flex justify-start mb-6 sm:mb-8 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="inline-flex items-center gap-1 p-1 bg-white rounded-2xl border border-slate-200 shadow-2xs">
             {CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
+                  className={`min-h-[34px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
                     isActive
-                      ? 'text-blue-700 bg-blue-50/80 font-bold shadow-2xs border border-blue-200/80'
+                      ? 'text-blue-700 bg-blue-50 font-bold shadow-2xs border border-blue-200/80'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
@@ -196,181 +240,273 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
           </div>
         </div>
 
-        {/* ── Vertical Scrolling Feed with Guided Connectors ── */}
-        <div className="space-y-8 sm:space-y-12 relative">
-          
-          {filteredProjects.map((project, index) => {
-            const {
-              _id,
-              id = _id,
-              title,
-              tags = [],
-              githubLink = 'https://github.com/arun-pandian-p',
-              demoLink,
-              liveLink = demoLink,
-              chartType = index,
-              image_url,
-              imageUrl = image_url,
-              category,
-              result,
-              insight,
-            } = project;
+        {/* ── PROJECT FEED (RESPONSIVE HORIZONTAL SNAP / VERTICAL GRID) ── */}
+        {layoutMode === 'horizontal' ? (
+          /* Horizontal Slider Layout */
+          <div className="space-y-4">
+            <div
+              ref={scrollContainerRef}
+              onScroll={handleScroll}
+              className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              {filteredProjects.map((project, index) => {
+                const {
+                  _id,
+                  id = _id,
+                  title,
+                  tags = [],
+                  githubLink = 'https://github.com/arun-pandian-p',
+                  chartType = index,
+                  image_url,
+                  imageUrl = image_url,
+                  category,
+                  result,
+                  insight,
+                } = project;
 
-            const projectNumber = String(index + 1).padStart(2, '0');
-            const displayCategory = category || tags[0] || 'Analytics';
-            const question = getAnalyticalQuestion(project);
-            const isLast = index === filteredProjects.length - 1;
+                const projectNumber = String(index + 1).padStart(2, '0');
+                const displayCategory = category || tags[0] || 'Analytics';
+                const question = getAnalyticalQuestion(project);
 
-            return (
-              <article
-                key={id || title}
-                ref={(el) => (projectRefs.current[index] = el)}
-                className="group relative bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
-                  
-                  {/* Left Column: Rich Interactive Visual / Preview */}
-                  <div className="lg:col-span-5 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-100 relative min-h-[260px] sm:min-h-[320px] flex items-center justify-center overflow-hidden">
-                    <Link to={`/project/${id || 1}`} className="w-full h-full block relative">
+                return (
+                  <article
+                    key={id || title}
+                    className="w-[85vw] max-w-[340px] sm:max-w-[400px] lg:max-w-[440px] shrink-0 snap-center bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                  >
+                    <div>
+                      {/* Visual Header (Clean Mobile Resize Ratio) */}
+                      <Link
+                        to={`/project/${id || 1}`}
+                        className="block relative w-full h-44 sm:h-52 bg-slate-50 border-b border-slate-100 overflow-hidden"
+                      >
+                        <ProjectChartPreview
+                          type={chartType}
+                          title={title}
+                          imageUrl={imageUrl}
+                        />
+                        
+                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                          <span className="font-mono text-[10px] font-bold text-slate-800 bg-white/95 backdrop-blur px-2 py-0.5 rounded shadow-2xs border border-slate-200">
+                            #{projectNumber}
+                          </span>
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80 px-2 py-0.5 rounded">
+                            {displayCategory}
+                          </span>
+                        </div>
+                      </Link>
+
+                      {/* Content */}
+                      <div className="p-4 sm:p-5 space-y-3">
+                        <Link to={`/project/${id || 1}`}>
+                          <h3 className="font-display font-bold text-slate-900 text-base sm:text-lg leading-snug hover:text-blue-600 transition-colors line-clamp-2">
+                            {title}
+                          </h3>
+                        </Link>
+
+                        {/* Analytical Question */}
+                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                          <span className="font-semibold text-slate-800">Question: </span>
+                          "{question}"
+                        </p>
+
+                        {/* Measurable Impact */}
+                        {(result || insight) && (
+                          <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100/90 flex items-start gap-2">
+                            <Sparkles size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-emerald-950 font-medium line-clamp-2">
+                              {result || insight}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Tools Badges */}
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {tags.slice(0, 4).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-100 text-slate-700 border border-slate-200/60"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <Link
+                        to={`/project/${id || 1}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                      >
+                        <span>Case Study</span>
+                        <ArrowUpRight size={13} />
+                      </Link>
+
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={githubLink.replace('shadow-byte-warrior', 'arun-pandian-p')}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                          title="GitHub Code"
+                        >
+                          <GithubIcon size={14} />
+                        </a>
+                        <button
+                          onClick={() => setSelectedProject(project)}
+                          className="text-[11px] font-mono text-slate-400 hover:text-slate-700"
+                        >
+                          Quick View
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            {/* Slide Pagination Indicator Dots */}
+            <div className="flex items-center justify-center gap-1.5 pt-2">
+              {filteredProjects.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => scrollToSlide(idx)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    activeSlideIndex === idx
+                      ? 'w-6 bg-blue-600'
+                      : 'w-2 bg-slate-300 hover:bg-slate-400'
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* Default Vertical Grid Layout */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project, index) => {
+              const {
+                _id,
+                id = _id,
+                title,
+                tags = [],
+                githubLink = 'https://github.com/arun-pandian-p',
+                chartType = index,
+                image_url,
+                imageUrl = image_url,
+                category,
+                result,
+                insight,
+              } = project;
+
+              const projectNumber = String(index + 1).padStart(2, '0');
+              const displayCategory = category || tags[0] || 'Analytics';
+              const question = getAnalyticalQuestion(project);
+
+              return (
+                <article
+                  key={id || title}
+                  className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                >
+                  <div>
+                    {/* Visual Header */}
+                    <Link
+                      to={`/project/${id || 1}`}
+                      className="block relative w-full h-44 sm:h-48 bg-slate-50 border-b border-slate-100 overflow-hidden"
+                    >
                       <ProjectChartPreview
                         type={chartType}
                         title={title}
                         imageUrl={imageUrl}
                       />
                       
-                      {/* Floating Badges */}
-                      <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
-                        <span className="font-mono text-xs font-black text-slate-900 bg-white/95 backdrop-blur px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 tracking-wider">
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                        <span className="font-mono text-[10px] font-bold text-slate-800 bg-white/95 backdrop-blur px-2 py-0.5 rounded shadow-2xs border border-slate-200">
                           #{projectNumber}
                         </span>
-                        <span className="text-xs font-mono font-bold uppercase tracking-wider bg-blue-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80 px-2 py-0.5 rounded">
                           {displayCategory}
                         </span>
                       </div>
                     </Link>
-                  </div>
 
-                  {/* Right Column: High-Density Analytical Narrative */}
-                  <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
-                    <div className="space-y-4">
-                      
-                      {/* Project Title */}
-                      <div>
-                        <Link to={`/project/${id || 1}`}>
-                          <h3 className="font-display font-black text-slate-900 text-xl sm:text-2xl lg:text-3xl leading-tight group-hover:text-blue-600 transition-colors">
-                            {title}
-                          </h3>
-                        </Link>
-                      </div>
+                    {/* Content */}
+                    <div className="p-4 sm:p-5 space-y-3">
+                      <Link to={`/project/${id || 1}`}>
+                        <h3 className="font-display font-bold text-slate-900 text-base sm:text-lg leading-snug hover:text-blue-600 transition-colors line-clamp-2">
+                          {title}
+                        </h3>
+                      </Link>
 
                       {/* Analytical Question */}
-                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                        <Lightbulb size={17} className="text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
-                            Analytical Question
-                          </span>
-                          <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-0.5 leading-relaxed">
-                            "{question}"
+                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                        <span className="font-semibold text-slate-800">Question: </span>
+                        "{question}"
+                      </p>
+
+                      {/* Impact */}
+                      {(result || insight) && (
+                        <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-100/90 flex items-start gap-2">
+                          <Sparkles size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-emerald-950 font-medium line-clamp-2">
+                            {result || insight}
                           </p>
                         </div>
+                      )}
+
+                      {/* Tools Badges */}
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {tags.slice(0, 4).map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-2 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-100 text-slate-700 border border-slate-200/60"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                       </div>
-
-                      {/* Business Impact / Outcome Callout */}
-                      {(result || insight) && (
-                        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100/90 flex items-start gap-3">
-                          <Sparkles size={17} className="text-emerald-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 block">
-                              Measurable Business Impact
-                            </span>
-                            <p className="text-xs sm:text-sm text-emerald-950 font-medium mt-0.5 leading-relaxed">
-                              {result || insight}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Tech Stack Pills */}
-                      {tags && tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200/60"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
-
-                    {/* Action Buttons & Next Guide */}
-                    <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/project/${id || 1}`}
-                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs transition-colors shadow-xs"
-                        >
-                          <span>Explore Deep Case Study</span>
-                          <ArrowRight size={14} />
-                        </Link>
-
-                        <a
-                          href={githubLink.replace('shadow-byte-warrior', 'arun-pandian-p')}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
-                        >
-                          <GithubIcon size={14} />
-                          <span>Code</span>
-                        </a>
-
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProject(project)}
-                          className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-                        >
-                          <span>Quick View</span>
-                        </button>
-                      </div>
-
-                      {/* Guide Arrow to Next Project */}
-                      {!isLast && (
-                        <button
-                          onClick={() => scrollToNextProject(index)}
-                          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                          title="Scroll down to next case study"
-                        >
-                          <span>Next Case Study #{String(index + 2).padStart(2, '0')}</span>
-                          <ArrowDown size={13} className="group-hover:translate-y-0.5 transition-transform" />
-                        </button>
-                      )}
-                    </div>
-
                   </div>
-                </div>
-              </article>
-            );
-          })}
 
-        </div>
+                  {/* Bottom Action Footer */}
+                  <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <Link
+                      to={`/project/${id || 1}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <span>Read Case Study</span>
+                      <ArrowUpRight size={13} />
+                    </Link>
 
-        {/* ── Bottom Section Guided Action Indicator ── */}
-        <div className="mt-14 text-center">
-          <a
-            href="#about"
-            className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-mono font-bold text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-all group"
-          >
-            <span>✦ All {filteredProjects.length} Analytical Case Studies Explored — Continue to About & Skills</span>
-            <ArrowDown size={14} className="group-hover:translate-y-1 transition-transform text-blue-600" />
-          </a>
-        </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={githubLink.replace('shadow-byte-warrior', 'arun-pandian-p')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+                        title="GitHub Code"
+                      >
+                        <GithubIcon size={14} />
+                      </a>
+                      <button
+                        onClick={() => setSelectedProject(project)}
+                        className="text-[11px] font-mono text-slate-400 hover:text-slate-700"
+                      >
+                        Quick View
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
 
       </div>
 
-      {/* ── Interactive Quick View Modal (FlowingData Reader) ── */}
+      {/* ── Interactive Quick View Modal ── */}
       <AnimatePresence>
         {selectedProject && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
@@ -383,13 +519,13 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
             />
 
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
+              exit={{ opacity: 0, y: 30 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="relative w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 text-slate-900"
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 text-slate-900"
             >
-              {/* Sticky Top Header */}
+              {/* Top Header */}
               <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-3.5 bg-white/95 backdrop-blur-md border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100">
@@ -408,10 +544,8 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                 </button>
               </div>
 
-              {/* Scrollable Modal Content */}
-              <div className="overflow-y-auto overflow-x-hidden p-5 sm:p-7 space-y-6">
-                
-                {/* Visual Header */}
+              {/* Modal Content */}
+              <div className="overflow-y-auto p-5 sm:p-6 space-y-5">
                 <div className="relative aspect-[16/9] w-full rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden">
                   <ProjectChartPreview
                     type={selectedProject.chartType || 0}
@@ -420,20 +554,19 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                   />
                 </div>
 
-                {/* Title & Quick Recruiter Takeaway */}
                 <div>
                   <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight leading-tight">
                     {selectedProject.title}
                   </h3>
                   
                   {(selectedProject.result || selectedProject.insight) && (
-                    <div className="mt-3 p-3.5 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2.5">
-                      <Sparkles size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                    <div className="mt-3 p-3 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2.5">
+                      <Sparkles size={16} className="text-blue-600 shrink-0 mt-0.5" />
                       <div>
                         <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-blue-700 block">
-                          Executive Takeaway / Impact
+                          Executive Takeaway
                         </span>
-                        <p className="text-xs sm:text-sm text-blue-950 font-medium leading-relaxed mt-0.5">
+                        <p className="text-xs text-blue-950 font-medium leading-relaxed mt-0.5">
                           {selectedProject.result || selectedProject.insight}
                         </p>
                       </div>
@@ -441,69 +574,43 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                   )}
                 </div>
 
-                {/* Structured Flow */}
-                <div className="space-y-4 text-xs sm:text-sm">
+                <div className="space-y-3 text-xs">
                   {selectedProject.problem && (
-                    <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100">
-                      <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider mb-1.5">
-                        <Target size={15} />
-                        <span>Problem Statement</span>
-                      </div>
-                      <p className="text-slate-800 leading-relaxed">
-                        {selectedProject.problem}
-                      </p>
+                    <div className="p-3.5 rounded-xl bg-rose-50/50 border border-rose-100">
+                      <span className="text-rose-700 font-bold uppercase tracking-wider block mb-1">Problem Statement</span>
+                      <p className="text-slate-800 leading-relaxed">{selectedProject.problem}</p>
                     </div>
                   )}
-
-                  {selectedProject.data && (
-                    <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
-                      <div className="flex items-center gap-2 text-sky-700 font-bold text-xs uppercase tracking-wider mb-1.5">
-                        <Database size={15} />
-                        <span>Dataset & Data Sources</span>
-                      </div>
-                      <p className="text-slate-800 leading-relaxed">
-                        {selectedProject.data}
-                      </p>
-                    </div>
-                  )}
-
                   {selectedProject.process && (
-                    <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100">
-                      <div className="flex items-center gap-2 text-amber-700 font-bold text-xs uppercase tracking-wider mb-1.5">
-                        <Brain size={15} />
-                        <span>Methodology & Workflow</span>
-                      </div>
-                      <p className="text-slate-800 leading-relaxed whitespace-pre-line">
-                        {selectedProject.process}
-                      </p>
+                    <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-100">
+                      <span className="text-amber-700 font-bold uppercase tracking-wider block mb-1">Methodology</span>
+                      <p className="text-slate-800 leading-relaxed whitespace-pre-line">{selectedProject.process}</p>
                     </div>
                   )}
                 </div>
-
               </div>
 
-              {/* Bottom Bar */}
+              {/* Modal Footer */}
               <div className="sticky bottom-0 z-20 p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-3">
                 <Link
                   to={`/project/${selectedProject._id || selectedProject.id || 1}`}
                   onClick={() => setSelectedProject(null)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-colors shadow-xs"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-colors shadow-2xs"
                 >
-                  <span>Open Full Article & Dashboard</span>
-                  <ArrowUpRight size={14} />
+                  <span>Open Full Article</span>
+                  <ArrowUpRight size={13} />
                 </Link>
 
                 <a
                   href={(selectedProject.githubLink || 'https://github.com/arun-pandian-p').replace('shadow-byte-warrior', 'arun-pandian-p')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50"
                 >
                   <GithubIcon size={14} />
                   <span>GitHub</span>
                 </a>
               </div>
-
             </motion.div>
           </div>
         )}
