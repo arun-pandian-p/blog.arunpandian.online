@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ExternalLink,
   ArrowUpRight,
+  ArrowDown,
   X,
   Sparkles,
   Filter,
@@ -14,7 +15,10 @@ import {
   Wrench,
   Layers,
   ChevronRight,
+  ChevronDown,
   Code2,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectChartPreview from './ProjectChartPreview';
@@ -78,6 +82,7 @@ const getAnalyticalQuestion = (project) => {
 export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
+  const projectRefs = useRef([]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -124,40 +129,64 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
     });
   }, [projects, activeCategory]);
 
+  const scrollToNextProject = (currentIndex) => {
+    const nextIdx = currentIndex + 1;
+    if (nextIdx < filteredProjects.length && projectRefs.current[nextIdx]) {
+      projectRefs.current[nextIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (projectRefs.current[0]) {
+      projectRefs.current[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
-    <section id="projects" className="py-16 sm:py-20 bg-white text-slate-900 border-b border-slate-200/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="projects" className="py-16 sm:py-24 bg-[#FAFAFC] text-slate-900 border-b border-slate-200/80 relative">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* ── Section Header (Editorial FlowingData Style) ── */}
-        <div className="mb-10 sm:mb-12">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        {/* ── Section Header ── */}
+        <div className="mb-10 sm:mb-14">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-slate-200">
             <div>
-              <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-blue-600 block mb-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/70 text-blue-700 text-xs font-mono font-bold uppercase tracking-wider mb-3">
+                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
                 Analytical Case Studies & Projects
-              </span>
-              <h2 className="font-display font-black text-2xl sm:text-4xl text-slate-900 tracking-tight">
+              </div>
+              <h2 className="font-display font-black text-3xl sm:text-5xl text-slate-900 tracking-tight">
                 Project Index
               </h2>
             </div>
-            <p className="text-xs sm:text-sm text-slate-500 font-mono">
-              Showing {filteredProjects.length} data projects with interactive reports
-            </p>
+
+            <div className="flex flex-col md:items-end gap-2">
+              <p className="text-xs sm:text-sm text-slate-600 font-mono">
+                Showing <strong className="text-slate-900">{filteredProjects.length}</strong> data projects with interactive reports
+              </p>
+              
+              {/* Guided Arrow Scroll Indicator */}
+              <button
+                onClick={() => scrollToNextProject(-1)}
+                className="inline-flex items-center gap-2 text-xs font-mono font-bold text-blue-600 hover:text-blue-700 transition-colors cursor-pointer group"
+              >
+                <span>Explore Case Studies</span>
+                <span className="p-1 rounded-full bg-blue-100 text-blue-600 group-hover:translate-y-0.5 transition-transform">
+                  <ArrowDown size={13} className="animate-bounce" />
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* ── Category Filter Tabs (Instant, Clean Editorial) ── */}
-        <div className="flex justify-start sm:justify-start mb-8 sm:mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="inline-flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200">
+        {/* ── Category Filter Tabs ── */}
+        <div className="flex justify-start mb-10 overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="inline-flex items-center gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-xs">
             {CATEGORIES.map((cat) => {
               const isActive = activeCategory === cat.id;
               return (
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`min-h-[36px] px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
+                  className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer select-none whitespace-nowrap flex items-center justify-center ${
                     isActive
-                      ? 'text-blue-700 bg-white font-bold shadow-xs border border-slate-200/80'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'text-blue-700 bg-blue-50/80 font-bold shadow-2xs border border-blue-200/80'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
                   {cat.label}
@@ -167,148 +196,204 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
           </div>
         </div>
 
-        {/* ── FlowingData-Inspired Editorial Project Feed ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          <AnimatePresence>
-            {filteredProjects.map((project, index) => {
-              const {
-                _id,
-                id = _id,
-                title,
-                tags = [],
-                githubLink,
-                demoLink,
-                liveLink = demoLink,
-                chartType = index,
-                image_url,
-                imageUrl = image_url,
-                category,
-              } = project;
+        {/* ── Vertical Scrolling Feed with Guided Connectors ── */}
+        <div className="space-y-8 sm:space-y-12 relative">
+          
+          {filteredProjects.map((project, index) => {
+            const {
+              _id,
+              id = _id,
+              title,
+              tags = [],
+              githubLink = 'https://github.com/arun-pandian-p',
+              demoLink,
+              liveLink = demoLink,
+              chartType = index,
+              image_url,
+              imageUrl = image_url,
+              category,
+              result,
+              insight,
+            } = project;
 
-              const projectNumber = String(index + 1).padStart(2, '0');
-              const displayCategory = category || tags[0] || 'Analytics';
-              const question = getAnalyticalQuestion(project);
+            const projectNumber = String(index + 1).padStart(2, '0');
+            const displayCategory = category || tags[0] || 'Analytics';
+            const question = getAnalyticalQuestion(project);
+            const isLast = index === filteredProjects.length - 1;
 
-              return (
-                <article
-                  key={id || title}
-                  className="group bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    {/* Visual Preview */}
-                    <Link to={`/project/${id || 1}`} className="block relative w-full aspect-[16/10] bg-slate-50 border-b border-slate-100 overflow-hidden">
+            return (
+              <article
+                key={id || title}
+                ref={(el) => (projectRefs.current[index] = el)}
+                className="group relative bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
+                  
+                  {/* Left Column: Rich Interactive Visual / Preview */}
+                  <div className="lg:col-span-5 bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-100 relative min-h-[260px] sm:min-h-[320px] flex items-center justify-center overflow-hidden">
+                    <Link to={`/project/${id || 1}`} className="w-full h-full block relative">
                       <ProjectChartPreview
                         type={chartType}
                         title={title}
                         imageUrl={imageUrl}
                       />
-                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        <span className="font-mono text-[10px] font-bold text-slate-800 bg-white/95 backdrop-blur px-2 py-0.5 rounded shadow-xs border border-slate-200 tracking-wider">
-                          {projectNumber}
+                      
+                      {/* Floating Badges */}
+                      <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+                        <span className="font-mono text-xs font-black text-slate-900 bg-white/95 backdrop-blur px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 tracking-wider">
+                          #{projectNumber}
                         </span>
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/70 px-2 py-0.5 rounded">
+                        <span className="text-xs font-mono font-bold uppercase tracking-wider bg-blue-600 text-white px-2.5 py-1 rounded-lg shadow-sm">
                           {displayCategory}
                         </span>
                       </div>
                     </Link>
+                  </div>
 
-                    {/* Content */}
-                    <div className="p-5">
+                  {/* Right Column: High-Density Analytical Narrative */}
+                  <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+                    <div className="space-y-4">
+                      
                       {/* Project Title */}
-                      <Link to={`/project/${id || 1}`}>
-                        <h3 className="font-display font-bold text-slate-900 text-lg leading-snug group-hover:text-blue-600 transition-colors mb-2">
-                          {title}
-                        </h3>
-                      </Link>
-
-                      {/* Analytical Question in Editorial Style */}
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal mb-4">
-                        <span className="font-semibold text-slate-900 block text-[11px] font-mono uppercase tracking-wider mb-0.5 text-blue-700">
-                          Analytical Question:
-                        </span>
-                        {question}
-                      </p>
-
-                      {/* Tools Tag Pills */}
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {tags.slice(0, 4).map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-100 text-slate-600 border border-slate-200/60"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                      <div>
+                        <Link to={`/project/${id || 1}`}>
+                          <h3 className="font-display font-black text-slate-900 text-xl sm:text-2xl lg:text-3xl leading-tight group-hover:text-blue-600 transition-colors">
+                            {title}
+                          </h3>
+                        </Link>
                       </div>
+
+                      {/* Analytical Question */}
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
+                        <Lightbulb size={17} className="text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 block">
+                            Analytical Question
+                          </span>
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800 mt-0.5 leading-relaxed">
+                            "{question}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Business Impact / Outcome Callout */}
+                      {(result || insight) && (
+                        <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-100/90 flex items-start gap-3">
+                          <Sparkles size={17} className="text-emerald-600 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-700 block">
+                              Measurable Business Impact
+                            </span>
+                            <p className="text-xs sm:text-sm text-emerald-950 font-medium mt-0.5 leading-relaxed">
+                              {result || insight}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tech Stack Pills */}
+                      {tags && tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-slate-100 text-slate-700 border border-slate-200/60"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Card Bottom CTA Link */}
-                  <div className="p-5 pt-0 border-t border-slate-100/60 flex items-center justify-between">
-                    <Link
-                      to={`/project/${id || 1}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
-                    >
-                      <span>Read Case Study</span>
-                      <ArrowUpRight size={14} />
-                    </Link>
+                    {/* Action Buttons & Next Guide */}
+                    <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/project/${id || 1}`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs transition-colors shadow-xs"
+                        >
+                          <span>Explore Deep Case Study</span>
+                          <ArrowRight size={14} />
+                        </Link>
 
-                    <button
-                      onClick={() => setSelectedProject(project)}
-                      className="text-[11px] font-mono text-slate-400 hover:text-slate-700 transition-colors"
-                    >
-                      Quick Overview
-                    </button>
+                        <a
+                          href={githubLink.replace('shadow-byte-warrior', 'arun-pandian-p')}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs transition-colors"
+                        >
+                          <GithubIcon size={14} />
+                          <span>Code</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProject(project)}
+                          className="inline-flex items-center gap-1 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+                        >
+                          <span>Quick View</span>
+                        </button>
+                      </div>
+
+                      {/* Guide Arrow to Next Project */}
+                      {!isLast && (
+                        <button
+                          onClick={() => scrollToNextProject(index)}
+                          className="hidden sm:inline-flex items-center gap-1.5 text-xs font-mono font-bold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                          title="Scroll down to next case study"
+                        >
+                          <span>Next Case Study #{String(index + 2).padStart(2, '0')}</span>
+                          <ArrowDown size={13} className="group-hover:translate-y-0.5 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+
                   </div>
-                </article>
-              );
-            })}
-          </AnimatePresence>
+                </div>
+              </article>
+            );
+          })}
+
         </div>
 
-        {/* ── Empty State ── */}
-        {filteredProjects.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8">
-            <Filter size={32} className="mx-auto text-slate-400 mb-3" />
-            <h4 className="font-bold text-slate-700 text-base">No projects found in this category</h4>
-            <p className="text-xs text-slate-400 mt-1">Switch to "Show all" to see all portfolio case studies.</p>
-            <button
-              onClick={() => setActiveCategory('all')}
-              className="mt-4 min-h-[40px] px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-500 transition-colors cursor-pointer"
-            >
-              Reset Filter
-            </button>
-          </div>
-        )}
+        {/* ── Bottom Section Guided Action Indicator ── */}
+        <div className="mt-14 text-center">
+          <a
+            href="#about"
+            className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-mono font-bold text-slate-700 hover:text-blue-600 hover:border-blue-300 transition-all group"
+          >
+            <span>✦ All {filteredProjects.length} Analytical Case Studies Explored — Continue to About & Skills</span>
+            <ArrowDown size={14} className="group-hover:translate-y-1 transition-transform text-blue-600" />
+          </a>
+        </div>
 
       </div>
 
-      {/* ── Recruiter-Ready Case Study Modal / Bottom Sheet ── */}
+      {/* ── Interactive Quick View Modal (FlowingData Reader) ── */}
       <AnimatePresence>
         {selectedProject && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 lg:p-6">
-            {/* Backdrop */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedProject(null)}
-              className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
             />
 
-            {/* Modal / Bottom Sheet Box */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 40 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-              className="relative w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden flex flex-col z-10 text-slate-900"
+              className="relative w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col z-10 text-slate-900"
             >
-              {/* Sticky Top Header with Close Button */}
+              {/* Sticky Top Header */}
               <div className="sticky top-0 z-20 flex items-center justify-between px-5 py-3.5 bg-white/95 backdrop-blur-md border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100">
-                    Case Study
+                    Quick Case Study Preview
                   </span>
                   <span className="text-xs font-mono text-slate-400">
                     {selectedProject.category || selectedProject.tags?.[0] || 'Analytics'}
@@ -316,18 +401,18 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                 </div>
                 <button
                   onClick={() => setSelectedProject(null)}
-                  className="min-w-[40px] min-h-[40px] p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+                  className="min-w-[36px] min-h-[36px] p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
                   aria-label="Close Case Study Modal"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
               {/* Scrollable Modal Content */}
               <div className="overflow-y-auto overflow-x-hidden p-5 sm:p-7 space-y-6">
                 
-                {/* Visual Header / Chart Preview */}
-                <div className="relative aspect-[16/9] w-full rounded-2xl bg-slate-100 border border-slate-200/80 overflow-hidden">
+                {/* Visual Header */}
+                <div className="relative aspect-[16/9] w-full rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden">
                   <ProjectChartPreview
                     type={selectedProject.chartType || 0}
                     title={selectedProject.title}
@@ -337,11 +422,10 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
 
                 {/* Title & Quick Recruiter Takeaway */}
                 <div>
-                  <h3 className="font-display font-black text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight leading-tight">
+                  <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight leading-tight">
                     {selectedProject.title}
                   </h3>
                   
-                  {/* Recruiter 5-Second Scan Callout */}
                   {(selectedProject.result || selectedProject.insight) && (
                     <div className="mt-3 p-3.5 rounded-xl bg-blue-50/80 border border-blue-100 flex items-start gap-2.5">
                       <Sparkles size={18} className="text-blue-600 shrink-0 mt-0.5" />
@@ -357,132 +441,67 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
                   )}
                 </div>
 
-                {/* ── Structured Case Study Flow: Problem → Data → Process → Key Insights → Result → Tools ── */}
+                {/* Structured Flow */}
                 <div className="space-y-4 text-xs sm:text-sm">
-                  
-                  {/* 1. Problem */}
                   {selectedProject.problem && (
                     <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100">
                       <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase tracking-wider mb-1.5">
                         <Target size={15} />
                         <span>Problem Statement</span>
                       </div>
-                      <p className="text-slate-800 leading-relaxed font-normal">
+                      <p className="text-slate-800 leading-relaxed">
                         {selectedProject.problem}
                       </p>
                     </div>
                   )}
 
-                  {/* 2. Data */}
                   {selectedProject.data && (
                     <div className="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
                       <div className="flex items-center gap-2 text-sky-700 font-bold text-xs uppercase tracking-wider mb-1.5">
                         <Database size={15} />
                         <span>Dataset & Data Sources</span>
                       </div>
-                      <p className="text-slate-800 leading-relaxed font-normal">
+                      <p className="text-slate-800 leading-relaxed">
                         {selectedProject.data}
                       </p>
                     </div>
                   )}
 
-                  {/* 3. Process */}
                   {selectedProject.process && (
                     <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100">
                       <div className="flex items-center gap-2 text-amber-700 font-bold text-xs uppercase tracking-wider mb-1.5">
                         <Brain size={15} />
                         <span>Methodology & Workflow</span>
                       </div>
-                      <p className="text-slate-800 leading-relaxed font-normal whitespace-pre-line">
+                      <p className="text-slate-800 leading-relaxed whitespace-pre-line">
                         {selectedProject.process}
                       </p>
                     </div>
                   )}
-
-                  {/* 4. Key Insights */}
-                  {selectedProject.insight && (
-                    <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
-                      <div className="flex items-center gap-2 text-purple-700 font-bold text-xs uppercase tracking-wider mb-1.5">
-                        <Lightbulb size={15} />
-                        <span>Key Analytical Insights</span>
-                      </div>
-                      <p className="text-slate-800 leading-relaxed font-normal">
-                        {selectedProject.insight}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* 5. Result */}
-                  {(selectedProject.result || selectedProject.insight) && (
-                    <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
-                      <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs uppercase tracking-wider mb-1.5">
-                        <TrendingUp size={15} />
-                        <span>Measurable Outcome & Business Result</span>
-                      </div>
-                      <p className="text-emerald-950 font-medium leading-relaxed">
-                        {selectedProject.result || selectedProject.insight}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* 6. Tools & Technologies */}
-                  {selectedProject.tags && selectedProject.tags.length > 0 && (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-                      <div className="flex items-center gap-2 text-slate-700 font-bold text-xs uppercase tracking-wider mb-2.5">
-                        <Wrench size={15} />
-                        <span>Tools & Tech Stack</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedProject.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="px-2.5 py-1 text-xs font-mono font-medium rounded-lg bg-white text-slate-800 border border-slate-200 shadow-2xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                 </div>
 
               </div>
 
-              {/* ── 7. Live & GitHub Links (Sticky Bottom Bar, min 44px Touch Targets) ── */}
-              <div className="sticky bottom-0 z-20 p-4 sm:p-5 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shadow-lg">
-                <div className="flex items-center gap-2 flex-1 sm:flex-none">
-                  {selectedProject.githubLink && (
-                    <a
-                      href={selectedProject.githubLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[44px] flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors"
-                    >
-                      <GithubIcon size={16} /> GitHub Source
-                    </a>
-                  )}
-                  {(selectedProject.demoLink || selectedProject.liveLink) && (
-                    <a
-                      href={selectedProject.demoLink || selectedProject.liveLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="min-h-[44px] flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 shadow-sm transition-colors"
-                    >
-                      <ExternalLink size={16} /> Live Dashboard
-                    </a>
-                  )}
-                </div>
+              {/* Bottom Bar */}
+              <div className="sticky bottom-0 z-20 p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-3">
+                <Link
+                  to={`/project/${selectedProject._id || selectedProject.id || 1}`}
+                  onClick={() => setSelectedProject(null)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-colors shadow-xs"
+                >
+                  <span>Open Full Article & Dashboard</span>
+                  <ArrowUpRight size={14} />
+                </Link>
 
-                {selectedProject._id && (
-                  <Link
-                    to={`/project/${selectedProject._id}`}
-                    onClick={() => setSelectedProject(null)}
-                    className="min-h-[44px] inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold text-slate-700 hover:text-blue-600 transition-colors"
-                  >
-                    Full Case Study Page <ArrowUpRight size={14} />
-                  </Link>
-                )}
+                <a
+                  href={(selectedProject.githubLink || 'https://github.com/arun-pandian-p').replace('shadow-byte-warrior', 'arun-pandian-p')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50"
+                >
+                  <GithubIcon size={14} />
+                  <span>GitHub</span>
+                </a>
               </div>
 
             </motion.div>
