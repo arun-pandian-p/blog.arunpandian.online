@@ -3,7 +3,8 @@ import { supabase } from '../../../lib/supabaseClient';
 import {
   Upload, X, Loader2, Link as LinkIcon, FileVideo,
   FileText, FileSpreadsheet, Presentation, File as FileIcon,
-  FileArchive, ExternalLink, RefreshCw,
+  FileArchive, ExternalLink, RefreshCw, Maximize2, Minimize2,
+  Image as ImageIcon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getFileKind, getKindLabel, getFileName } from '../../../utils/fileType';
@@ -24,6 +25,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [manualUrl, setManualUrl] = useState(url || '');
+  const [fitMode, setFitMode] = useState('contain'); // 'contain' for 100% full visibility, 'cover' for filled
   const fileInputRef = useRef(null);
 
   // Only restrict to images when the caller hasn't opted into broader types.
@@ -33,13 +35,12 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
 
   const kind = getFileKind(url);
   const isImageFile = kind === 'image';
-  const isVideoFile = kind === 'video' || (acceptsVideo && !url); // fall back to widget intent
+  const isVideoFile = kind === 'video' || (acceptsVideo && !url);
 
   const handleFileProcess = async (file) => {
     if (!file) return;
 
-    // Supabase has strict file size limits, so we check on the client first
-    const maxMb = imageOnly ? 5 : 50;
+    const maxMb = imageOnly ? 10 : 50;
     if (file.size > maxMb * 1024 * 1024) {
       toast.error(`File is too large (max ${maxMb}MB).`);
       return;
@@ -74,7 +75,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
       const { data } = supabase.storage.from('assets').getPublicUrl(filePath);
       onUpload(data.publicUrl);
       setManualUrl(data.publicUrl);
-      toast.success('File uploaded successfully!');
+      toast.success('File uploaded successfully!', { icon: '📸' });
     } catch (error) {
       toast.error('Error uploading file: ' + error.message);
       console.error(error);
@@ -86,7 +87,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
 
   const handleFileChange = (event) => {
     handleFileProcess(event.target.files[0]);
-    event.target.value = ''; // allow re-selecting the same file
+    event.target.value = '';
   };
 
   const handleDragOver = (e) => {
@@ -123,7 +124,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
   const openFilePicker = () => fileInputRef.current?.click();
 
   const acceptHint = imageOnly
-    ? 'PNG, JPG, WEBP (max 5MB)'
+    ? 'PNG, JPG, WEBP, GIF (max 10MB)'
     : acceptsVideo && !acceptsAny
       ? 'MP4, WEBM, PNG, JPG (max 50MB)'
       : 'PDF, DOC, PPT, XLS, images — any file (max 50MB)';
@@ -131,8 +132,18 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
   const KindIcon = KIND_ICON[kind] || FileIcon;
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-bold text-slate-700">{label}</label>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+          {label}
+        </label>
+        {url && isImageFile && (
+          <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Active Asset
+          </span>
+        )}
+      </div>
 
       {/* Hidden input shared by the dropzone and the Replace button */}
       <input
@@ -145,80 +156,136 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
       />
 
       {url ? (
-        <div className="relative rounded-xl overflow-hidden border border-slate-200 group bg-slate-50">
-          {isImageFile ? (
-            <img loading="lazy" src={url} alt={label} className="w-full h-40 object-cover" />
-          ) : isVideoFile ? (
-            <video src={url} autoPlay muted loop playsInline className="w-full h-40 object-cover" />
-          ) : (
-            // Non-visual files (PDF, DOC, XLS, PPT, ...) get a labelled file card
-            // instead of a broken <img alt="" loading="lazy">.
-            <div className="flex h-40 w-full items-center gap-4 px-5">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-600 border border-teal-100">
-                <KindIcon size={30} strokeWidth={1.75} />
+        <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-[#2E2E44] bg-slate-900/5 dark:bg-[#12121E] shadow-sm transition-all">
+          
+          {/* Main Visual Display - Adaptive Height with Full View */}
+          <div className="flex items-center justify-center min-h-[220px] max-h-[460px] p-3 overflow-hidden bg-slate-100/60 dark:bg-[#171726]">
+            {isImageFile ? (
+              <img
+                loading="lazy"
+                src={url}
+                alt={label}
+                className={`w-full max-h-[440px] rounded-xl transition-all duration-200 ${
+                  fitMode === 'contain' ? 'object-contain h-auto' : 'object-cover h-[340px]'
+                }`}
+              />
+            ) : isVideoFile ? (
+              <video
+                src={url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full max-h-[440px] object-contain rounded-xl"
+              />
+            ) : (
+              // Non-visual files (PDF, DOC, XLS, PPT, ...)
+              <div className="flex h-36 w-full items-center gap-4 px-5 bg-white dark:bg-[#1E1E2C] rounded-xl border border-slate-200 dark:border-[#2C2C40]">
+                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-[#F29F67]/15 text-[#F29F67] border border-[#F29F67]/30">
+                  <KindIcon size={30} strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#F29F67]">{getKindLabel(url)}</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-white" title={getFileName(url)}>
+                    {getFileName(url)}
+                  </p>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#F29F67] hover:underline"
+                  >
+                    <ExternalLink size={13} /> Open full file ↗
+                  </a>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">{getKindLabel(url)}</p>
-                <p className="mt-0.5 truncate text-sm font-medium text-slate-700" title={getFileName(url)}>
-                  {getFileName(url)}
-                </p>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-600 hover:text-teal-700"
-                >
-                  <ExternalLink size={13} /> Open file
-                </a>
-              </div>
-            </div>
-          )}
-
-          {/* Action overlay — Replace + Remove, always reachable (not hover-only on mobile) */}
-          <div className="absolute inset-x-0 top-0 flex justify-end gap-2 p-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={openFilePicker}
-              disabled={uploading}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-white disabled:opacity-50"
-              title="Replace file"
-            >
-              {uploading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-              Replace
-            </button>
-            <button
-              type="button"
-              onClick={clear}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white/95 text-red-500 shadow-sm hover:bg-red-50"
-              title="Remove file"
-              aria-label="Remove file"
-            >
-              <X size={16} />
-            </button>
+            )}
           </div>
+
+          {/* Action Toolbar Header (Always Visible & Accessible) */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-[#1E1E2C]/95 backdrop-blur-md border-t border-slate-100 dark:border-[#2A2A3E] text-xs">
+            <div className="flex items-center gap-2 truncate max-w-[50%]">
+              <span className="truncate font-mono text-[11px] text-slate-500 dark:text-slate-400" title={url}>
+                {getFileName(url) || url}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Fit Mode Toggle */}
+              {isImageFile && (
+                <button
+                  type="button"
+                  onClick={() => setFitMode(fitMode === 'contain' ? 'cover' : 'contain')}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#33334B] text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#252538] transition-colors cursor-pointer"
+                  title={fitMode === 'contain' ? 'Switch to Filled View' : 'Switch to Full Uncropped View'}
+                >
+                  {fitMode === 'contain' ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
+                  <span>{fitMode === 'contain' ? 'Full View' : 'Fill'}</span>
+                </button>
+              )}
+
+              {/* View Full Size ↗ */}
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#33334B] text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#252538] transition-colors"
+                title="Open original file in new tab"
+              >
+                <ExternalLink size={12} />
+                <span className="hidden sm:inline">Open</span>
+              </a>
+
+              {/* Replace Button */}
+              <button
+                type="button"
+                onClick={openFilePicker}
+                disabled={uploading}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F29F67] hover:bg-[#E8824A] text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                title="Replace with new file"
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                <span>Replace</span>
+              </button>
+
+              {/* Remove Button */}
+              <button
+                type="button"
+                onClick={clear}
+                className="p-1 rounded-lg border border-rose-200/40 text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                title="Remove asset"
+                aria-label="Remove asset"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <label
-            className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-              isDragging ? 'border-teal-500 bg-teal-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+            className={`flex flex-col items-center justify-center w-full min-h-[160px] border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
+              isDragging
+                ? 'border-[#F29F67] bg-[#F29F67]/10'
+                : 'border-slate-300 dark:border-[#2C2C40] bg-slate-50 dark:bg-[#181826] hover:bg-slate-100 dark:hover:bg-[#1E1E2C] hover:border-[#F29F67]'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6 pointer-events-none">
+            <div className="flex flex-col items-center justify-center p-5 pointer-events-none text-center">
               {uploading ? (
-                <Loader2 className="w-8 h-8 text-slate-400 animate-spin mb-2" />
+                <Loader2 className="w-8 h-8 text-[#F29F67] animate-spin mb-2" />
               ) : acceptsVideo && !acceptsAny ? (
-                <FileVideo className={`w-8 h-8 mb-2 ${isDragging ? 'text-teal-500' : 'text-slate-400'}`} />
+                <FileVideo className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#F29F67]' : 'text-slate-400'}`} />
               ) : (
-                <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-teal-500' : 'text-slate-400'}`} />
+                <Upload className={`w-8 h-8 mb-2 ${isDragging ? 'text-[#F29F67]' : 'text-slate-400'}`} />
               )}
-              <p className="mb-2 text-sm text-slate-500 font-medium text-center px-4">
-                {uploading ? 'Uploading...' : isDragging ? 'Drop file here' : 'Click or drag to upload'}
+              <p className="mb-1 text-xs font-bold text-slate-700 dark:text-slate-200">
+                {uploading ? 'Uploading to Supabase...' : isDragging ? 'Drop file here' : 'Click to upload or drag & drop'}
               </p>
-              <p className="text-[10px] text-slate-400 text-center px-2">{acceptHint}</p>
+              <p className="text-[10px] font-mono text-slate-400">{acceptHint}</p>
             </div>
             <input
               type="file"
@@ -229,23 +296,14 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
             />
           </label>
 
-          <div className="relative flex items-center">
-            <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center w-full">
-              <span className="bg-white px-3 text-xs font-semibold text-slate-400 uppercase">Or provide URL</span>
-            </div>
-          </div>
-
           <div className="flex gap-2">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <LinkIcon size={16} />
+                <LinkIcon size={14} />
               </div>
               <input
                 type="url"
-                placeholder="https://..."
+                placeholder="Or paste direct image URL (https://...)"
                 value={manualUrl}
                 onChange={(e) => setManualUrl(e.target.value)}
                 onKeyDown={(e) => {
@@ -254,14 +312,14 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
                     handleUrlSubmit(e);
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none transition-shadow"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-[#2C2C40] bg-white dark:bg-[#1E1E2C] text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:border-[#F29F67] outline-none transition-shadow"
               />
             </div>
             <button
               type="button"
               onClick={handleUrlSubmit}
               disabled={!manualUrl.trim()}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3.5 py-2 rounded-xl bg-[#1E1E2C] dark:bg-[#28283C] text-white text-xs font-bold hover:bg-[#F29F67] transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               Set URL
             </button>
