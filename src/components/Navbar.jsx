@@ -205,7 +205,7 @@ const Navbar = () => {
             {/* Col 1 — Brand (left-aligned) */}
             <a href="/#hero" className="flex items-center gap-2.5 group" aria-label={`${brandName} home`}>
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
-              <div className="hidden xs:block">
+              <div>
                 <span className="block text-[11px] font-extrabold tracking-tight leading-none" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
                   {brandName}
                 </span>
