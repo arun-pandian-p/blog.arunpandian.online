@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import Navbar from '../components/Navbar';
 import { useContent } from '../context/ContentProvider';
 import StyleOverrides from '../editor/StyleOverrides';
+import arunProfile from '../assets/arun-profile.jpg';
 import {
   Loader2,
   ArrowLeft,
@@ -168,6 +169,7 @@ export default function ProjectDetails() {
 
   // ─── Dynamic Attributes ───
   const title = project.title || 'Data Analytics Case Study';
+  const authorAvatar = settings?.about?.profileImage || project.author_avatar || arunProfile;
   const subtitle =
     project.subtitle ||
     project.problem ||
@@ -286,12 +288,12 @@ export default function ProjectDetails() {
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-3">
               <img
-                src="https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/branding/avatar_arun.jpg"
+                src={authorAvatar}
                 alt="Arun Pandian"
-                className="w-10 h-10 rounded-full object-cover border border-slate-200 bg-slate-100"
+                className="w-10 h-10 rounded-full object-cover border border-slate-200 bg-slate-100 shadow-xs"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = '/favicon.svg';
+                  e.target.src = arunProfile;
                 }}
               />
               <div>

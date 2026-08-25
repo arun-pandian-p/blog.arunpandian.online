@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useContent } from '../context/ContentProvider';
 import Navbar from '../components/Navbar';
 import StyleOverrides from '../editor/StyleOverrides';
+import arunProfile from '../assets/arun-profile.jpg';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import {
   ArrowLeft,
@@ -278,7 +279,7 @@ export default function BlogDetails() {
   const authorAvatar =
     blog.author_avatar ||
     settings?.about?.profileImage ||
-    'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png';
+    arunProfile;
   const authorBio =
     settings?.about?.bio ||
     "Hi, I'm Arun Pandian — a Data Analyst transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
@@ -599,7 +600,7 @@ export default function BlogDetails() {
                 className="h-11 w-11 rounded-full object-cover border-2 border-slate-200 shadow-sm"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src = '/favicon.svg';
+                  e.target.src = arunProfile;
                 }}
               />
               <div>
