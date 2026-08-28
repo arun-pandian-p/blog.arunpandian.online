@@ -43,50 +43,30 @@ import {
   AlertTriangle,
   Play,
   Mail,
+  TrendingUp,
+  Tag,
+  Star,
+  Flame
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// Custom SVG Icons
-const GithubIcon = ({ size = 18 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+const GithubIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
     <path d="M9 18c-4.51 2-5-2-7-2" />
   </svg>
 );
 
 const LinkedinIcon = ({ size = 16 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
     <rect width="4" height="12" x="2" y="9" />
     <circle cx="4" cy="4" r="2" />
   </svg>
 );
 
-const XTwitterIcon = ({ size = 16 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-  >
+const XTwitterIcon = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
@@ -117,7 +97,7 @@ export default function BlogDetails() {
               .select('*')
               .or(`slug.eq.${slug},id.eq.${slug}`)
               .single(),
-            supabase.from('blogs').select('*').order('sort_order', { ascending: true }),
+            supabase.from('blogs').select('*').order('created_at', { ascending: false }),
           ]);
 
           if (isMounted) {
@@ -233,8 +213,8 @@ export default function BlogDetails() {
     }
   };
 
-  // Find previous and next blog articles for cross-navigation
-  const { prevBlog, nextBlog, relatedBlogs } = useMemo(() => {
+  // Featured and Recent Posts for the 3-Section Split Sidebar
+  const { featuredPosts, recentPosts, prevBlog, nextBlog } = useMemo(() => {
     const list = allBlogsList.length > 0 ? allBlogsList : contextBlogs;
     const currentIndex = list.findIndex(
       (b) => String(b.slug) === String(slug) || String(b.id) === String(slug)
@@ -242,9 +222,15 @@ export default function BlogDetails() {
 
     const prev = currentIndex > 0 ? list[currentIndex - 1] : list[list.length - 1];
     const next = currentIndex < list.length - 1 && currentIndex !== -1 ? list[currentIndex + 1] : list[0];
-    const related = list.filter((b) => String(b.slug) !== String(slug) && String(b.id) !== String(slug)).slice(0, 3);
+    
+    // Featured posts (featured flag or first 3)
+    const featured = list.filter((b) => b.featured && String(b.slug) !== String(slug)).slice(0, 3);
+    const fallbackFeatured = featured.length > 0 ? featured : list.filter((b) => String(b.slug) !== String(slug)).slice(0, 3);
 
-    return { prevBlog: prev, nextBlog: next, relatedBlogs: related };
+    // Recent posts (latest 5)
+    const recent = list.filter((b) => String(b.slug) !== String(slug)).slice(0, 5);
+
+    return { featuredPosts: fallbackFeatured, recentPosts: recent, prevBlog: prev, nextBlog: next };
   }, [allBlogsList, contextBlogs, slug]);
 
   if (loading) {
@@ -260,7 +246,7 @@ export default function BlogDetails() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 px-4 text-center">
         <h1 className="text-3xl font-display font-bold mb-3">Article Not Found</h1>
         <p className="text-slate-500 mb-6 max-w-md text-sm">
-          The requested data publication or blog post could not be loaded.
+          The requested publication or blog post could not be loaded.
         </p>
         <Link
           to="/blog"
@@ -273,8 +259,8 @@ export default function BlogDetails() {
   }
 
   // ─── Dynamic Attributes ───
-  const title = blog.title || 'Technical Data Analytics Investigation';
-  const excerpt = blog.excerpt || blog.summary || 'An in-depth data analytics investigation.';
+  const title = blog.title || 'Exploring Fitbit Data using Fitbit\'s API';
+  const excerpt = blog.excerpt || blog.summary || '';
   const authorName = blog.author_name || settings?.about?.name || 'Arun Pandian';
   const authorRole = settings?.about?.role || 'Data Analyst';
   const authorAvatar =
@@ -288,14 +274,16 @@ export default function BlogDetails() {
   const category = meta.category || 'Data Analytics';
   const tags = Array.isArray(blog.tags) && blog.tags.length > 0
     ? blog.tags
-    : ['Data Analytics', 'Power BI', 'SQL', 'Data Engineering'];
+    : typeof blog.tags === 'string' && blog.tags.trim().length > 0
+      ? blog.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : ['statistics', 'python', 'API'];
 
   const coverImage = blog.cover_image || blog.image || '';
   const imageCaption = meta.imageCaption || '';
   const readTime = blog.read_time || '5 min read';
   const publishedDate = new Date(blog.published_at || blog.created_at || Date.now()).toLocaleDateString(
     'en-US',
-    { month: 'short', day: 'numeric', year: 'numeric' }
+    { month: 'long', day: 'numeric', year: 'numeric' }
   );
 
   const videoUrl = meta.videoUrl || '';
@@ -303,9 +291,9 @@ export default function BlogDetails() {
   const githubLink = meta.githubLink || 'https://github.com/arun-pandian-p';
   const liveLink = meta.liveLink || '';
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
-  const seoDescription = meta.seoDescription || excerpt;
+  const seoDescription = meta.seoDescription || excerpt || title;
 
-  // ─── Custom Markdown Renderer for High Readability ───
+  // ─── Markdown Renderer ───
   const renderFormattedArticle = (contentStr) => {
     if (!contentStr) return null;
 
@@ -319,7 +307,7 @@ export default function BlogDetails() {
       if (trimmed.startsWith('# ')) {
         const text = trimmed.replace(/^#\s+/, '').replace(/\*\*|\*|`/g, '');
         return (
-          <h1 key={idx} className="font-serif font-black text-3xl sm:text-4xl text-slate-900 mt-12 mb-4 tracking-tight">
+          <h1 key={idx} className="font-serif font-black text-3xl sm:text-4xl text-slate-900 mt-10 mb-4 tracking-tight">
             {text}
           </h1>
         );
@@ -336,13 +324,13 @@ export default function BlogDetails() {
           <h2
             key={idx}
             id={id}
-            className="group font-serif font-bold text-2xl sm:text-3xl text-slate-900 mt-12 mb-4 pt-4 border-t border-slate-100 scroll-mt-24 flex items-center justify-between"
+            className="group font-serif font-bold text-2xl sm:text-3xl text-slate-900 mt-10 mb-4 pt-3 border-t border-slate-100 scroll-mt-24 flex items-center justify-between"
           >
             <span>{text}</span>
             <a
               href={`#${id}`}
               className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-opacity text-sm font-mono"
-              aria-label="Link to this section"
+              aria-label="Link to section"
             >
               #
             </a>
@@ -361,7 +349,7 @@ export default function BlogDetails() {
           <h3
             key={idx}
             id={id}
-            className="font-sans font-bold text-xl text-slate-900 mt-8 mb-3 scroll-mt-24"
+            className="font-sans font-bold text-lg sm:text-xl text-slate-900 mt-8 mb-3 scroll-mt-24"
           >
             {text}
           </h3>
@@ -374,7 +362,7 @@ export default function BlogDetails() {
         return (
           <h4
             key={idx}
-            className="font-sans font-bold text-base text-slate-800 mt-6 mb-2 uppercase tracking-wide text-xs"
+            className="font-sans font-bold text-sm text-slate-800 mt-6 mb-2 uppercase tracking-wide text-xs"
           >
             {text}
           </h4>
@@ -431,7 +419,6 @@ export default function BlogDetails() {
 
         return (
           <div key={idx} className="my-6 rounded-xl overflow-hidden border border-slate-800 bg-[#0E1726] shadow-md font-mono text-xs">
-            {/* Header with language & copy button */}
             <div className="px-4 py-2.5 bg-[#172338] border-b border-slate-800 flex items-center justify-between text-slate-300">
               <span className="text-[11px] font-bold uppercase text-blue-400 tracking-wider">
                 {language}
@@ -439,7 +426,7 @@ export default function BlogDetails() {
               <button
                 onClick={() => copyToClipboard(codeBody, codeId)}
                 className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                title="Copy code snippet"
+                title="Copy snippet"
               >
                 {copiedCode === codeId ? (
                   <>
@@ -497,7 +484,7 @@ export default function BlogDetails() {
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         const items = trimmed.split('\n').map(i => i.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
         return (
-          <ul key={idx} className="my-4 space-y-2 list-disc list-inside text-slate-700 text-[17px] leading-[1.78]">
+          <ul key={idx} className="my-4 space-y-2 list-disc list-inside text-slate-700 text-[16px] sm:text-[17px] leading-[1.78]">
             {items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:text-blue-600">
                 {item}
@@ -511,7 +498,7 @@ export default function BlogDetails() {
       if (/^\d+\.\s/.test(trimmed)) {
         const items = trimmed.split('\n').map(i => i.replace(/^\d+\.\s+/, '').trim()).filter(Boolean);
         return (
-          <ol key={idx} className="my-4 space-y-2 list-decimal list-inside text-slate-700 text-[17px] leading-[1.78]">
+          <ol key={idx} className="my-4 space-y-2 list-decimal list-inside text-slate-700 text-[16px] sm:text-[17px] leading-[1.78]">
             {items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:font-bold marker:text-slate-800">
                 {item}
@@ -536,7 +523,7 @@ export default function BlogDetails() {
 
       // Horizontal Divider
       if (trimmed === '---' || trimmed === '***') {
-        return <hr key={idx} className="my-8 border-slate-200" />;
+        return <hr key={idx} className="my-8 border-slate-300/80 max-w-sm mx-auto" />;
       }
 
       // Responsive Markdown Image: ![Caption](url)
@@ -549,7 +536,7 @@ export default function BlogDetails() {
             <img
               src={imgUrl}
               alt={caption || 'Article Visual'}
-              className="w-full h-auto rounded-2xl border border-slate-200 shadow-sm object-cover"
+              className="w-full max-w-2xl mx-auto h-auto rounded-2xl border border-slate-200 shadow-sm object-cover"
               loading="lazy"
             />
             {caption && (
@@ -563,7 +550,7 @@ export default function BlogDetails() {
 
       // Standard Paragraph
       return (
-        <p key={idx} className="text-slate-800 text-[17px] sm:text-[18px] leading-[1.78] my-5 font-normal tracking-[-0.003em]">
+        <p key={idx} className="text-slate-800 text-[16px] sm:text-[17.5px] leading-[1.78] my-5 font-normal tracking-[-0.003em]">
           {trimmed}
         </p>
       );
@@ -571,7 +558,7 @@ export default function BlogDetails() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#FBFBFB] text-slate-900 selection:bg-blue-600 selection:text-white">
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
@@ -592,8 +579,8 @@ export default function BlogDetails() {
 
       <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         
-        {/* ── 01: BREADCRUMBS & TOP NAV BAR ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100 text-xs font-mono text-slate-500">
+        {/* ── 01: BREADCRUMBS & ADMIN EDIT BUTTON ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200/80 text-xs font-mono text-slate-500">
           <nav className="flex items-center gap-2">
             <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
             <span>/</span>
@@ -605,8 +592,8 @@ export default function BlogDetails() {
           <div className="flex items-center gap-2.5">
             <Link
               to={`/admin/blogs?edit=${blog.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
-              title="Edit this article in Admin Panel"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
+              title="Edit in Admin Panel"
             >
               <Edit2 size={12} className="text-slate-500" />
               <span>Edit in Admin</span>
@@ -614,133 +601,92 @@ export default function BlogDetails() {
           </div>
         </div>
 
-        {/* ── 02: ARTICLE HEADER & METADATA ── */}
-        <header className="max-w-3xl mx-auto mb-8 sm:mb-12">
-          {/* Category Badge */}
-          <div className="mb-4">
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-              {category}
-            </span>
-          </div>
+        {/* ═════════════════════════════════════════════════════════════════
+            3-SECTION SPLIT LAYOUT (Matching User's Uploaded Image)
+            Left/Center (Col 8): Tags + Title + Date + GitHub Alert + Body
+            Right Sidebar (Col 4): Featured Posts + Recent Posts + TOC
+            ═════════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          
+          {/* ─────────────────────────────────────────────────────────────
+              LEFT / CENTER MAIN ARTICLE COLUMN (lg:col-span-8)
+              ───────────────────────────────────────────────────────────── */}
+          <article className="lg:col-span-8 bg-white p-6 sm:p-10 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
+            
+            {/* 1. TOP TAGS PILLS (Matching uploaded image top badges) */}
+            <div className="flex flex-wrap items-center gap-2">
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="px-3 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-xs font-medium border border-slate-200/80 transition-colors"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
 
-          {/* Large H1 Title (KDnuggets / High Readability Inspired) */}
-          <h1 className="font-serif font-black text-3xl sm:text-4xl md:text-5xl text-slate-900 tracking-tight leading-[1.18] mb-5">
-            {title}
-          </h1>
+            {/* 2. ARTICLE HEADLINE TITLE */}
+            <h1 className="font-serif font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight leading-[1.2]">
+              {title}
+            </h1>
 
-          {/* Subtitle / Excerpt */}
-          <p className="text-lg sm:text-xl text-slate-600 font-sans leading-relaxed font-normal mb-8">
-            {excerpt}
-          </p>
+            {/* 3. PUBLISH DATE & READ TIME */}
+            <div className="text-xs text-slate-500 font-mono flex items-center gap-3 pb-2">
+              <span>{publishedDate}</span>
+              <span>•</span>
+              <span>{readTime}</span>
+              <span>•</span>
+              <span className="font-medium text-slate-700">By {authorName}</span>
+            </div>
 
-          {/* Author Meta Bar & Social Share */}
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-slate-200">
-            <div className="flex items-center gap-3.5">
-              <img
-                src={authorAvatar}
-                alt={authorName}
-                className="h-11 w-11 rounded-full object-cover border-2 border-slate-200 shadow-sm"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = arunProfile;
-                }}
-              />
-              <div>
-                <div className="font-bold text-sm text-slate-900">{authorName}</div>
-                <div className="text-xs text-slate-500 font-mono flex items-center gap-2 mt-0.5">
-                  <span>{publishedDate}</span>
-                  <span>•</span>
-                  <span>{readTime}</span>
+            {/* 4. GITHUB REPOSITORY / CODE NOTICE BANNER (Matching uploaded image) */}
+            {githubLink && (
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm sm:text-[15px] font-sans leading-relaxed shadow-2xs flex items-start gap-3">
+                <GithubIcon size={20} className="shrink-0 text-slate-900 mt-0.5" />
+                <div>
+                  <span className="font-bold">All code for this project is </span>
+                  <a
+                    href={githubLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-blue-600 hover:text-blue-800 underline transition-colors"
+                  >
+                    here on GitHub
+                  </a>
+                  <span>, along with instructions and dataset scripts.</span>
                 </div>
               </div>
-            </div>
-
-            {/* Social Share Buttons */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-slate-400 mr-1 hidden sm:inline">Share:</span>
-              <button
-                onClick={() => handleShare('linkedin')}
-                title="Share on LinkedIn"
-                className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 transition-colors cursor-pointer"
-              >
-                <LinkedinIcon size={15} />
-              </button>
-              <button
-                onClick={() => handleShare('twitter')}
-                title="Share on X (Twitter)"
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
-              >
-                <XTwitterIcon size={14} />
-              </button>
-              <button
-                onClick={() => handleShare('copy')}
-                title="Copy Article Link"
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
-              >
-                {copiedLink ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* ── 03: HERO COVER IMAGE / VIDEO BANNER ── */}
-        {coverImage && (
-          <figure className="max-w-4xl mx-auto mb-12 sm:mb-16">
-            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-950 aspect-16/9 sm:aspect-21/9 flex items-center justify-center">
-              <img
-                src={coverImage}
-                alt={title}
-                className="w-full h-full object-cover"
-                fetchPriority="high"
-              />
-            </div>
-            {imageCaption && (
-              <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-3">
-                {imageCaption}
-              </figcaption>
             )}
-          </figure>
-        )}
 
-        {/* Mobile Collapsible TOC Dropdown */}
-        {headings.length > 0 && (
-          <div className="lg:hidden max-w-3xl mx-auto mb-8">
-            <button
-              onClick={() => setIsMobileTocOpen(!isMobileTocOpen)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-slate-800"
-            >
-              <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-blue-700">
-                <List size={14} /> Table of Contents ({headings.length} Sections)
-              </span>
-              <ChevronDown size={16} className={`transition-transform duration-200 ${isMobileTocOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isMobileTocOpen && (
-              <div className="mt-2 p-4 rounded-xl bg-white border border-slate-200 shadow-sm space-y-2 text-xs font-sans">
-                {headings.map((h) => (
-                  <a
-                    key={h.id}
-                    href={`#${h.id}`}
-                    onClick={() => setIsMobileTocOpen(false)}
-                    className={`block py-1 text-slate-700 hover:text-blue-600 transition-colors ${h.level === 3 ? 'pl-4 text-slate-500' : 'font-semibold'}`}
-                  >
-                    {h.text}
-                  </a>
-                ))}
-              </div>
+            {/* Excerpt Summary (if provided) */}
+            {excerpt && (
+              <p className="text-base sm:text-lg text-slate-600 font-sans leading-relaxed italic border-l-2 border-slate-300 pl-4 py-1">
+                {excerpt}
+              </p>
             )}
-          </div>
-        )}
 
-        {/* ── 04: TWO-COLUMN LAYOUT: MAIN ARTICLE + STICKY TOC ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 max-w-6xl mx-auto">
-          
-          {/* Main Article Reading Column (680–760px) */}
-          <article className="lg:col-span-8 max-w-3xl font-sans">
-            
+            {/* Primary Cover Visual Banner */}
+            {coverImage && (
+              <figure className="my-6">
+                <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm aspect-16/9 bg-slate-950">
+                  <img
+                    src={coverImage}
+                    alt={title}
+                    className="w-full h-full object-cover"
+                    fetchPriority="high"
+                  />
+                </div>
+                {imageCaption && (
+                  <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2.5">
+                    {imageCaption}
+                  </figcaption>
+                )}
+              </figure>
+            )}
+
             {/* Embedded Video (if provided) */}
             {videoUrl && (
-              <div className="my-8 rounded-2xl overflow-hidden border border-slate-200 shadow-sm aspect-video bg-black">
+              <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm aspect-video bg-black">
                 {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
                   <iframe
                     src={videoUrl.replace('watch?v=', 'embed/')}
@@ -756,7 +702,7 @@ export default function BlogDetails() {
 
             {/* Embedded Power BI / Interactive App (if provided) */}
             {powerbiUrl && (
-              <div className="my-8 rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-900 aspect-16/10">
+              <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-900 aspect-16/10">
                 <iframe
                   src={powerbiUrl}
                   title="Interactive Report Embed"
@@ -766,31 +712,18 @@ export default function BlogDetails() {
               </div>
             )}
 
-            {/* Render Full Technical Markdown Content with High Readability */}
-            <div className="article-body">
+            {/* 5. MAIN ARTICLE CONTENT */}
+            <div className="article-body pt-2">
               {renderFormattedArticle(cleanContent)}
             </div>
 
-            {/* Article Tags */}
-            <div className="pt-8 mt-12 border-t border-slate-200 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider mr-2">Tags:</span>
-              {tags.map((t) => (
-                <span
-                  key={t}
-                  className="text-xs font-mono px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-medium"
-                >
-                  #{t}
-                </span>
-              ))}
-            </div>
-
-            {/* GitHub Repo / Live Demo Link Action Box */}
+            {/* Live App / Repository Action Buttons */}
             {(githubLink || liveLink) && (
-              <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 my-10 flex flex-wrap items-center justify-between gap-4">
+              <div className="p-5 rounded-xl bg-slate-50 border border-slate-200 mt-8 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-sm text-slate-900">Explore Source Code & Artifacts</h4>
+                  <h4 className="font-bold text-sm text-slate-900">Explore Interactive Materials</h4>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
-                    Verified repository materials and reproducible scripts.
+                    Reproducible models and verified scripts.
                   </p>
                 </div>
                 <div className="flex items-center gap-2.5">
@@ -819,249 +752,243 @@ export default function BlogDetails() {
                 </div>
               </div>
             )}
+
+            {/* Social Share Footer */}
+            <div className="flex items-center justify-between pt-6 border-t border-slate-100 text-xs font-mono text-slate-500">
+              <span>Share this article:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleShare('linkedin')}
+                  className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 transition-colors cursor-pointer"
+                  title="Share on LinkedIn"
+                >
+                  <LinkedinIcon size={14} />
+                </button>
+                <button
+                  onClick={() => handleShare('twitter')}
+                  className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
+                  title="Share on X"
+                >
+                  <XTwitterIcon size={14} />
+                </button>
+                <button
+                  onClick={() => handleShare('copy')}
+                  className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
+                  title="Copy link"
+                >
+                  {copiedLink ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                </button>
+              </div>
+            </div>
+
           </article>
 
-          {/* ── 05: DESKTOP STICKY TABLE OF CONTENTS (Right Side) ── */}
-          <aside className="hidden lg:block lg:col-span-4">
-            <div className="sticky top-28 space-y-6">
-              
-              {/* Table of Contents Box */}
-              {headings.length > 0 ? (
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/90 shadow-2xs">
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200 text-xs font-mono font-bold text-slate-800 uppercase tracking-wider">
-                    <span className="flex items-center gap-1.5 text-blue-700">
-                      <List size={14} /> Table of Contents
-                    </span>
-                    <span className="text-[10px] text-slate-400">{headings.length} sections</span>
-                  </div>
-
-                  <nav className="space-y-1.5 text-xs max-h-[60vh] overflow-y-auto pr-1">
-                    {headings.map((h) => {
-                      const isActive = activeHeadingId === h.id;
-                      return (
-                        <a
-                          key={h.id}
-                          href={`#${h.id}`}
-                          className={`block py-1 transition-all leading-snug rounded-md px-2 ${
-                            h.level === 3 ? 'pl-5 text-[11px]' : 'font-semibold'
-                          } ${
-                            isActive
-                              ? 'bg-blue-100/70 text-blue-700 font-bold translate-x-1'
-                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
-                          }`}
-                        >
-                          {h.text}
-                        </a>
-                      );
-                    })}
-                  </nav>
+          {/* ─────────────────────────────────────────────────────────────
+              RIGHT SIDEBAR: FEATURED POSTS + RECENT POSTS + TOC (lg:col-span-4)
+              (Matching User's Uploaded 3-Section Split Screenshot)
+              ───────────────────────────────────────────────────────────── */}
+          <aside className="lg:col-span-4 space-y-8 sticky top-24">
+            
+            {/* ── SECTION 1: FEATURED POSTS (Hero Cards with Thumbnails) ── */}
+            {featuredPosts.length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h3 className="font-serif font-bold text-base text-slate-900 flex items-center gap-1.5">
+                    <Star size={16} className="text-amber-500 fill-amber-500" />
+                    <span>Featured Posts</span>
+                  </h3>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Top Picks</span>
                 </div>
-              ) : null}
 
-              {/* Quick Author Snapshot Card */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs text-xs space-y-3">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={authorAvatar}
-                    alt={authorName}
-                    className="h-10 w-10 rounded-full object-cover border border-slate-200"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">{authorName}</div>
-                    <div className="text-[11px] text-slate-500">{authorRole}</div>
-                  </div>
+                <div className="space-y-4">
+                  {featuredPosts.slice(0, 2).map((fp) => (
+                    <div
+                      key={fp.id}
+                      onClick={() => navigate(`/blog/${fp.slug || fp.id}`)}
+                      className="group cursor-pointer rounded-xl overflow-hidden border border-slate-200 bg-slate-900 relative shadow-2xs hover:shadow-md transition-all"
+                    >
+                      <div className="aspect-16/10 overflow-hidden bg-slate-950">
+                        {fp.cover_image && (
+                          <img
+                            src={fp.cover_image}
+                            alt={fp.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                          />
+                        )}
+                      </div>
+                      <div className="p-3.5 bg-white space-y-1">
+                        <span className="text-[10px] font-mono font-bold text-blue-600 uppercase block">
+                          {fp.category || 'Data Analytics'}
+                        </span>
+                        <h4 className="font-serif font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+                          {fp.title}
+                        </h4>
+                        <span className="text-[11px] font-mono text-slate-400 block pt-1">
+                          {new Date(fp.published_at || fp.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-slate-600 leading-relaxed text-[11px]">
-                  Specializing in data pipelines, SQL transformations, DAX analytics, and dashboard architecture.
-                </p>
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-blue-600 font-mono text-[11px] font-bold">
-                  <a
-                    href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 hover:underline text-[#0077B5]"
-                  >
-                    <FaLinkedin className="text-xs" /> LinkedIn
-                  </a>
-                  <a
-                    href="https://github.com/arun-pandian-p"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 hover:underline text-slate-800"
-                  >
-                    <FaGithub className="text-xs" /> GitHub
-                  </a>
-                  <Link to="/#contact" className="hover:underline text-blue-600">
-                    Contact ✉
+              </div>
+            )}
+
+            {/* ── SECTION 2: RECENT POSTS (Compact List with Thumbnails & Dates) ── */}
+            {recentPosts.length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <h3 className="font-serif font-bold text-base text-slate-900 flex items-center gap-1.5">
+                    <Flame size={16} className="text-orange-500" />
+                    <span>Recent Posts</span>
+                  </h3>
+                  <Link to="/blog" className="text-[11px] font-mono text-blue-600 hover:underline">
+                    View All →
                   </Link>
                 </div>
-              </div>
-            </div>
-          </aside>
-        </div>
 
-        {/* ── 06: BOTTOM SECTION: AUTHOR CARD, RELATED POSTS & CTAS ── */}
-        <section className="max-w-4xl mx-auto mt-16 pt-12 border-t border-slate-200 space-y-12">
-          
-          {/* Detailed Author Card */}
-          <div className="p-6 sm:p-8 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center gap-6 shadow-2xs">
-            <img
-              src={authorAvatar}
-              alt={authorName}
-              className="h-20 w-20 rounded-full object-cover border-2 border-white shadow-md shrink-0"
-            />
-            <div className="space-y-2 flex-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="divide-y divide-slate-100">
+                  {recentPosts.map((rp) => (
+                    <div
+                      key={rp.id}
+                      onClick={() => navigate(`/blog/${rp.slug || rp.id}`)}
+                      className="py-3 first:pt-0 last:pb-0 flex items-center gap-3.5 group cursor-pointer"
+                    >
+                      {/* Compact Square / Rectangular Thumbnail */}
+                      <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-900 shrink-0 border border-slate-200">
+                        {rp.cover_image ? (
+                          <img
+                            src={rp.cover_image}
+                            alt={rp.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+                            <FileText size={16} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Title & Date */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-sans font-bold text-xs sm:text-[13px] text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+                          {rp.title}
+                        </h4>
+                        <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                          {new Date(rp.published_at || rp.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 3: TABLE OF CONTENTS ── */}
+            {headings.length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-xs font-mono font-bold text-slate-800 uppercase tracking-wider">
+                  <span className="flex items-center gap-1.5 text-blue-700">
+                    <List size={14} /> Section Outline
+                  </span>
+                  <span className="text-[10px] text-slate-400">{headings.length} parts</span>
+                </div>
+
+                <nav className="space-y-1 text-xs max-h-[50vh] overflow-y-auto pr-1">
+                  {headings.map((h) => {
+                    const isActive = activeHeadingId === h.id;
+                    return (
+                      <a
+                        key={h.id}
+                        href={`#${h.id}`}
+                        className={`block py-1.5 transition-all leading-snug rounded-md px-2 ${
+                          h.level === 3 ? 'pl-5 text-[11px]' : 'font-semibold'
+                        } ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 font-bold translate-x-1 border-l-2 border-blue-600'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                        }`}
+                      >
+                        {h.text}
+                      </a>
+                    );
+                  })}
+                </nav>
+              </div>
+            )}
+
+            {/* Author Card Snapshot */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs text-xs space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={authorAvatar}
+                  alt={authorName}
+                  className="h-10 w-10 rounded-full object-cover border border-slate-200"
+                />
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900 font-serif">Written by {authorName}</h3>
-                  <p className="text-xs font-mono text-slate-500">{authorRole}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-[#0077B5] hover:border-[#0077B5]/30 transition-colors"
-                  >
-                    <FaLinkedin className="text-sm text-[#0077B5]" />
-                    <span>LinkedIn</span>
-                  </a>
-                  <a
-                    href="https://github.com/arun-pandian-p"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-mono text-slate-700 hover:text-slate-950 hover:border-slate-400 transition-colors"
-                  >
-                    <FaGithub className="text-sm text-slate-900" />
-                    <span>GitHub</span>
-                  </a>
+                  <div className="font-bold text-slate-900">{authorName}</div>
+                  <div className="text-[11px] text-slate-500">{authorRole}</div>
                 </div>
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed font-sans">
-                {authorBio}
+              <p className="text-slate-600 leading-relaxed text-[11px]">
+                Specializing in data pipelines, SQL transformations, DAX analytics, and dashboard architecture.
               </p>
-            </div>
-          </div>
-
-          {/* Prev / Next Article Navigation */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {prevBlog && (
-              <Link
-                to={`/blog/${prevBlog.slug || prevBlog.id}`}
-                className="p-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center gap-3 group shadow-2xs"
-              >
-                <ChevronLeft size={22} className="text-slate-400 group-hover:text-blue-600 group-hover:-translate-x-1 transition-all shrink-0" />
-                <div className="truncate">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Previous Article</span>
-                  <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 truncate block mt-0.5">{prevBlog.title}</span>
-                </div>
-              </Link>
-            )}
-
-            {nextBlog && (
-              <Link
-                to={`/blog/${nextBlog.slug || nextBlog.id}`}
-                className="p-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between text-right group shadow-2xs sm:col-start-2"
-              >
-                <div className="truncate">
-                  <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Next Article</span>
-                  <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 truncate block mt-0.5">{nextBlog.title}</span>
-                </div>
-                <ChevronRight size={22} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all shrink-0" />
-              </Link>
-            )}
-          </div>
-
-          {/* Related Articles Grid */}
-          {relatedBlogs.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-serif font-bold text-xl text-slate-900">
-                  Related Technical Publications
-                </h4>
-                <Link to="/blog" className="text-xs font-mono text-blue-600 hover:underline font-semibold">
-                  View All Articles →
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-blue-600 font-mono text-[11px] font-bold">
+                <a
+                  href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline text-[#0077B5]"
+                >
+                  <FaLinkedin className="text-xs" /> LinkedIn
+                </a>
+                <a
+                  href="https://github.com/arun-pandian-p"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:underline text-slate-800"
+                >
+                  <FaGithub className="text-xs" /> GitHub
+                </a>
+                <Link to="/#contact" className="hover:underline text-blue-600">
+                  Contact ✉
                 </Link>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                {relatedBlogs.map((rb) => (
-                  <Link
-                    key={rb.id}
-                    to={`/blog/${rb.slug || rb.id}`}
-                    className="p-4 rounded-xl border border-slate-200 bg-white hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs"
-                  >
-                    <div>
-                      {rb.cover_image && (
-                        <img
-                          src={rb.cover_image}
-                          alt={rb.title}
-                          className="w-full h-28 object-cover rounded-lg mb-3 bg-slate-900"
-                        />
-                      )}
-                      <h5 className="font-bold text-sm text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">
-                        {rb.title}
-                      </h5>
-                      <p className="text-xs text-slate-500 line-clamp-2 mt-1.5 leading-relaxed">
-                        {rb.excerpt || 'Data analytics investigation and modeling walk-through.'}
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-mono text-blue-600 font-bold mt-3 block">
-                      Read Article →
-                    </span>
-                  </Link>
-                ))}
-              </div>
             </div>
+
+          </aside>
+
+        </div>
+
+        {/* ── PREV / NEXT NAVIGATION BAR ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 pt-8 border-t border-slate-200">
+          {prevBlog && (
+            <Link
+              to={`/blog/${prevBlog.slug || prevBlog.id}`}
+              className="p-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center gap-3 group shadow-2xs"
+            >
+              <ChevronLeft size={22} className="text-slate-400 group-hover:text-blue-600 group-hover:-translate-x-1 transition-all shrink-0" />
+              <div className="truncate">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Previous Article</span>
+                <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 truncate block mt-0.5">{prevBlog.title}</span>
+              </div>
+            </Link>
           )}
 
-          {/* Dual CTAs: Explore Projects & Contact Arun */}
-          <div className="rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-8 sm:p-10 text-center shadow-lg space-y-6">
-            <h2 className="text-2xl sm:text-3xl font-display font-black">
-              Interested in more data insights or collaboration?
-            </h2>
-            <p className="text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-              Explore interactive dashboards in the portfolio or reach out for data analytics roles, modeling consulting, or business intelligence projects.
-            </p>
+          {nextBlog && (
+            <Link
+              to={`/blog/${nextBlog.slug || nextBlog.id}`}
+              className="p-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors flex items-center justify-between text-right group shadow-2xs sm:col-start-2"
+            >
+              <div className="truncate">
+                <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Next Article</span>
+                <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 truncate block mt-0.5">{nextBlog.title}</span>
+              </div>
+              <ChevronRight size={22} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all shrink-0" />
+            </Link>
+          )}
+        </div>
 
-            <div className="flex flex-wrap justify-center items-center gap-3">
-              <Link
-                to="/#projects"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md active:scale-95 cursor-pointer"
-              >
-                <Grid size={15} />
-                <span>Explore Portfolio Projects</span>
-              </Link>
-              <Link
-                to="/#contact"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition-all cursor-pointer"
-              >
-                <Mail size={15} />
-                <span>Contact Me</span>
-              </Link>
-              <Link
-                to={`/admin/blogs?edit=${blog.id}`}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800/80 hover:bg-slate-800 text-slate-300 border border-slate-700 font-medium text-xs sm:text-sm transition-all cursor-pointer"
-              >
-                <Edit2 size={13} className="text-slate-400" />
-                <span>Edit in Admin</span>
-              </Link>
-            </div>
-          </div>
-        </section>
       </main>
-
-      {/* Floating Quick Edit Button */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <Link
-          to={`/admin/blogs?edit=${blog.id}`}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium shadow-xl border border-slate-700/80 transition-all hover:scale-105 backdrop-blur-md cursor-pointer"
-          title="Edit this article in Admin Panel"
-        >
-          <Edit2 size={13} className="text-slate-400" />
-          <span>Edit in Admin</span>
-        </Link>
-      </div>
     </div>
   );
 }
