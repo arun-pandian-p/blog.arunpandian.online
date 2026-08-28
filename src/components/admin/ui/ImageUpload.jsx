@@ -21,21 +21,37 @@ const KIND_ICON = {
   other: FileIcon,
 };
 
-export default function ImageUpload({ url, onUpload, folder = 'uploads', label = 'Image', accept = 'image/*' }) {
+export default function ImageUpload({ 
+  url, 
+  value, 
+  onUpload, 
+  onChange, 
+  folder = 'uploads', 
+  label = 'Image', 
+  accept = 'image/*' 
+}) {
+  const currentUrl = url !== undefined ? url : (value || '');
+  const notifyChange = onUpload || onChange || (() => {});
+
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [manualUrl, setManualUrl] = useState(url || '');
+  const [manualUrl, setManualUrl] = useState(currentUrl);
   const [fitMode, setFitMode] = useState('contain'); // 'contain' for 100% full visibility, 'cover' for filled
   const fileInputRef = useRef(null);
+
+  // Sync manualUrl when external url/value changes
+  React.useEffect(() => {
+    setManualUrl(currentUrl);
+  }, [currentUrl]);
 
   // Only restrict to images when the caller hasn't opted into broader types.
   const imageOnly = accept === 'image/*';
   const acceptsAny = accept === '*' || accept === '*/*' || accept.includes('*/*');
   const acceptsVideo = accept.includes('video');
 
-  const kind = getFileKind(url);
+  const kind = getFileKind(currentUrl);
   const isImageFile = kind === 'image';
-  const isVideoFile = kind === 'video' || (acceptsVideo && !url);
+  const isVideoFile = kind === 'video' || (acceptsVideo && !currentUrl);
 
   const handleFileProcess = async (file) => {
     if (!file) return;
@@ -73,7 +89,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
       }
 
       const { data } = supabase.storage.from('assets').getPublicUrl(filePath);
-      onUpload(data.publicUrl);
+      notifyChange(data.publicUrl);
       setManualUrl(data.publicUrl);
       toast.success('File uploaded successfully!', { icon: '📸' });
     } catch (error) {
@@ -111,13 +127,13 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
   const handleUrlSubmit = (e) => {
     e.preventDefault();
     if (manualUrl.trim()) {
-      onUpload(manualUrl.trim());
+      notifyChange(manualUrl.trim());
       toast.success('File URL set!');
     }
   };
 
   const clear = () => {
-    onUpload('');
+    notifyChange('');
     setManualUrl('');
   };
 
@@ -137,7 +153,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
           {label}
         </label>
-        {url && isImageFile && (
+        {currentUrl && isImageFile && (
           <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Active Asset
@@ -155,7 +171,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
         ref={fileInputRef}
       />
 
-      {url ? (
+      {currentUrl ? (
         <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-[#2E2E44] bg-slate-900/5 dark:bg-[#12121E] shadow-sm transition-all">
           
           {/* Main Visual Display - Adaptive Height with Full View */}
@@ -163,7 +179,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
             {isImageFile ? (
               <img
                 loading="lazy"
-                src={url}
+                src={currentUrl}
                 alt={label}
                 className={`w-full max-h-[440px] rounded-xl transition-all duration-200 ${
                   fitMode === 'contain' ? 'object-contain h-auto' : 'object-cover h-[340px]'
@@ -171,7 +187,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
               />
             ) : isVideoFile ? (
               <video
-                src={url}
+                src={currentUrl}
                 autoPlay
                 muted
                 loop
@@ -185,12 +201,12 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
                   <KindIcon size={30} strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#F29F67]">{getKindLabel(url)}</p>
-                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-white" title={getFileName(url)}>
-                    {getFileName(url)}
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#F29F67]">{getKindLabel(currentUrl)}</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-white" title={getFileName(currentUrl)}>
+                    {getFileName(currentUrl)}
                   </p>
                   <a
-                    href={url}
+                    href={currentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-[#F29F67] hover:underline"
@@ -205,8 +221,8 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
           {/* Action Toolbar Header (Always Visible & Accessible) */}
           <div className="flex items-center justify-between px-3.5 py-2.5 bg-white/95 dark:bg-[#1E1E2C]/95 backdrop-blur-md border-t border-slate-100 dark:border-[#2A2A3E] text-xs">
             <div className="flex items-center gap-2 truncate max-w-[50%]">
-              <span className="truncate font-mono text-[11px] text-slate-500 dark:text-slate-400" title={url}>
-                {getFileName(url) || url}
+              <span className="truncate font-mono text-[11px] text-slate-500 dark:text-slate-400" title={currentUrl}>
+                {getFileName(currentUrl) || currentUrl}
               </span>
             </div>
 
@@ -226,7 +242,7 @@ export default function ImageUpload({ url, onUpload, folder = 'uploads', label =
 
               {/* View Full Size ↗ */}
               <a
-                href={url}
+                href={currentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#33334B] text-[11px] font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#252538] transition-colors"

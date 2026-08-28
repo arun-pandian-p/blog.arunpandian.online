@@ -315,6 +315,16 @@ export default function BlogDetails() {
     return sections.map((block, idx) => {
       const trimmed = block.trim();
 
+      // Heading 1
+      if (trimmed.startsWith('# ')) {
+        const text = trimmed.replace(/^#\s+/, '').replace(/\*\*|\*|`/g, '');
+        return (
+          <h1 key={idx} className="font-serif font-black text-3xl sm:text-4xl text-slate-900 mt-12 mb-4 tracking-tight">
+            {text}
+          </h1>
+        );
+      }
+
       // Heading 2
       if (trimmed.startsWith('## ')) {
         const text = trimmed.replace(/^##\s+/, '').replace(/\*\*|\*|`/g, '');
@@ -355,6 +365,19 @@ export default function BlogDetails() {
           >
             {text}
           </h3>
+        );
+      }
+
+      // Heading 4
+      if (trimmed.startsWith('#### ')) {
+        const text = trimmed.replace(/^####\s+/, '').replace(/\*\*|\*|`/g, '');
+        return (
+          <h4
+            key={idx}
+            className="font-sans font-bold text-base text-slate-800 mt-6 mb-2 uppercase tracking-wide text-xs"
+          >
+            {text}
+          </h4>
         );
       }
 
@@ -496,6 +519,24 @@ export default function BlogDetails() {
             ))}
           </ol>
         );
+      }
+
+      // Collapsible FAQ Accordion (<details><summary>...</summary>...</details>)
+      if (trimmed.startsWith('<details>')) {
+        const sumMatch = trimmed.match(/<summary>(.*?)<\/summary>/);
+        const summary = sumMatch ? sumMatch[1] : 'Click to expand';
+        const body = trimmed.replace(/<details>[\s\S]*?<summary>.*?<\/summary>/, '').replace(/<\/details>/, '').trim();
+        return (
+          <details key={idx} className="my-6 p-4 rounded-xl border border-slate-200 bg-slate-50/70 text-slate-800 cursor-pointer shadow-2xs">
+            <summary className="font-bold text-sm sm:text-base text-slate-900 select-none">{summary}</summary>
+            <div className="pt-3 mt-3 border-t border-slate-200 text-sm text-slate-600 leading-relaxed">{body}</div>
+          </details>
+        );
+      }
+
+      // Horizontal Divider
+      if (trimmed === '---' || trimmed === '***') {
+        return <hr key={idx} className="my-8 border-slate-200" />;
       }
 
       // Responsive Markdown Image: ![Caption](url)

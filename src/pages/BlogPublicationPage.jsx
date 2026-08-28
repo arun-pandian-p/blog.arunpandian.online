@@ -14,6 +14,7 @@ import {
   Calendar,
   Clock,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   Layers,
   Code2,
@@ -35,13 +36,19 @@ import {
   SlidersHorizontal,
   LayoutGrid,
   Columns,
+  Mail,
+  Share2,
+  Check,
+  User,
+  X
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
 import { supabase } from '../lib/supabaseClient';
-import { FaLinkedin, FaGithub } from 'react-icons/fa6';
+import { FaLinkedin, FaGithub, FaXTwitter, FaMedium } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
 
 const VERIFIED_FALLBACK_IMAGES = [
   'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
@@ -54,27 +61,20 @@ export default function BlogPublicationPage() {
   const { settings, projects: contextProjects = [], blogs: contextBlogs = [] } = useContent();
   const { theme } = useThemeStore();
   
-  // Layout presets & arrangement: 'grid' | 'horizontal' | 'bento'
-  const defaultLayout = theme?.layout?.blogScroll || settings?.sections?.blog?.layout || 'grid';
-  const [layoutMode, setLayoutMode] = useState(defaultLayout);
-
-  const [selectedTopic, setSelectedTopic] = useState('All');
-  const [selectedArticle, setSelectedArticle] = useState(null);
-  const [selectedCertification, setSelectedCertification] = useState(null);
+  // Layout presets & arrangement: 'magazine' | 'grid' | 'list'
+  const [layoutMode, setLayoutMode] = useState('magazine');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  const [subscribeSuccess, setSubscribeSuccess] = useState(false);
   
   // Real-time live data states
   const [liveDbProjects, setLiveDbProjects] = useState([]);
   const [liveDbBlogs, setLiveDbBlogs] = useState([]);
   const [liveDbCertifications, setLiveDbCertifications] = useState([]);
 
-  // Sync with theme store changes
-  useEffect(() => {
-    if (theme?.layout?.blogScroll) {
-      setLayoutMode(theme.layout.blogScroll);
-    }
-  }, [theme?.layout?.blogScroll]);
-
-  // Fetch directly from Supabase on mount to guarantee fresh live data from admin panel
+  // Fetch directly from Supabase on mount
   useEffect(() => {
     let isMounted = true;
     const fetchLiveDb = async () => {
@@ -123,11 +123,12 @@ export default function BlogPublicationPage() {
       problem: p.problem || p.subtitle || '',
       insight: p.insight || 'Key statistical pattern and actionable metric discovered.',
       description: p.problem || p.subtitle || p.description || '',
-      analyticalQuestion: p.analyticalQuestion || p.insight || 'How can structured analytics solve this operational challenge?',
       tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Data Analytics'],
       image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
       href: `/project/${p.id || p._id || idx + 1}`,
       date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Aug 24, 2026',
+      type: 'project',
+      readTime: '6 min read',
     }));
   }, [liveDbProjects, contextProjects]);
 
@@ -136,6 +137,7 @@ export default function BlogPublicationPage() {
     const rawList = liveDbBlogs.length > 0 ? liveDbBlogs : contextBlogs;
     return rawList.map((b, idx) => ({
       id: b.id || b._id || String(idx + 1),
+      slug: b.slug || String(b.id || idx + 1),
       title: b.title || 'Data Analytics Process Notes',
       subtitle: b.excerpt || (Array.isArray(b.tags) ? b.tags.slice(0, 3).join(' · ') : 'Methodologies & Architecture'),
       content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
@@ -143,775 +145,534 @@ export default function BlogPublicationPage() {
       image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
       readTime: b.read_time || b.readTime || '5 min read',
       date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Aug 21, 2026',
-      category: 'Editorial Article',
+      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Data Analytics',
+      authorName: b.author_name || 'Arun Pandian',
+      href: `/blog/${b.slug || b.id}`,
+      type: 'article',
+      featured: Boolean(b.featured),
     }));
   }, [liveDbBlogs, contextBlogs]);
 
-  // 3. Unified Certifications
-  const allCertifications = useMemo(() => {
-    const rawList =
-      liveDbCertifications.length > 0
-        ? liveDbCertifications
-        : settings?.certifications?.certifications || settings?.skills?.certifications || [];
+  // Combined articles list for filtering & search
+  const allItems = useMemo(() => {
+    return [...allBlogs, ...allProjects];
+  }, [allBlogs, allProjects]);
 
-    return rawList.map((c, idx) => {
-      const isObj = typeof c === 'object' && c !== null;
-      const name = isObj ? (c.name || c.title) : c;
-      const issuer = isObj ? (c.issuer || 'Forage') : (name.includes('Deloitte') ? 'Deloitte' : name.includes('Tata') ? 'Tata' : 'Forage');
-      const image = isObj ? (c.image || '') : '';
-      const credentialUrl = isObj ? (c.credentialUrl || '') : '';
-      const issueDate = isObj ? (c.issueDate || 'June 2026') : 'July 2026';
-
-      return {
-        id: `cert-${idx + 1}`,
-        title: name,
-        issuer,
-        subtitle: `${issuer} · Professional Credential & Simulation`,
-        image: image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-        credentialUrl,
-        issueDate,
-        tags: [issuer, 'Job Simulation', 'Data Analytics'],
-        category: 'Certification Story',
-        description: `Completed comprehensive professional simulation covering data pipelines, forensic anomaly analysis, and executive KPI scorecards.`,
-      };
-    });
-  }, [liveDbCertifications, settings]);
-
-  // 4. Combined Mixed Cards Grid
-  const mixedShowcaseCards = useMemo(() => {
-    const cards = [];
-    allProjects.forEach((p) => {
-      cards.push({
-        id: `proj-${p.id}`,
-        title: p.title,
-        subtitle: p.subtitle,
-        image: p.image,
-        category: `${p.category || 'Power BI'} Project`,
-        link: p.href,
-        type: 'project',
-      });
-    });
-    allBlogs.forEach((b) => {
-      cards.push({
-        id: `blog-${b.id}`,
-        title: b.title,
-        subtitle: b.subtitle,
-        image: b.image,
-        category: 'Editorial Article',
-        articleData: b,
-        type: 'article',
-      });
-    });
-    allCertifications.forEach((c) => {
-      cards.push({
-        id: `cert-${c.id}`,
-        title: c.title,
-        subtitle: c.subtitle,
-        image: c.image,
-        category: 'Certification Story',
-        certData: c,
-        type: 'certification',
-      });
-    });
-    return cards;
-  }, [allProjects, allBlogs, allCertifications]);
-
-  // 5. Combined Editorial Story Feed
-  const allEditorialStories = useMemo(() => {
-    const stories = [];
-    allProjects.forEach((p) => {
-      stories.push({
-        id: `story-proj-${p.id}`,
-        title: p.title,
-        date: p.date,
-        topic: 'Statistical Visualization',
-        subtopic: p.tool || 'Power BI · Analytics',
-        tags: p.tags,
-        image: p.image,
-        narrative: (
-          <div className="space-y-3">
-            <p className="font-medium text-slate-800">
-              <strong>Analytical Question:</strong> <em>"{p.analyticalQuestion}"</em>
-            </p>
-            <p>{p.description}</p>
-            {p.insight && (
-              <p className="bg-slate-50 p-3 rounded-lg border-l-3 border-blue-600 text-xs sm:text-sm">
-                <strong>Key Finding:</strong> {p.insight}
-              </p>
-            )}
-          </div>
-        ),
-        ctaLink: p.href,
-        ctaText: 'Explore full case study and data model →',
-        type: 'project',
-      });
-    });
-
-    allBlogs.forEach((b) => {
-      stories.push({
-        id: `story-blog-${b.id}`,
-        title: b.title,
-        date: b.date,
-        topic: 'Methodology Notes',
-        subtopic: b.subtitle,
-        tags: b.tags,
-        image: b.image,
-        narrative: (
-          <div className="space-y-3">
-            <p className="line-clamp-4">{b.content}</p>
-          </div>
-        ),
-        articleData: b,
-        ctaText: 'Read full analysis and methodology notes →',
-        type: 'article',
-      });
-    });
-
-    allCertifications.forEach((c) => {
-      stories.push({
-        id: `story-cert-${c.id}`,
-        title: `${c.title} — ${c.issuer}`,
-        date: c.issueDate || 'July 2026',
-        topic: 'Professional Simulation',
-        subtopic: `${c.issuer} Job Simulation`,
-        tags: c.tags,
-        image: c.image,
-        narrative: (
-          <div className="space-y-3">
-            <p>{c.description}</p>
-            <p className="text-xs text-slate-600">
-              <strong>Issuer:</strong> {c.issuer} · {c.issueDate}
-            </p>
-          </div>
-        ),
-        certData: c,
-        ctaText: 'View certification credential details →',
-        type: 'certification',
-      });
-    });
-
-    return stories;
-  }, [allProjects, allBlogs, allCertifications]);
-
-  // Filtered stories based on topic
-  const filteredStories = useMemo(() => {
-    if (selectedTopic === 'All') return allEditorialStories;
-    return allEditorialStories.filter((s) => {
-      const matchTopic = s.topic.toLowerCase().includes(selectedTopic.toLowerCase());
-      const matchSub = s.subtopic && s.subtopic.toLowerCase().includes(selectedTopic.toLowerCase());
-      const matchTag = s.tags && s.tags.some((t) => t.toLowerCase().includes(selectedTopic.toLowerCase()));
-      return matchTopic || matchSub || matchTag;
-    });
-  }, [allEditorialStories, selectedTopic]);
-
-  const handleCardClick = (card) => {
-    if (card.link) {
-      if (card.link.startsWith('http')) {
-        window.open(card.link, '_blank');
-      } else {
-        navigate(card.link);
+  // Categories list with counts
+  const categoriesList = useMemo(() => {
+    const cats = ['All'];
+    allItems.forEach((item) => {
+      if (item.category && !cats.includes(item.category)) {
+        cats.push(item.category);
       }
-    } else if (card.articleData) {
-      navigate(`/blog/${card.articleData.slug || card.articleData.id}`);
-    } else if (card.certData) {
-      setSelectedCertification(card.certData);
-    }
-  };
-
-  const handleStoryClick = (story) => {
-    if (story.ctaLink) {
-      if (story.ctaLink.startsWith('http')) {
-        window.open(story.ctaLink, '_blank');
-      } else {
-        navigate(story.ctaLink);
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach((tag) => {
+          if (tag && !cats.includes(tag) && cats.length < 9) {
+            cats.push(tag);
+          }
+        });
       }
-    } else if (story.articleData) {
-      navigate(`/blog/${story.articleData.slug || story.articleData.id}`);
-    } else if (story.certData) {
-      setSelectedCertification(story.certData);
-    }
+    });
+    return cats;
+  }, [allItems]);
+
+  // Filtered Items
+  const filteredItems = useMemo(() => {
+    return allItems.filter((item) => {
+      const matchesSearch =
+        !searchQuery.trim() ||
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
+
+      const matchesCat =
+        selectedCategory === 'All' ||
+        item.category.toLowerCase() === selectedCategory.toLowerCase() ||
+        (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === selectedCategory.toLowerCase()));
+
+      return matchesSearch && matchesCat;
+    });
+  }, [allItems, searchQuery, selectedCategory]);
+
+  // Featured 3 Spotlight Cards (Top Hero Showcase matching Image 2)
+  const spotlightCards = useMemo(() => {
+    const featuredList = allBlogs.filter((b) => b.featured);
+    if (featuredList.length >= 3) return featuredList.slice(0, 3);
+    return allBlogs.slice(0, 3);
+  }, [allBlogs]);
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (!subscribeEmail.trim()) return;
+    setSubscribeSuccess(true);
+    toast.success('Thank you for subscribing to our Data Publication!', { icon: '🎉' });
+    setTimeout(() => {
+      setIsSubscribeOpen(false);
+      setSubscribeSuccess(false);
+      setSubscribeEmail('');
+    }, 2000);
   };
 
-  // Helper to render image or PDF preview cleanly
-  const renderVisualMedia = (mediaUrl, altTitle) => {
-    if (!mediaUrl) return null;
-    const isPdf = mediaUrl.toLowerCase().endsWith('.pdf');
-
-    if (isPdf) {
-      return (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-white p-4">
-          <GraduationCap size={36} className="text-blue-400 mb-2" />
-          <span className="text-xs font-mono font-bold text-center px-2">{altTitle}</span>
-          <span className="text-[10px] text-slate-400 mt-1 uppercase font-mono tracking-wider">PDF Certificate</span>
-        </div>
-      );
-    }
-
-    return (
-      <img
-        src={mediaUrl}
-        alt={altTitle}
-        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-        loading="lazy"
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = VERIFIED_FALLBACK_IMAGES[0];
-        }}
-      />
-    );
-  };
-
-  // Dynamic Sidebar & Author Configurations (Editable via Admin)
-  const sidebarSectionTitle = settings?.sections?.blog?.sidebarName || 'Made by Arun Pandian';
   const authorName = settings?.hero?.name || 'Arun Pandian';
-  const authorBio = settings?.about?.bio || settings?.sections?.blog?.authorBio || "Hi, I'm Arun Pandian — a Data Analyst transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
+  const authorBio = settings?.about?.bio || settings?.sections?.blog?.authorBio || "Data Analyst exploring real-world datasets, Business Intelligence architecture, and ETL engineering pipelines.";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>Analytics Publication, Projects & Certifications | {authorName}</title>
+        <title>Blog & Technical Publications | {authorName}</title>
         <meta
           name="description"
-          content="FlowingData-inspired data analytics publication, real uploaded projects, and technical certifications by Arun Pandian."
+          content="Explore in-depth data analytics case studies, Power BI architecture, SQL transformations, and statistical modeling articles."
         />
       </Helmet>
 
       <StyleOverrides />
       <Navbar />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-20">
-
-        {/* ═════════════════════════════════════════════════════════════════
-            PART 1: TOP SHOWCASE CARDS (HORIZONTAL / GRID / BENTO ARRANGEMENT)
-            Real Projects + Real Blog Articles + Real Certifications
-            ═════════════════════════════════════════════════════════════════ */}
-        <section className="mb-12 sm:mb-16">
-          <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-200 mb-6 gap-3">
+      {/* ═════════════════════════════════════════════════════════════════
+          TOP EDITORIAL MASTHEAD (Matching Elementor Blog Style & Image 2)
+          ═════════════════════════════════════════════════════════════════ */}
+      <header className="pt-24 sm:pt-28 pb-6 border-b border-slate-100 bg-slate-50/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Top Sub-Bar: Social Icons & Tagline */}
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/70 text-xs font-mono text-slate-500">
             <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-              <h2
-                data-edit-id="blog.showcaseTitle"
-                data-edit-name="Blog · Showcase Title"
-                data-edit-kind="heading"
-                data-edit-path="sections.blog.showcaseTitle"
-                className="text-xs font-mono font-bold tracking-widest text-slate-700 uppercase"
-              >
-                Featured Projects, Articles & Certifications
-              </h2>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-slate-700 tracking-wide uppercase text-[11px]">
+                Data Intelligence & Engineering Journal
+              </span>
             </div>
 
-            {/* Layout Arrangement Switcher (Horizontal vs Vertical Grid) */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-mono">
-                <button
-                  onClick={() => setLayoutMode('grid')}
-                  title="3-Column Grid Layout"
-                  className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                    layoutMode === 'grid'
-                      ? 'bg-white font-bold text-slate-900 shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <LayoutGrid size={13} />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
-                <button
-                  onClick={() => setLayoutMode('horizontal')}
-                  title="Horizontal Carousel Layout"
-                  className={`px-2.5 py-1 rounded-md flex items-center gap-1 transition-all cursor-pointer ${
-                    layoutMode === 'horizontal'
-                      ? 'bg-white font-bold text-slate-900 shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  <Columns size={13} />
-                  <span className="hidden sm:inline">Horizontal</span>
-                </button>
-              </div>
-
-              <span className="text-[11px] font-mono text-slate-400">
-                {mixedShowcaseCards.length} Total Works
-              </span>
+            {/* Social Channels */}
+            <div className="flex items-center gap-4 text-slate-600">
+              <a
+                href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-[#0077B5] transition-colors"
+                title="LinkedIn"
+              >
+                <FaLinkedin size={15} />
+              </a>
+              <a
+                href="https://github.com/arun-pandian-p"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-slate-900 transition-colors"
+                title="GitHub"
+              >
+                <FaGithub size={15} />
+              </a>
+              <button
+                onClick={() => setIsSubscribeOpen(true)}
+                className="px-3 py-1 rounded-full bg-slate-900 hover:bg-blue-600 text-white font-bold text-[11px] font-mono transition-all shadow-xs cursor-pointer"
+              >
+                Subscribe
+              </button>
             </div>
           </div>
 
-          {/* Render by Layout Arrangement */}
-          {layoutMode === 'horizontal' ? (
-            /* Horizontal Scrollable Carousel with Arrow Indicator */
-            <div className="relative">
-              <div className="flex overflow-x-auto gap-5 sm:gap-6 pb-4 snap-x snap-mandatory hide-scrollbar -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-                {mixedShowcaseCards.map((card) => (
-                  <div
-                    key={card.id}
-                    onClick={() => handleCardClick(card)}
-                    className="w-[78vw] sm:w-[42vw] md:w-[30vw] lg:w-[24vw] shrink-0 snap-center group cursor-pointer flex flex-col"
-                  >
-                    <div className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-2xs group-hover:shadow-md group-hover:border-slate-300 transition-all duration-300 aspect-4/3 mb-3 relative">
-                      {renderVisualMedia(card.image, card.title)}
-                      <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-[10px] font-mono font-bold text-slate-800 shadow-xs border border-slate-200/60">
-                        {card.category}
-                      </div>
-                    </div>
-                    <h3 className="font-display font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors leading-snug mb-1 truncate">
-                      {card.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-mono truncate">
-                      {card.subtitle}
+          {/* Central Iconic Title: BLOG */}
+          <div className="py-8 sm:py-12 text-center">
+            <h1 className="font-display font-black text-5xl sm:text-7xl md:text-8xl tracking-tight text-slate-950 uppercase leading-none">
+              BLOG
+            </h1>
+            <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-xl mx-auto font-sans leading-relaxed">
+              Analytical investigations, Power BI & DAX architectures, SQL pipelines, and real-world business insights.
+            </p>
+          </div>
+
+          {/* Editorial Navigation Menu (Home, Pages, Categories, Search) */}
+          <nav className="flex flex-wrap items-center justify-between gap-4 py-3 border-t border-slate-200 text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
+              <Link to="/#projects" className="hover:text-blue-600 transition-colors">Projects</Link>
+              <Link to="/#skills" className="hover:text-blue-600 transition-colors">Toolkit</Link>
+              <Link to="/#about" className="hover:text-blue-600 transition-colors">About</Link>
+              <Link to="/#contact" className="hover:text-blue-600 transition-colors">Contact</Link>
+              <Link to="/admin/blogs" className="text-slate-400 hover:text-blue-600 transition-colors">Admin Studio ⚙</Link>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Search articles & case studies..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:border-slate-900 outline-none font-sans"
+              />
+              <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-700 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </nav>
+
+        </div>
+      </header>
+
+      {/* ═════════════════════════════════════════════════════════════════
+          SPOTLIGHT MAGAZINE 3-CARD HERO (Matching User Image 2)
+          Left: Category Banner | Center: Prominent Spotlight Hero | Right: Visual Story
+          ═════════════════════════════════════════════════════════════════ */}
+      {spotlightCards.length > 0 && !searchQuery && selectedCategory === 'All' && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+            
+            {/* Card 1 (Left): Tall Editorial Spotlight */}
+            {spotlightCards[0] && (
+              <div
+                onClick={() => navigate(spotlightCards[0].href)}
+                className="md:col-span-4 group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 min-h-[360px] md:min-h-[460px] flex flex-col justify-end p-6 border border-slate-200/80 shadow-sm transition-all duration-300 hover:shadow-xl"
+              >
+                <img
+                  src={spotlightCards[0].image}
+                  alt={spotlightCards[0].title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                
+                <div className="relative z-10 space-y-2">
+                  <span className="inline-block px-3 py-1 rounded-md bg-white/90 backdrop-blur-xs text-[10px] font-mono font-black uppercase tracking-wider text-slate-900 shadow-xs">
+                    {spotlightCards[0].category}
+                  </span>
+                  <h3 className="font-serif font-bold text-xl sm:text-2xl text-white group-hover:text-blue-300 transition-colors leading-snug">
+                    {spotlightCards[0].title}
+                  </h3>
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                    {spotlightCards[0].subtitle}
+                  </p>
+                  <div className="flex items-center gap-3 pt-2 text-[11px] font-mono text-slate-300">
+                    <span>{spotlightCards[0].date}</span>
+                    <span>•</span>
+                    <span>{spotlightCards[0].readTime}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Card 2 (Center): Primary Large Hero Card with Iconic Floating Dark Badge Overlay */}
+            {spotlightCards[1] && (
+              <div
+                onClick={() => navigate(spotlightCards[1].href)}
+                className="md:col-span-5 group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 min-h-[380px] md:min-h-[460px] flex flex-col justify-between p-6 border border-slate-200/80 shadow-md transition-all duration-300 hover:shadow-2xl"
+              >
+                <img
+                  src={spotlightCards[1].image}
+                  alt={spotlightCards[1].title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-85"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-black/20" />
+
+                {/* Top Badge */}
+                <div className="relative z-10 flex justify-between items-center">
+                  <span className="px-3 py-1 rounded-md bg-blue-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-sm">
+                    ★ Featured Story
+                  </span>
+                  <span className="text-[11px] font-mono text-white/80 bg-black/40 px-2 py-0.5 rounded backdrop-blur-xs">
+                    {spotlightCards[1].readTime}
+                  </span>
+                </div>
+
+                {/* Center / Bottom Floating Dark Pill Overlay (Exact Image 2 Style) */}
+                <div className="relative z-10 mt-auto pt-8">
+                  <div className="bg-black/90 backdrop-blur-md px-5 py-4 rounded-xl border border-white/15 shadow-2xl text-center space-y-2 group-hover:border-blue-500/50 transition-colors">
+                    <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-blue-400">
+                      {spotlightCards[1].category}
+                    </span>
+                    <h2 className="font-serif font-black text-xl sm:text-2xl text-white group-hover:text-blue-200 transition-colors leading-tight">
+                      {spotlightCards[1].title}
+                    </h2>
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                      {spotlightCards[1].subtitle}
                     </p>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          ) : (
-            /* 3-Column Standard Grid Layout */
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-              {mixedShowcaseCards.map((card) => (
-                <div
-                  key={card.id}
-                  onClick={() => handleCardClick(card)}
-                  className="group cursor-pointer flex flex-col"
-                >
-                  <div className="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-2xs group-hover:shadow-md group-hover:border-slate-300 transition-all duration-300 aspect-4/3 mb-3 relative">
-                    {renderVisualMedia(card.image, card.title)}
-                    <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-white/95 backdrop-blur-xs text-[10px] font-mono font-bold text-slate-800 shadow-xs border border-slate-200/60">
-                      {card.category}
-                    </div>
-                  </div>
-                  <h3 className="font-display font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors leading-snug mb-1">
-                    {card.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono line-clamp-1">
-                    {card.subtitle}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+            )}
 
-        {/* Divider */}
-        <div className="border-t border-slate-200/90 mb-12 sm:mb-16" />
-
-        {/* ═════════════════════════════════════════════════════════════════
-            PART 2: FLOWINGDATA EDITORIAL STREAM + STICKY SIDEBAR (Image 1 & 3 style)
-            Left: Date & Topic | Center: Detailed Story | Right: Complete FlowingData Sidebar
-            ═════════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start relative">
-          
-          {/* ─────────────────────────────────────────────────────────────
-              LEFT / CENTER: EDITORIAL STORIES FEED (Col-span-12 lg:col-span-8)
-              ───────────────────────────────────────────────────────────── */}
-          <section className="col-span-12 lg:col-span-8 space-y-16 sm:space-y-20">
-            {filteredStories.map((story) => (
-              <article
-                key={story.id}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-6 items-start pb-12 border-b border-slate-100 last:border-b-0"
+            {/* Card 3 (Right): Side Spotlight Card */}
+            {spotlightCards[2] && (
+              <div
+                onClick={() => navigate(spotlightCards[2].href)}
+                className="md:col-span-3 group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-900 min-h-[360px] md:min-h-[460px] flex flex-col justify-end p-6 border border-slate-200/80 shadow-sm transition-all duration-300 hover:shadow-xl"
               >
-                {/* Left Metadata Column (Date, Topic, Tags) */}
-                <div className="md:col-span-3 space-y-2 pt-1 font-sans text-xs">
-                  <div className="text-slate-500 font-medium text-xs">
-                    {story.date}
+                <img
+                  src={spotlightCards[2].image}
+                  alt={spotlightCards[2].title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+
+                <div className="relative z-10 space-y-2">
+                  <span className="inline-block px-3 py-1 rounded-md bg-white/90 backdrop-blur-xs text-[10px] font-mono font-black uppercase tracking-wider text-slate-900 shadow-xs">
+                    {spotlightCards[2].category}
+                  </span>
+                  <h3 className="font-serif font-bold text-lg sm:text-xl text-white group-hover:text-blue-300 transition-colors leading-snug">
+                    {spotlightCards[2].title}
+                  </h3>
+                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
+                    {spotlightCards[2].subtitle}
+                  </p>
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-blue-300 group-hover:translate-x-1 transition-transform">
+                      Read Article →
+                    </span>
                   </div>
-                  <div className="pt-2 border-t border-slate-100">
-                    <span className="text-[11px] font-serif text-slate-400 block mb-0.5">
-                      Topic
-                    </span>
-                    <span className="font-semibold text-slate-800 block leading-tight">
-                      {story.topic}
-                    </span>
-                    <span className="text-slate-500 text-[11px] block mt-0.5">
-                      / {story.subtopic}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-2">
-                    {story.tags?.map((t) => (
-                      <span
-                        key={t}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTopic(t);
-                        }}
-                        className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200/80 text-slate-600 hover:text-blue-600 cursor-pointer"
-                      >
-                        #{t}
-                      </span>
-                    ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </section>
+      )}
+
+      {/* ═════════════════════════════════════════════════════════════════
+          MAIN CONTENT FEED & CATEGORY FILTER BAR
+          ═════════════════════════════════════════════════════════════════ */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pb-20">
+        
+        {/* Filter Bar & Layout Switcher */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-8 border-b border-slate-200">
+          
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {categoriesList.map((cat) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <button
+                onClick={() => setLayoutMode('magazine')}
+                title="Magazine Grid View"
+                className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                  layoutMode === 'magazine' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-400 hover:text-slate-800'
+                }`}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setLayoutMode('list')}
+                title="List Feed View"
+                className={`p-1.5 rounded-md transition-all cursor-pointer ${
+                  layoutMode === 'list' ? 'bg-white text-slate-900 font-bold shadow-2xs' : 'text-slate-400 hover:text-slate-800'
+                }`}
+              >
+                <Columns size={15} />
+              </button>
+            </div>
+            <span className="text-xs font-mono text-slate-400">
+              {filteredItems.length} items
+            </span>
+          </div>
+        </div>
+
+        {/* ─── Articles Grid ─── */}
+        {filteredItems.length === 0 ? (
+          <div className="py-20 text-center bg-slate-50 rounded-2xl border border-slate-200">
+            <h3 className="font-serif font-bold text-xl text-slate-800 mb-2">No publications found</h3>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto mb-4">
+              Try adjusting your search query or reset the category filter.
+            </p>
+            <button
+              onClick={() => {
+                setSelectedCategory('All');
+                setSearchQuery('');
+              }}
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold font-mono hover:bg-blue-600 transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : layoutMode === 'magazine' ? (
+          /* Magazine 3-Column Grid Layout (Image 2 style) */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredItems.map((item) => (
+              <article
+                key={item.id}
+                onClick={() => navigate(item.href)}
+                className="group cursor-pointer flex flex-col bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300"
+              >
+                {/* Thumbnail image with subtle hover zoom */}
+                <div className="relative aspect-16/10 overflow-hidden bg-slate-950">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs text-[10px] font-mono font-bold uppercase tracking-wider text-slate-900 shadow-xs">
+                    {item.category}
                   </div>
                 </div>
 
-                {/* Right Story Content Column (Headline, Large Visual, Narrative, Links) */}
-                <div className="md:col-span-9 space-y-4">
-                  {/* FlowingData Signature Title (Burgundy / Dark Serif) */}
-                  <h2
-                    onClick={() => handleStoryClick(story)}
-                    className="font-serif font-bold text-2xl sm:text-3xl text-[#7F1D1D] hover:text-[#991B1B] cursor-pointer tracking-tight leading-snug transition-colors"
-                  >
-                    {story.title}
-                  </h2>
-
-                  {/* Real Image or GIF (No synthetic placeholder video!) */}
-                  {story.image && (
-                    <div
-                      onClick={() => handleStoryClick(story)}
-                      className="rounded-xl overflow-hidden bg-slate-900 border border-slate-200 aspect-16/10 cursor-pointer group"
-                    >
-                      {renderVisualMedia(story.image, story.title)}
+                {/* Content Box */}
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                      <span>{item.date}</span>
+                      <span>•</span>
+                      <span>{item.readTime}</span>
                     </div>
-                  )}
 
-                  {/* Narrative Body */}
-                  <div className="text-sm sm:text-[15px] text-slate-700 leading-relaxed font-sans font-normal">
-                    {story.narrative}
+                    <h2 className="font-serif font-bold text-lg sm:text-xl text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
+                      {item.title}
+                    </h2>
+
+                    <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed font-sans font-normal">
+                      {item.subtitle || item.description}
+                    </p>
                   </div>
 
-                  {/* Link CTA */}
-                  <div className="pt-2">
-                    <button
-                      onClick={() => handleStoryClick(story)}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-[#7F1D1D] hover:text-blue-700 transition-colors cursor-pointer"
-                    >
-                      <span>{story.ctaText}</span>
-                      <ArrowRight size={14} />
-                    </button>
+                  {/* Footer metadata */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+                    <span className="font-bold text-slate-700 group-hover:text-blue-600 transition-colors flex items-center gap-1">
+                      <span>Read Full Study</span>
+                      <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase">
+                      {item.type === 'project' ? 'Case Study' : 'Article'}
+                    </span>
                   </div>
                 </div>
               </article>
             ))}
-          </section>
-
-          {/* ─────────────────────────────────────────────────────────────
-              RIGHT SIDEBAR: FULL FLOWINGDATA SIDEBAR (Col-span-12 lg:col-span-4)
-              Sticky & Editable from Admin & Studio
-              ───────────────────────────────────────────────────────────── */}
-          <aside className="col-span-12 lg:col-span-4 space-y-8 lg:pl-4 lg:border-l lg:border-slate-200/80 sticky top-24 self-start">
-            
-            {/* 1. Browse by Chart Type & Stack (FlowingData Visual Icon Badges) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <h4 className="font-serif font-bold text-sm text-slate-900 italic">
-                  Browse by Chart Type & Stack
-                </h4>
-                {selectedTopic !== 'All' && (
-                  <button
-                    onClick={() => setSelectedTopic('All')}
-                    className="text-[10px] font-mono text-blue-600 font-semibold cursor-pointer"
-                  >
-                    Reset Filter
-                  </button>
-                )}
-              </div>
-
-              {/* Chart Type Icon Badges */}
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                {[
-                  { name: 'Power BI', icon: BarChart3, filter: 'Power BI' },
-                  { name: 'Line & DAX', icon: LineChart, filter: 'DAX' },
-                  { name: 'Dynamic Arrays', icon: Code2, filter: 'Dynamic Arrays' },
-                  { name: 'SQL & Database', icon: Database, filter: 'SQL' },
-                  { name: 'Automation', icon: Cpu, filter: 'Automation' },
-                  { name: 'Spreadsheets', icon: Layers, filter: 'Excel' },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = selectedTopic === item.filter;
-                  return (
-                    <button
-                      key={item.name}
-                      onClick={() => setSelectedTopic(isSelected ? 'All' : item.filter)}
-                      className={`p-2.5 rounded-lg border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-slate-900 text-white border-slate-900 font-bold'
-                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <Icon size={14} className={isSelected ? 'text-blue-400' : 'text-slate-500'} />
-                      <span className="text-[11px] truncate">{item.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 2. Browse By Topic (Matching FlowingData "Browse by Topic") */}
-            <div className="space-y-3">
-              <h4 className="font-serif font-bold text-sm text-slate-900 italic pb-2 border-b border-slate-200">
-                Browse By Topic
-              </h4>
-
-              <ul className="space-y-2.5 text-xs">
-                {[
-                  { title: 'Visualization', sub: 'Seeing data & interactive dashboards', filter: 'Visualization' },
-                  { title: 'Data Wrangling', sub: 'SQL extraction & Power Query ETL', filter: 'SQL' },
-                  { title: 'Spreadsheet Modeling', sub: 'Formula-driven Excel frameworks', filter: 'Excel' },
-                  { title: 'Artificial Intelligence', sub: 'Local LLMs, Ollama & n8n pipelines', filter: 'Automation' },
-                  { title: 'Statistical Analysis', sub: 'Analyzing data & regression metrics', filter: 'Statistical' },
-                  { title: 'Certifications', sub: 'Deloitte, Tata & Forage simulations', filter: 'Certification' },
-                ].map((t) => (
-                  <li
-                    key={t.title}
-                    onClick={() => setSelectedTopic(t.filter)}
-                    className="cursor-pointer group flex flex-col"
-                  >
-                    <span className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
-                      {t.title}
-                    </span>
-                    <span className="text-[11px] text-slate-500 italic font-serif">
-                      {t.sub}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* 3. Made by Author / Sidebar Name (Customizable via Admin) */}
-            <div className="space-y-3">
-              <h4
-                data-edit-id="blog.sidebarName"
-                data-edit-name="Blog · Sidebar Name"
-                data-edit-kind="heading"
-                data-edit-path="sections.blog.sidebarName"
-                className="font-serif font-bold text-sm text-slate-900 italic pb-2 border-b border-slate-200"
+          </div>
+        ) : (
+          /* List Feed View */
+          <div className="space-y-6 max-w-4xl mx-auto">
+            {filteredItems.map((item) => (
+              <article
+                key={item.id}
+                onClick={() => navigate(item.href)}
+                className="group cursor-pointer p-6 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-2xs hover:shadow-md transition-all flex flex-col sm:flex-row gap-6 items-start"
               >
-                {sidebarSectionTitle}
-              </h4>
-              <ul className="space-y-2 text-xs font-mono text-slate-600">
-                <li>
-                  <Link to="/#projects" className="hover:text-blue-600 transition-colors flex items-center justify-between">
-                    <span>The Process & Case Studies</span>
-                    <span className="text-slate-400">→</span>
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/#skills" className="hover:text-blue-600 transition-colors flex items-center justify-between">
-                    <span>Technical Toolkit & Architecture</span>
-                    <span className="text-slate-400">→</span>
-                  </Link>
-                </li>
-                <li>
-                  <a href="/resume.pdf" download className="hover:text-blue-600 transition-colors flex items-center justify-between font-semibold text-blue-600">
-                    <span>Download Official Résumé</span>
-                    <span>↓</span>
-                  </a>
-                </li>
-                <li>
-                  <Link to="/admin" className="hover:text-slate-900 transition-colors flex items-center justify-between text-slate-400">
-                    <span>Admin Studio Control</span>
-                    <span>⚙</span>
-                  </Link>
-                </li>
-              </ul>
-            </div>
+                <div className="w-full sm:w-56 aspect-16/10 rounded-xl overflow-hidden bg-slate-950 shrink-0">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-mono font-bold uppercase tracking-wider">
+                      {item.category}
+                    </span>
+                    <span className="text-xs font-mono text-slate-400">• {item.date}</span>
+                    <span className="text-xs font-mono text-slate-400">• {item.readTime}</span>
+                  </div>
+                  <h2 className="font-serif font-bold text-xl text-slate-900 group-hover:text-blue-600 transition-colors">
+                    {item.title}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed">
+                    {item.subtitle || item.description}
+                  </p>
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <span>Explore Analysis</span>
+                      <ArrowRight size={13} />
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
-            {/* 4. About the Author */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <h4 className="font-serif font-bold text-sm text-slate-900">
-                About the Author
-              </h4>
-              <p
-                data-edit-id="blog.authorBio"
-                data-edit-name="Blog · Author Bio"
-                data-edit-kind="text"
-                data-edit-path="sections.blog.authorBio"
-                className="text-xs text-slate-600 leading-relaxed"
+        {/* ═════════════════════════════════════════════════════════════════
+            NEWSLETTER / SUBSCRIBE CALLOUT BANNER (Image 2 style)
+            ═════════════════════════════════════════════════════════════════ */}
+        <div className="mt-16 sm:mt-20 p-8 sm:p-12 rounded-3xl bg-slate-950 text-white relative overflow-hidden shadow-xl border border-slate-800">
+          <div className="max-w-2xl mx-auto text-center space-y-4 relative z-10">
+            <span className="px-3 py-1 rounded-full bg-blue-600/30 border border-blue-500/40 text-blue-400 font-mono text-xs font-bold uppercase tracking-wider">
+              Newsletter & Updates
+            </span>
+            <h2 className="font-serif font-black text-2xl sm:text-4xl text-white tracking-tight">
+              Stay Informed on New Data Studies
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+              Subscribe to get notified when deep-dive business intelligence projects, DAX methodologies, and data analysis guides are published.
+            </p>
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3 pt-3 max-w-md mx-auto">
+              <input
+                type="email"
+                required
+                value={subscribeEmail}
+                onChange={(e) => setSubscribeEmail(e.target.value)}
+                placeholder="Enter your work email address..."
+                className="flex-1 px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-blue-500 outline-none font-sans"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
               >
-                {authorBio}
-              </p>
-              <div className="flex items-center gap-3 pt-2 text-xs font-mono text-slate-500 border-t border-slate-200">
-                <a
-                  href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-[#0077B5] transition-colors"
-                  title="LinkedIn Profile"
-                >
-                  <FaLinkedin className="text-sm text-[#0077B5]" />
-                  <span>LinkedIn</span>
-                </a>
-                <a
-                  href="https://github.com/arun-pandian-p"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors"
-                  title="GitHub Profile"
-                >
-                  <FaGithub className="text-sm text-slate-800" />
-                  <span>GitHub</span>
-                </a>
-                <a
-                  href="/resume.pdf"
-                  download
-                  className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors font-semibold text-blue-600"
-                  title="Download Résumé"
-                >
-                  <FileText size={13} />
-                  <span>Résumé</span>
-                </a>
-              </div>
-            </div>
-          </aside>
+                {subscribeSuccess ? '✓ Subscribed' : 'Subscribe Free'}
+              </button>
+            </form>
+          </div>
         </div>
+
       </main>
 
-      {/* Inline Article Reading Modal */}
-      {selectedArticle && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
-          onClick={() => setSelectedArticle(null)}
-        >
-          <div
-            className="relative max-w-2xl w-full max-h-[85vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-2xl space-y-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-              <div className="flex items-center gap-2 text-xs font-mono text-slate-500">
-                <span>{selectedArticle.date}</span>
-                <span>•</span>
-                <span>{selectedArticle.readTime}</span>
-              </div>
-              <button
-                onClick={() => setSelectedArticle(null)}
-                className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-xs font-mono text-slate-700 font-bold cursor-pointer"
-              >
-                Close ✕
-              </button>
-            </div>
-
-            {selectedArticle.image && (
-              <img
-                src={selectedArticle.image}
-                alt={selectedArticle.title}
-                className="w-full h-auto rounded-xl border border-slate-200"
+      {/* Quick Subscribe Modal */}
+      {isSubscribeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 relative">
+            <button
+              onClick={() => setIsSubscribeOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="font-serif font-bold text-2xl text-slate-900">Subscribe to Publication</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Get notified directly in your inbox whenever new technical case studies and datasets are published.
+            </p>
+            <form onSubmit={handleSubscribe} className="space-y-3 pt-2">
+              <input
+                type="email"
+                required
+                value={subscribeEmail}
+                onChange={(e) => setSubscribeEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:border-slate-900 outline-none"
               />
-            )}
-
-            <h2 className="font-serif font-bold text-2xl sm:text-3xl text-[#7F1D1D] tracking-tight">
-              {selectedArticle.title}
-            </h2>
-
-            <div className="prose prose-slate max-w-none text-sm leading-relaxed whitespace-pre-line font-sans text-slate-700">
-              {selectedArticle.content}
-            </div>
-
-            <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
-              <div className="flex flex-wrap gap-1.5">
-                {selectedArticle.tags?.map((t) => (
-                  <span key={t} className="text-xs font-mono px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-600 rounded">
-                    {t}
-                  </span>
-                ))}
-              </div>
               <button
-                onClick={() => setSelectedArticle(null)}
-                className="px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-blue-600 transition-colors cursor-pointer"
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-xs font-mono font-bold transition-colors cursor-pointer"
               >
-                Done Reading
+                {subscribeSuccess ? '✓ Subscribed!' : 'Confirm Subscription'}
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* Inline Certification Credential Modal */}
-      {selectedCertification && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
-          onClick={() => setSelectedCertification(null)}
-        >
-          <div
-            className="relative max-w-xl w-full max-h-[85vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-2xl space-y-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-              <div className="flex items-center gap-2 text-xs font-mono text-blue-600 font-bold">
-                <ShieldCheck size={16} />
-                <span>{selectedCertification.issuer}</span>
-              </div>
-              <button
-                onClick={() => setSelectedCertification(null)}
-                className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-xs font-mono text-slate-700 font-bold cursor-pointer"
-              >
-                Close ✕
-              </button>
-            </div>
-
-            {selectedCertification.image && (
-              <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-950 aspect-16/10 flex items-center justify-center">
-                {renderVisualMedia(selectedCertification.image, selectedCertification.title)}
-              </div>
-            )}
-
-            <div>
-              <h2 className="font-serif font-bold text-2xl text-[#7F1D1D] tracking-tight mb-2">
-                {selectedCertification.title}
-              </h2>
-              <p className="text-xs font-mono text-slate-500 mb-4">
-                {selectedCertification.subtitle}
-              </p>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                {selectedCertification.description}
-              </p>
-            </div>
-
-            <div className="pt-4 border-t border-slate-200 flex flex-wrap gap-2 justify-between items-center">
-              {selectedCertification.credentialUrl ? (
-                <a
-                  href={selectedCertification.credentialUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-blue-600 hover:underline"
-                >
-                  <span>Verify Original Certificate</span>
-                  <ExternalLink size={12} />
-                </a>
-              ) : (
-                <span className="text-xs font-mono text-slate-400">Verified Credential</span>
-              )}
-              
-              <button
-                onClick={() => setSelectedCertification(null)}
-                className="px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-semibold hover:bg-blue-600 transition-colors cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Minimal Footer */}
-      <footer className="border-t border-slate-200/90 py-8 bg-slate-50 text-slate-600 text-xs font-mono">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900">{authorName}</span>
-            <span>· Data Analyst Publication</span>
-          </div>
-          <div className="flex items-center gap-4 text-slate-500">
-            <a
-              href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-[#0077B5] transition-colors"
-            >
-              <FaLinkedin className="text-xs text-[#0077B5]" /> LinkedIn
-            </a>
-            <a
-              href="https://github.com/arun-pandian-p"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 hover:text-slate-900 transition-colors"
-            >
-              <FaGithub className="text-xs text-slate-800" /> GitHub
-            </a>
-            <a
-              href="/resume.pdf"
-              download
-              className="inline-flex items-center gap-1 hover:text-blue-600 transition-colors"
-            >
-              <FileText size={12} /> Résumé
-            </a>
-            <Link to="/admin" className="hover:text-slate-900 transition-colors">Admin</Link>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
