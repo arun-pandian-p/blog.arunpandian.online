@@ -38,6 +38,10 @@ export default function Blogs() {
   // Deletion Confirm Modal State
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, title: '' });
 
+  // Undo / Redo History Stack for Editor
+  const [historyStack, setHistoryStack] = useState([]);
+  const [historyPointer, setHistoryPointer] = useState(-1);
+
   // Inline Image Inserter Modal
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [inlineImageUrl, setInlineImageUrl] = useState('');
@@ -70,6 +74,99 @@ export default function Blogs() {
     featured: false,
     sort_order: 0
   });
+
+  // Push state to undo/redo history stack
+  const updateContentWithHistory = (newContent) => {
+    setHistoryStack((prev) => {
+      const upToCurrent = prev.slice(0, historyPointer + 1);
+      return [...upToCurrent, newContent].slice(-50); // Keep last 50 steps
+    });
+    setHistoryPointer((prev) => Math.min(prev + 1, 49));
+    setFormData((prev) => ({ ...prev, content: newContent }));
+  };
+
+  const handleUndo = () => {
+    if (historyPointer > 0) {
+      const prevIndex = historyPointer - 1;
+      const targetContent = historyStack[prevIndex];
+      setHistoryPointer(prevIndex);
+      setFormData((prev) => ({ ...prev, content: targetContent }));
+      toast('Undo (Ctrl+Z)', { icon: '↩️' });
+    }
+  };
+
+  const handleRedo = () => {
+    if (historyPointer < historyStack.length - 1) {
+      const nextIndex = historyPointer + 1;
+      const targetContent = historyStack[nextIndex];
+      setHistoryPointer(nextIndex);
+      setFormData((prev) => ({ ...prev, content: targetContent }));
+      toast('Redo (Ctrl+Y)', { icon: '↪️' });
+    }
+  };
+
+  // Selection-aware wrapper for Markdown formatting
+  const wrapSelection = (beforeStr, afterStr = beforeStr, defaultText = 'Text') => {
+    const textarea = editorTextareaRef.current;
+    if (!textarea) {
+      insertMarkdownSnippet(`${beforeStr}${defaultText}${afterStr}`);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentVal = formData.content;
+    const selected = currentVal.substring(start, end);
+    const textToInsert = selected || defaultText;
+
+    const newContent = `${currentVal.substring(0, start)}${beforeStr}${textToInsert}${afterStr}${currentVal.substring(end)}`;
+    updateContentWithHistory(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      const cursorStart = start + beforeStr.length;
+      const cursorEnd = cursorStart + textToInsert.length;
+      textarea.setSelectionRange(cursorStart, cursorEnd);
+    }, 40);
+  };
+
+  // Keyboard shortcut listener for Ctrl+Z, Ctrl+Y, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+S, Tab
+  const handleEditorKeyDown = (e) => {
+    const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const isCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+    if (isCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      handleUndo();
+    } else if ((isCtrl && e.key.toLowerCase() === 'y') || (isCtrl && e.shiftKey && e.key.toLowerCase() === 'z')) {
+      e.preventDefault();
+      handleRedo();
+    } else if (isCtrl && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      wrapSelection('**', '**', 'Bold text');
+    } else if (isCtrl && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      wrapSelection('*', '*', 'Italic text');
+    } else if (isCtrl && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      wrapSelection('[', '](https://github.com/arun-pandian-p)', 'Link title');
+    } else if (isCtrl && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      handleSave();
+      toast.success('Quick Saved!', { icon: '💾' });
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = editorTextareaRef.current;
+      if (!textarea) return;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newContent = `${formData.content.substring(0, start)}  ${formData.content.substring(end)}`;
+      updateContentWithHistory(newContent);
+      setTimeout(() => {
+        textarea.setSelectionRange(start + 2, start + 2);
+      }, 20);
+    }
+  };
 
   useEffect(() => {
     fetchBlogs();
@@ -292,7 +389,17 @@ export default function Blogs() {
       return;
     }
 
-    if (templateType === 'case-study') {
+    if (templateType === 'medallion-architecture') {
+      setFormData(prev => ({
+        ...prev,
+        title: 'The Medallion Architecture Reconsidered: What It Solved, and Where It\'s Cracking',
+        excerpt: 'Rethinking Bronze, Silver, and Gold for the AI and modern data warehouse era.',
+        category: 'Data Engineering',
+        tags: 'Data Engineering, SQL, Python, Medallion Architecture',
+        content: `## 1. Executive Context: The Evolution of Lakehouse Layers\n\nThe Medallion architecture (Bronze ➔ Silver ➔ Gold) solved data sprawl and multi-hop transformation reliability for over a decade.\n\n> [!NOTE]\n> Core principle: Each progressive layer earns greater data quality, business schema compliance, and consumer trust.\n\n## 2. Bronze Layer: Raw Streaming & Append-Only Ingestion\n\nPreserves raw untransformed source logs with timestamp indexing and schema drift detection.\n\n\`\`\`sql\n-- Bronze Landing Query: Raw JSON Extraction\nSELECT \n    event_id,\n    ingest_timestamp,\n    raw_payload:customer_id::INT AS customer_id,\n    raw_payload:amount::NUMERIC(10,2) AS order_amount\nFROM bronze_raw_telemetry\nWHERE ingest_timestamp >= CURRENT_DATE - INTERVAL '1 day';\n\`\`\`\n\n## 3. Silver Layer: Cleansed, Conformed, and Deduplicated Dimensions\n\n\`\`\`python\nimport pandas as pd\n\n# Deduplication & NULL imputation pipeline\ndef process_silver_layer(raw_df):\n    cleansed = raw_df.drop_duplicates(subset=['event_id'])\n    cleansed['amount'] = cleansed['amount'].fillna(0.0)\n    return cleansed\n\`\`\`\n\n## 4. Gold Layer: Star Schema & DAX Business Models\n\n| Architecture Layer | SLA Target | Storage Format | Business Consumer |\n|---|---|---|---|\n| Bronze (Raw) | < 5 min | Parquet / Delta | Data Engineers |\n| Silver (Cleansed) | < 30 min | Delta Lake | Data Analysts |\n| Gold (Aggregated) | < 2 hrs | Star Schema / Power BI | Executives & ML Models |\n\n## 5. Summary & Actionable Recommendations\n\n- Automate schema migration validations.\n- Enforce ACID transactional consistency across pipelines.`
+      }));
+      toast.success('Medallion Architecture template loaded!');
+    } else if (templateType === 'case-study') {
       setFormData(prev => ({
         ...prev,
         content: `## 1. Executive Problem Statement\n\nBrief overview of the business challenge, baseline metrics, and stakeholder objectives.\n\n> [!NOTE]\n> Key hypothesis: Enhancing ETL automation and index optimization will yield a 35% throughput increase.\n\n## 2. Dataset Architecture & ETL Pipeline\n\nDescribe the raw schema, normalization techniques, and transformation steps.\n\n\`\`\`sql\n-- Aggregated cohort performance\nSELECT \n    DATE_TRUNC('month', order_date) AS cohort_month,\n    COUNT(DISTINCT customer_id) AS active_users,\n    ROUND(AVG(total_amount), 2) AS avg_order_value\nFROM transactions\nGROUP BY 1\nORDER BY 1 DESC;\n\`\`\`\n\n## 3. Statistical Analysis & DAX Metrics\n\n\`\`\`python\nimport pandas as pd\nimport numpy as np\n\ndf = pd.read_csv("analytics_dataset.csv")\nsummary = df.groupby('segment')['revenue'].agg(['mean', 'median', 'std'])\nprint(summary)\n\`\`\`\n\n## 4. Key Findings & Strategic Impact\n\n| Operational KPI | Pre-Optimization | Post-Optimization | Net Variance |\n|---|---|---|---|\n| Query Latency | 4.2 sec | 0.45 sec | -89% |\n| Data Pipeline SLA | 94.2% | 99.8% | +5.6% |\n| Cost per Query | $0.014 | $0.003 | -78% |\n\n## 5. Conclusion & Actionable Next Steps\n\n- Integrate real-time webhook telemetry.\n- Deploy automated anomaly alerts into Slack.`
@@ -921,6 +1028,7 @@ export default function Blogs() {
                   defaultValue=""
                 >
                   <option value="" disabled>✨ Load Template</option>
+                  <option value="medallion-architecture">Medallion Architecture (Bronze/Silver/Gold)</option>
                   <option value="case-study">Technical Case Study</option>
                   <option value="powerbi-tutorial">Power BI & DAX Tutorial</option>
                 </select>
@@ -967,11 +1075,33 @@ export default function Blogs() {
               {/* Comprehensive Elementor Rich Blocks Insertion Toolbar */}
               <div className="p-2 bg-slate-100 rounded-xl border border-slate-200 flex flex-wrap items-center gap-1 text-xs">
                 
-                {/* Heading Blocks */}
+                {/* History Controls (Undo / Redo) */}
                 <div className="flex items-center gap-0.5 pr-1.5 border-r border-slate-300">
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('## Section Heading\n\nSection narrative text...')}
+                    onClick={handleUndo}
+                    disabled={historyPointer <= 0}
+                    title="Undo (Ctrl+Z)"
+                    className="p-1.5 rounded bg-white hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-200 cursor-pointer"
+                  >
+                    ↩️
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={historyPointer >= historyStack.length - 1}
+                    title="Redo (Ctrl+Y)"
+                    className="p-1.5 rounded bg-white hover:bg-slate-200 disabled:opacity-40 text-slate-700 border border-slate-200 cursor-pointer"
+                  >
+                    ↪️
+                  </button>
+                </div>
+
+                {/* Heading Blocks */}
+                <div className="flex items-center gap-0.5 px-1.5 border-r border-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => wrapSelection('## ', '\n\n', 'Section Heading')}
                     title="Insert Heading 2"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 cursor-pointer"
                   >
@@ -979,7 +1109,7 @@ export default function Blogs() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('### Subsection Heading\n\nSubsection content...')}
+                    onClick={() => wrapSelection('### ', '\n\n', 'Subsection Heading')}
                     title="Insert Heading 3"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 cursor-pointer"
                   >
@@ -987,7 +1117,7 @@ export default function Blogs() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('#### Sub-point\n\nDetail content...')}
+                    onClick={() => wrapSelection('#### ', '\n\n', 'Sub-point')}
                     title="Insert Heading 4"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 cursor-pointer"
                   >
@@ -995,27 +1125,27 @@ export default function Blogs() {
                   </button>
                 </div>
 
-                {/* Inline Formatting */}
+                {/* Inline Formatting (Selection-Aware) */}
                 <div className="flex items-center gap-0.5 px-1.5 border-r border-slate-300">
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('**bold text**')}
-                    title="Bold Text"
+                    onClick={() => wrapSelection('**', '**', 'bold text')}
+                    title="Bold Text (Ctrl+B)"
                     className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer font-bold"
                   >
                     <Bold size={13} />
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('*italic text*')}
-                    title="Italic Text"
+                    onClick={() => wrapSelection('*', '*', 'italic text')}
+                    title="Italic Text (Ctrl+I)"
                     className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer italic"
                   >
                     <Italic size={13} />
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('`inline code`')}
+                    onClick={() => wrapSelection('`', '`', 'inline_code')}
                     title="Inline Code"
                     className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 font-mono text-xs border border-slate-200 cursor-pointer"
                   >
@@ -1023,7 +1153,7 @@ export default function Blogs() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('> Quotation text or notable statement here.')}
+                    onClick={() => wrapSelection('> ', '\n\n', 'Quotation or notable statement here.')}
                     title="Blockquote"
                     className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer"
                   >
@@ -1146,8 +1276,8 @@ export default function Blogs() {
 
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('[Explore Verified Source](https://github.com/arun-pandian-p)')}
-                    title="Insert Link"
+                    onClick={() => wrapSelection('[', '](https://github.com/arun-pandian-p)', 'Explore Source Repo')}
+                    title="Insert Link (Ctrl+K)"
                     className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer"
                   >
                     <LinkIcon size={13} />
@@ -1170,9 +1300,10 @@ export default function Blogs() {
                       ref={editorTextareaRef}
                       rows={isFullscreen ? 24 : 16}
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      onKeyDown={handleEditorKeyDown}
+                      onChange={(e) => updateContentWithHistory(e.target.value)}
                       className="w-full p-4 rounded-xl border border-slate-200 bg-white font-mono text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none leading-relaxed resize-y h-[420px]"
-                      placeholder="Write your technical article in Markdown with rich elements..."
+                      placeholder="Write your technical article in Markdown with rich elements... Supports Ctrl+Z, Ctrl+Y, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+S, Tab"
                     />
                   </div>
                 )}
