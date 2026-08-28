@@ -68,8 +68,11 @@ export default function BlogPublicationPage() {
   const { settings, projects: contextProjects = [], blogs: contextBlogs = [] } = useContent();
   const { theme } = useThemeStore();
   
-  // Medium-style Feed Tabs: 'for-you' | 'featured' | category
-  const [activeTab, setActiveTab] = useState('for-you');
+  // Top Visual Gallery Filter State (2nd Upload Design)
+  const [galleryCategory, setGalleryCategory] = useState('Show all');
+
+  // Bottom Medium Feed Tabs State (1st Upload Design)
+  const [activeTab, setActiveTab] = useState('For you');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [subscribeEmail, setSubscribeEmail] = useState('');
@@ -119,18 +122,18 @@ export default function BlogPublicationPage() {
       title: p.title || 'Data Analytics Project',
       subtitle: p.subtitle || p.problem || (Array.isArray(p.tags) ? p.tags.slice(0, 3).join(' · ') : 'SQL · Python · Power BI'),
       tool: Array.isArray(p.tags) ? p.tags.slice(0, 4).join(' · ') : (p.tool || 'Power BI · SQL'),
-      category: p.category || (p.tags?.[0] ? `${p.tags[0]}` : 'Power BI'),
+      category: p.category || (p.tags?.[0] ? `${p.tags[0]}` : 'Dashboard'),
       problem: p.problem || p.subtitle || '',
       insight: p.insight || 'Key statistical pattern and actionable metric discovered.',
       description: p.problem || p.subtitle || p.description || '',
-      tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Data Analytics'],
+      tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
       image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
       href: `/project/${p.id || p._id || idx + 1}`,
-      date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Apr 15',
+      date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Jul 8',
       type: 'project',
-      readTime: '6 min read',
-      claps: 320 + (idx * 47) % 500,
-      responses: 4 + idx * 2,
+      readTime: '5 min read',
+      claps: 484 + (idx * 47) % 500,
+      responses: 5 + idx * 2,
       featured: true,
     }));
   }, [liveDbProjects, contextProjects]);
@@ -141,21 +144,21 @@ export default function BlogPublicationPage() {
     return rawList.map((b, idx) => ({
       id: b.id || b._id || String(idx + 1),
       slug: b.slug || String(b.id || idx + 1),
-      title: b.title || 'The Medallion Architecture Reconsidered: What It Solved, and Where It\'s Cracking',
-      subtitle: b.excerpt || 'Rethinking Bronze, Silver, and Gold for the modern AI and business intelligence era.',
+      title: b.title || 'What 2023 Job-Posting Data Taught Me About Data Hiring',
+      subtitle: b.excerpt || 'Answering four salary-and-skills questions with nothing but Excel, Power Query, and a Power Pivot model.',
       content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
-      tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Architecture'],
+      tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Power BI'],
       image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-      readTime: b.read_time || b.readTime || '7 min read',
-      date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Jul 4',
-      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Data Engineering',
+      readTime: b.read_time || b.readTime || '4 min read',
+      date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Jul 8',
+      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Towards Data Intelligence',
       authorName: b.author_name || 'Arun Pandian',
       publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
       href: `/blog/${b.slug || b.id}`,
       type: 'article',
       featured: Boolean(b.featured) || idx === 0,
-      claps: 484 + (idx * 83) % 900,
-      responses: 5 + (idx * 3) % 15,
+      claps: 567 + (idx * 83) % 900,
+      responses: 8 + (idx * 3) % 15,
       shares: 3 + idx,
     }));
   }, [liveDbBlogs, contextBlogs]);
@@ -165,19 +168,42 @@ export default function BlogPublicationPage() {
     return [...allBlogs, ...allProjects];
   }, [allBlogs, allProjects]);
 
-  // Navigation Tabs list
-  const tabCategories = [
-    { id: 'for-you', label: 'For you' },
-    { id: 'featured', label: 'Featured' },
-    { id: 'Power BI', label: 'Power BI' },
-    { id: 'SQL', label: 'SQL' },
-    { id: 'Python', label: 'Python' },
-    { id: 'Data Engineering', label: 'Data Engineering' },
-    { id: 'Analytics', label: 'Analytics' },
+  // Top Visual Gallery Filter Categories (Image 2 style)
+  const galleryFilterCategories = [
+    'Show all',
+    'Data mining',
+    'Dataviz',
+    'Scientific paper',
+    'Dashboard',
+    'Shiny',
+    'SQL',
+    'Power BI',
+    'Python'
   ];
 
-  // Filtered Articles based on tab and search
-  const filteredItems = useMemo(() => {
+  // Visual Gallery Items (Top Section)
+  const visualGalleryItems = useMemo(() => {
+    if (galleryCategory === 'Show all') return allItems;
+    return allItems.filter((item) => {
+      const matchCat = item.category?.toLowerCase() === galleryCategory.toLowerCase();
+      const matchTags = Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase() === galleryCategory.toLowerCase());
+      return matchCat || matchTags;
+    });
+  }, [allItems, galleryCategory]);
+
+  // Bottom Medium Feed Tabs (Image 1 style)
+  const feedTabs = [
+    'For you',
+    'Featured',
+    'Power BI',
+    'SQL',
+    'Python',
+    'Data Engineering',
+    'Analytics',
+  ];
+
+  // Filtered Medium Feed Items (Bottom Section)
+  const feedItems = useMemo(() => {
     return allItems.filter((item) => {
       const matchesSearch =
         !searchQuery.trim() ||
@@ -186,9 +212,9 @@ export default function BlogPublicationPage() {
         (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
       let matchesTab = true;
-      if (activeTab === 'featured') {
+      if (activeTab === 'Featured') {
         matchesTab = item.featured;
-      } else if (activeTab !== 'for-you') {
+      } else if (activeTab !== 'For you') {
         matchesTab =
           item.category?.toLowerCase() === activeTab.toLowerCase() ||
           (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === activeTab.toLowerCase()));
@@ -240,7 +266,7 @@ export default function BlogPublicationPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>Publications & Articles | {authorName}</title>
+        <title>Publications & Projects | {authorName}</title>
         <meta
           name="description"
           content="Explore data analytics case studies, Power BI architecture, SQL transformations, and statistical modeling articles."
@@ -251,22 +277,85 @@ export default function BlogPublicationPage() {
       <Navbar />
 
       {/* ═════════════════════════════════════════════════════════════════
-          TOP HEADER & PROMO BANNER
+          TOP SECTION: 2ND UPLOADED DESIGN (Visual Project / Charts Gallery Grid)
+          Matching Screenshot 2: Clean Teal Filter Pills + Multi-Column Card Visuals
           ═════════════════════════════════════════════════════════════════ */}
-      <div className="pt-20 sm:pt-24 bg-amber-400 text-slate-950 px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-3">
-        <span>Verified Data Analytics Case Studies & Architecture Guides.</span>
-        <button
-          onClick={() => setIsSubscribeOpen(true)}
-          className="px-3 py-1 rounded-full bg-slate-950 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          Subscribe free
-        </button>
-      </div>
+      <section className="pt-24 sm:pt-28 pb-12 bg-[#FCFDFD] border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          
+          {/* Header Title for Visual Gallery */}
+          <div className="text-center mb-8 space-y-2">
+            <h2 className="font-serif font-black text-2xl sm:text-3xl md:text-4xl text-slate-950 tracking-tight">
+              Data Visualization & Interactive Projects
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 font-sans max-w-lg mx-auto">
+              Explore dashboards, statistical charts, ETL transformations, and data models.
+            </p>
+          </div>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pb-24">
+          {/* Teal Pill Filter Buttons (Exact 2nd Uploaded Screenshot Style) */}
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-10">
+            {galleryFilterCategories.map((cat) => {
+              const isSelected = galleryCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setGalleryCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-md text-xs sm:text-[13px] font-sans font-medium transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[#37B5A8] border-[#37B5A8] text-white font-bold shadow-xs'
+                      : 'bg-white border-[#37B5A8]/30 text-[#37B5A8] hover:bg-[#37B5A8]/10'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 4-Column Visual Cards Grid (Exact 2nd Uploaded Screenshot Style) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            {visualGalleryItems.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => navigate(item.href)}
+                className="group cursor-pointer bg-white rounded-xl border border-slate-200/90 hover:border-[#37B5A8]/50 shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden"
+              >
+                {/* Visual Chart Thumbnail */}
+                <div className="aspect-square bg-white flex items-center justify-center p-2 sm:p-3 overflow-hidden">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Card Sub-Info */}
+                <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex-1 flex flex-col justify-between">
+                  <h3 className="font-serif font-bold text-xs sm:text-sm text-slate-900 group-hover:text-[#37B5A8] transition-colors line-clamp-1">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center justify-between mt-1 text-[11px] font-mono text-slate-400">
+                    <span>{item.category}</span>
+                    <span className="text-[#37B5A8] font-bold">View →</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ═════════════════════════════════════════════════════════════════
+          DOWN SECTION: 1ST UPLOADED DESIGN (Medium-Style Editorial Feed)
+          Matching Screenshot 1: For You Tabs + Left Text / Right Thumbnail Cards
+          ═════════════════════════════════════════════════════════════════ */}
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pt-12 pb-24">
         
-        {/* ── MASTHEAD TITLE ── */}
-        <div className="flex items-center justify-between pt-8 pb-4 border-b border-slate-100">
+        {/* Masthead Header Title */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <h1 className="font-serif font-black text-2xl sm:text-3xl text-slate-950 tracking-tight">
               Arun Pandian
@@ -281,7 +370,7 @@ export default function BlogPublicationPage() {
             <div className="relative w-40 sm:w-60">
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:border-slate-900 outline-none"
@@ -307,46 +396,42 @@ export default function BlogPublicationPage() {
           </div>
         </div>
 
-        {/* ── MEDIUM FEED TABS (For you, Featured, Topics) ── */}
+        {/* Medium Feed Tabs (For you, Featured, Power BI, SQL, Python, etc.) */}
         <div className="flex items-center gap-6 overflow-x-auto no-scrollbar border-b border-slate-200 py-3 text-sm font-sans text-slate-600">
-          {tabCategories.map((tab) => {
-            const isActive = activeTab === tab.id;
+          {feedTabs.map((tab) => {
+            const isActive = activeTab === tab;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 className={`pb-2 border-b-2 font-medium transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'border-slate-950 text-slate-950 font-bold'
                     : 'border-transparent text-slate-500 hover:text-slate-900'
                 }`}
               >
-                {tab.label}
+                {tab}
               </button>
             );
           })}
         </div>
 
-        {/* ═════════════════════════════════════════════════════════════════
-            MEDIUM PUBLICATION ARTICLES FEED (Matching Screenshot Image 2)
-            Left: Publication info, Bold Title, Subtitle, Claps & Meta
-            Right: Square Crisp Thumbnail
-            ═════════════════════════════════════════════════════════════════ */}
-        <div className="divide-y divide-slate-150 mt-4">
-          {filteredItems.length === 0 ? (
+        {/* Medium Article Cards Feed (Matching Screenshot 1) */}
+        <div className="divide-y divide-slate-150 mt-2">
+          {feedItems.length === 0 ? (
             <div className="py-20 text-center text-slate-500 space-y-3">
               <BookOpen size={36} className="mx-auto text-slate-300" />
-              <p className="font-serif font-bold text-lg text-slate-800">No stories found in this section</p>
-              <p className="text-xs max-w-xs mx-auto">Try selecting "For you" or search for SQL, Power BI, Python keywords.</p>
+              <p className="font-serif font-bold text-lg text-slate-800">No articles found</p>
+              <p className="text-xs max-w-xs mx-auto">Try switching tabs or clear your search.</p>
               <button
-                onClick={() => { setActiveTab('for-you'); setSearchQuery(''); }}
+                onClick={() => { setActiveTab('For you'); setSearchQuery(''); }}
                 className="px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-bold"
               >
-                View all stories
+                View all articles
               </button>
             </div>
           ) : (
-            filteredItems.map((item) => {
+            feedItems.map((item) => {
               const isSaved = bookmarkedIds.has(item.id);
               const customClaps = clapsMap[item.id] ? item.claps + clapsMap[item.id] : item.claps;
 
@@ -354,7 +439,7 @@ export default function BlogPublicationPage() {
                 <article
                   key={item.id}
                   onClick={() => navigate(item.href)}
-                  className="py-6 group cursor-pointer transition-colors"
+                  className="py-7 group cursor-pointer transition-colors"
                 >
                   {/* Publication Subheader Row */}
                   <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
@@ -370,7 +455,7 @@ export default function BlogPublicationPage() {
                     <span className="text-slate-500 font-mono text-[11px]">{item.date}</span>
                   </div>
 
-                  {/* Main Content Split: Left Info + Right Thumbnail */}
+                  {/* Main Content Split: Left Text + Right Thumbnail (Exact Screenshot 1 Style) */}
                   <div className="flex items-start justify-between gap-4 sm:gap-6">
                     
                     {/* Left Info Column */}
@@ -384,9 +469,9 @@ export default function BlogPublicationPage() {
                       </p>
                     </div>
 
-                    {/* Right Thumbnail */}
+                    {/* Right Rectangular Thumbnail */}
                     {item.image && (
-                      <div className="w-24 h-18 sm:w-32 sm:h-22 rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
+                      <div className="w-28 h-20 sm:w-36 sm:h-24 rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
                         <img
                           src={item.image}
                           alt={item.title}
@@ -398,7 +483,7 @@ export default function BlogPublicationPage() {
 
                   </div>
 
-                  {/* Footer Actions Row (Star, Claps, Responses, Bookmark) */}
+                  {/* Footer Actions Row (Star, Read Time, Claps, Responses, Bookmark, Share) */}
                   <div className="flex items-center justify-between pt-4 mt-2 text-xs text-slate-500">
                     <div className="flex items-center gap-4 sm:gap-5">
                       {item.featured && (
