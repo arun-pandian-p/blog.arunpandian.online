@@ -548,20 +548,6 @@ function AdminShell() {
               <Menu size={20} />
             </button>
 
-            {navCollapsed && (
-              <button
-                onClick={toggleNavCollapsed}
-                className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                  isDark
-                    ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]'
-                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <PanelLeft size={14} />
-                <span>Show Sidebar</span>
-              </button>
-            )}
-
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm sm:text-base tracking-tight">
                 {navItems.find((n) => n.path === location.pathname)?.name || 'Admin Workspace'}
