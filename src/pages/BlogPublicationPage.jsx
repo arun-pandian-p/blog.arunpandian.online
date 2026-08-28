@@ -239,7 +239,7 @@ export default function BlogPublicationPage() {
 
   const currentMainNews = mainNewsList[mainNewsIndex % mainNewsList.length] || allItems[0];
   const editorsPicks = useMemo(() => {
-    return allItems.slice(1, 4);
+    return allItems.slice(1, 3); // 2 cards to match the left hero height with zero gap
   }, [allItems]);
 
   // Left Column Data: Recent Highlights & Next Post Preview
@@ -331,10 +331,10 @@ export default function BlogPublicationPage() {
         {/* ═════════════════════════════════════════════════════════════════
             1. TOP SECTION: EDITORIAL NEWS PORTAL (MAIN NEWS & EDITOR'S PICKS)
             ═════════════════════════════════════════════════════════════════ */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* ── LEFT: MAIN NEWS HERO CARD (lg:col-span-8) ── */}
-          <div className="lg:col-span-8 space-y-3">
+          <div className="lg:col-span-8 flex flex-col space-y-3">
             
             {/* Header with Red Accent Underline & Next/Prev Controls */}
             <div className="flex items-center justify-between pb-2 border-b-2 border-slate-200">
@@ -364,11 +364,11 @@ export default function BlogPublicationPage() {
               </div>
             </div>
 
-            {/* Main News Card */}
+            {/* Main News Card (flex-1 to match right column height perfectly) */}
             {currentMainNews && (
               <div
                 onClick={() => navigate(currentMainNews.href)}
-                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-8 border border-slate-200 shadow-md transition-all duration-300 hover:shadow-2xl"
+                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 flex-1 min-h-[440px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-8 border border-slate-200 shadow-md transition-all duration-300 hover:shadow-2xl"
               >
                 {/* Background Image */}
                 <img
@@ -411,7 +411,7 @@ export default function BlogPublicationPage() {
           </div>
 
           {/* ── RIGHT: EDITOR'S PICKS (lg:col-span-4) ── */}
-          <div className="lg:col-span-4 space-y-3">
+          <div className="lg:col-span-4 flex flex-col space-y-3">
             
             {/* Header with Red Accent Underline */}
             <div className="relative pb-2 border-b-2 border-slate-200">
@@ -421,13 +421,13 @@ export default function BlogPublicationPage() {
               <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-red-600 rounded-full" />
             </div>
 
-            {/* Stacked Cards */}
-            <div className="space-y-4 pt-1">
+            {/* Stacked Cards (matching height with zero gap) */}
+            <div className="flex-1 flex flex-col justify-between gap-4 pt-1">
               {editorsPicks.map((pick, idx) => (
                 <div
                   key={pick.id}
                   onClick={() => navigate(pick.href)}
-                  className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative min-h-[195px] sm:min-h-[220px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
+                  className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative flex-1 min-h-[210px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
                 >
                   {/* Visual Background */}
                   <img
