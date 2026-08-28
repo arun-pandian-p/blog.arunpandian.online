@@ -47,7 +47,8 @@ import {
   MessageSquare,
   Repeat,
   MoreVertical,
-  ThumbsUp
+  ThumbsUp,
+  TrendingDown
 } from 'lucide-react';
 import { FaLinkedin, FaGithub, FaXTwitter, FaWhatsapp, FaMedium } from 'react-icons/fa6';
 import Navbar from '../components/Navbar';
@@ -68,11 +69,8 @@ export default function BlogPublicationPage() {
   const { settings, projects: contextProjects = [], blogs: contextBlogs = [] } = useContent();
   const { theme } = useThemeStore();
   
-  // Top Visual Gallery Filter State (2nd Upload Design)
-  const [galleryCategory, setGalleryCategory] = useState('Show all');
-
-  // Bottom Medium Feed Tabs State (1st Upload Design)
-  const [activeTab, setActiveTab] = useState('For you');
+  // Category filter state
+  const [selectedCategory, setSelectedCategory] = useState('Show all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [subscribeEmail, setSubscribeEmail] = useState('');
@@ -83,6 +81,9 @@ export default function BlogPublicationPage() {
   const [liveDbBlogs, setLiveDbBlogs] = useState([]);
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const [clapsMap, setClapsMap] = useState({});
+
+  // Carousel index for Main News
+  const [mainNewsIndex, setMainNewsIndex] = useState(0);
 
   // Fetch directly from Supabase on mount
   useEffect(() => {
@@ -129,9 +130,9 @@ export default function BlogPublicationPage() {
       tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
       image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
       href: `/project/${p.id || p._id || idx + 1}`,
-      date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Jul 8',
+      date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Nov 17, 2024',
       type: 'project',
-      readTime: '5 min read',
+      readTime: '5 MIN READ',
       claps: 484 + (idx * 47) % 500,
       responses: 5 + idx * 2,
       featured: true,
@@ -149,9 +150,9 @@ export default function BlogPublicationPage() {
       content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
       tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Power BI'],
       image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-      readTime: b.read_time || b.readTime || '4 min read',
-      date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Jul 8',
-      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Towards Data Intelligence',
+      readTime: b.read_time || b.readTime || '4 MIN READ',
+      date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Nov 17, 2024',
+      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Newsfeed',
       authorName: b.author_name || 'Arun Pandian',
       publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
       href: `/blog/${b.slug || b.id}`,
@@ -168,8 +169,8 @@ export default function BlogPublicationPage() {
     return [...allBlogs, ...allProjects];
   }, [allBlogs, allProjects]);
 
-  // Top Visual Gallery Filter Categories (Image 2 style)
-  const galleryFilterCategories = [
+  // Filter Categories for Top Pills
+  const filterCategories = [
     'Show all',
     'Data mining',
     'Dataviz',
@@ -181,29 +182,8 @@ export default function BlogPublicationPage() {
     'Python'
   ];
 
-  // Visual Gallery Items (Top Section)
-  const visualGalleryItems = useMemo(() => {
-    if (galleryCategory === 'Show all') return allItems;
-    return allItems.filter((item) => {
-      const matchCat = item.category?.toLowerCase() === galleryCategory.toLowerCase();
-      const matchTags = Array.isArray(item.tags) && item.tags.some(t => t.toLowerCase() === galleryCategory.toLowerCase());
-      return matchCat || matchTags;
-    });
-  }, [allItems, galleryCategory]);
-
-  // Bottom Medium Feed Tabs (Image 1 style)
-  const feedTabs = [
-    'For you',
-    'Featured',
-    'Power BI',
-    'SQL',
-    'Python',
-    'Data Engineering',
-    'Analytics',
-  ];
-
-  // Filtered Medium Feed Items (Bottom Section)
-  const feedItems = useMemo(() => {
+  // Filtered Items based on category and search
+  const filteredItems = useMemo(() => {
     return allItems.filter((item) => {
       const matchesSearch =
         !searchQuery.trim() ||
@@ -211,42 +191,33 @@ export default function BlogPublicationPage() {
         item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
-      let matchesTab = true;
-      if (activeTab === 'Featured') {
-        matchesTab = item.featured;
-      } else if (activeTab !== 'For you') {
-        matchesTab =
-          item.category?.toLowerCase() === activeTab.toLowerCase() ||
-          (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === activeTab.toLowerCase()));
+      let matchesCat = true;
+      if (selectedCategory !== 'Show all') {
+        matchesCat =
+          item.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+          (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === selectedCategory.toLowerCase()));
       }
 
-      return matchesSearch && matchesTab;
+      return matchesSearch && matchesCat;
     });
-  }, [allItems, searchQuery, activeTab]);
+  }, [allItems, searchQuery, selectedCategory]);
 
-  const handleBookmarkToggle = (e, id) => {
-    e.stopPropagation();
-    setBookmarkedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        toast('Removed from reading list', { icon: '🗑️' });
-      } else {
-        next.add(id);
-        toast.success('Saved to your reading list!', { icon: '🔖' });
-      }
-      return next;
-    });
+  // Main News spotlight & Editor's Picks
+  const mainNewsList = useMemo(() => {
+    return allItems.slice(0, 4);
+  }, [allItems]);
+
+  const currentMainNews = mainNewsList[mainNewsIndex % mainNewsList.length] || allItems[0];
+  const editorsPicks = useMemo(() => {
+    return allItems.slice(1, 4);
+  }, [allItems]);
+
+  const handleNextMainNews = () => {
+    setMainNewsIndex((prev) => (prev + 1) % mainNewsList.length);
   };
 
-  const handleClap = (e, id) => {
-    e.stopPropagation();
-    setClapsMap((prev) => {
-      const current = prev[id] || 0;
-      const updated = current + 1;
-      toast.success(`👏 Clapped! (${updated})`, { icon: '👏' });
-      return { ...prev, [id]: updated };
-    });
+  const handlePrevMainNews = () => {
+    setMainNewsIndex((prev) => (prev - 1 + mainNewsList.length) % mainNewsList.length);
   };
 
   const handleSubscribe = (e) => {
@@ -264,9 +235,9 @@ export default function BlogPublicationPage() {
   const authorName = settings?.hero?.name || 'Arun Pandian';
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#FDFDFD] text-slate-900 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>Publications & Projects | {authorName}</title>
+        <title>Data Intelligence Journal & Case Studies | {authorName}</title>
         <meta
           name="description"
           content="Explore data analytics case studies, Power BI architecture, SQL transformations, and statistical modeling articles."
@@ -276,104 +247,181 @@ export default function BlogPublicationPage() {
       <StyleOverrides />
       <Navbar />
 
-      {/* ═════════════════════════════════════════════════════════════════
-          TOP SECTION: 2ND UPLOADED DESIGN (Visual Project / Charts Gallery Grid)
-          Matching Screenshot 2: Clean Teal Filter Pills + Multi-Column Card Visuals
-          ═════════════════════════════════════════════════════════════════ */}
-      <section className="pt-24 sm:pt-28 pb-12 bg-[#FCFDFD] border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-24 space-y-12">
+        
+        {/* ═════════════════════════════════════════════════════════════════
+            1. TOP SECTION: EDITORIAL NEWS PORTAL (Matching 2nd Uploaded Screenshot)
+            Left: MAIN NEWS with Hero Card & Navigation | Right: EDITOR'S PICKS
+            ═════════════════════════════════════════════════════════════════ */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Header Title for Visual Gallery */}
-          <div className="text-center mb-8 space-y-2">
-            <h2 className="font-serif font-black text-2xl sm:text-3xl md:text-4xl text-slate-950 tracking-tight">
-              Data Visualization & Interactive Projects
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-sans max-w-lg mx-auto">
-              Explore dashboards, statistical charts, ETL transformations, and data models.
-            </p>
-          </div>
+          {/* ── LEFT: MAIN NEWS HERO CARD (lg:col-span-8) ── */}
+          <div className="lg:col-span-8 space-y-3">
+            
+            {/* Header with Red Accent Underline & Next/Prev Controls */}
+            <div className="flex items-center justify-between pb-2 border-b-2 border-slate-200">
+              <div className="relative">
+                <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-slate-900">
+                  MAIN NEWS
+                </h2>
+                <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-red-600 rounded-full" />
+              </div>
 
-          {/* Teal Pill Filter Buttons (Exact 2nd Uploaded Screenshot Style) */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 mb-10">
-            {galleryFilterCategories.map((cat) => {
-              const isSelected = galleryCategory === cat;
-              return (
+              <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500">
                 <button
-                  key={cat}
-                  onClick={() => setGalleryCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-md text-xs sm:text-[13px] font-sans font-medium transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'bg-[#37B5A8] border-[#37B5A8] text-white font-bold shadow-xs'
-                      : 'bg-white border-[#37B5A8]/30 text-[#37B5A8] hover:bg-[#37B5A8]/10'
-                  }`}
+                  onClick={handlePrevMainNews}
+                  className="p-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-950 transition-colors cursor-pointer"
+                  title="Previous news"
                 >
-                  {cat}
+                  <ChevronLeft size={16} />
                 </button>
-              );
-            })}
-          </div>
+                <span>{mainNewsIndex + 1} / {mainNewsList.length}</span>
+                <button
+                  onClick={handleNextMainNews}
+                  className="p-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-950 transition-colors cursor-pointer"
+                  title="Next news"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
 
-          {/* 4-Column Visual Cards Grid (Exact 2nd Uploaded Screenshot Style) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
-            {visualGalleryItems.map((item) => (
+            {/* Main News Card */}
+            {currentMainNews && (
               <div
-                key={item.id}
-                onClick={() => navigate(item.href)}
-                className="group cursor-pointer bg-white rounded-xl border border-slate-200/90 hover:border-[#37B5A8]/50 shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden"
+                onClick={() => navigate(currentMainNews.href)}
+                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-8 border border-slate-200 shadow-md transition-all duration-300 hover:shadow-2xl"
               >
-                {/* Visual Chart Thumbnail */}
-                <div className="aspect-square bg-white flex items-center justify-center p-2 sm:p-3 overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                </div>
+                {/* Background Image */}
+                <img
+                  src={currentMainNews.image}
+                  alt={currentMainNews.title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-75"
+                />
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
 
-                {/* Card Sub-Info */}
-                <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex-1 flex flex-col justify-between">
-                  <h3 className="font-serif font-bold text-xs sm:text-sm text-slate-900 group-hover:text-[#37B5A8] transition-colors line-clamp-1">
-                    {item.title}
+                {/* Content Overlay */}
+                <div className="relative z-10 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded bg-red-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
+                      {currentMainNews.category || 'Newsfeed'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded bg-blue-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
+                      {currentMainNews.readTime || '5 MIN READ'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-serif font-black text-2xl sm:text-3xl md:text-4xl text-white group-hover:text-blue-300 transition-colors leading-tight">
+                    {currentMainNews.title}
                   </h3>
-                  <div className="flex items-center justify-between mt-1 text-[11px] font-mono text-slate-400">
-                    <span>{item.category}</span>
-                    <span className="text-[#37B5A8] font-bold">View →</span>
+
+                  <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed max-w-2xl font-sans">
+                    {currentMainNews.subtitle || currentMainNews.description}
+                  </p>
+
+                  <div className="flex items-center gap-3 pt-1 text-xs font-mono text-slate-400">
+                    <span className="text-slate-300 font-semibold">@{currentMainNews.authorName || 'Arun Pandian'}</span>
+                    <span>•</span>
+                    <span>{currentMainNews.date}</span>
                   </div>
                 </div>
               </div>
-            ))}
+            )}
+
           </div>
 
-        </div>
-      </section>
+          {/* ── RIGHT: EDITOR'S PICKS (lg:col-span-4) ── */}
+          <div className="lg:col-span-4 space-y-3">
+            
+            {/* Header with Red Accent Underline */}
+            <div className="relative pb-2 border-b-2 border-slate-200">
+              <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-slate-900">
+                EDITOR'S PICKS
+              </h2>
+              <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-red-600 rounded-full" />
+            </div>
 
-      {/* ═════════════════════════════════════════════════════════════════
-          DOWN SECTION: 1ST UPLOADED DESIGN (Medium-Style Editorial Feed)
-          Matching Screenshot 1: For You Tabs + Left Text / Right Thumbnail Cards
-          ═════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pt-12 pb-24">
-        
-        {/* Masthead Header Title */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <h1 className="font-serif font-black text-2xl sm:text-3xl text-slate-950 tracking-tight">
-              Arun Pandian
-            </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
-              Data Analyst
-            </span>
+            {/* Stacked Cards */}
+            <div className="space-y-4 pt-1">
+              {editorsPicks.map((pick, idx) => (
+                <div
+                  key={pick.id}
+                  onClick={() => navigate(pick.href)}
+                  className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative min-h-[195px] sm:min-h-[220px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
+                >
+                  {/* Visual Background */}
+                  <img
+                    src={pick.image}
+                    alt={pick.title}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+
+                  {/* Play / Video Icon on Top Right if first pick */}
+                  {idx === 0 && (
+                    <div className="absolute top-4 left-4 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
+                      <Play size={13} className="ml-0.5" />
+                    </div>
+                  )}
+
+                  {/* Content Overlay */}
+                  <div className="relative z-10 space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider">
+                        {pick.category || 'Analytics'}
+                      </span>
+                      {idx === 1 && (
+                        <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+
+                    <h4 className="font-serif font-bold text-sm sm:text-base text-white group-hover:text-blue-200 transition-colors line-clamp-2 leading-snug">
+                      {pick.title}
+                    </h4>
+
+                    <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2 pt-0.5">
+                      <span>{pick.date}</span>
+                      <span>•</span>
+                      <span>{pick.readTime}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Search Input Bar */}
-            <div className="relative w-40 sm:w-60">
+        </section>
+
+        {/* ═════════════════════════════════════════════════════════════════
+            2. BOTTOM SECTION: LARGE VISUAL PROJECTS GRID WITH SNIPPET TEXT
+            Matching 1st Uploaded Screenshot: Big full visual cards with rich text explanations
+            ═════════════════════════════════════════════════════════════════ */}
+        <section className="space-y-6 pt-6 border-t border-slate-200">
+          
+          {/* Section Header & Teal Filter Pills */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+            <div>
+              <h2 className="font-serif font-black text-2xl sm:text-3xl text-slate-950 tracking-tight">
+                All Projects & Scientific Case Studies
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 font-sans mt-0.5">
+                Detailed data investigations, scatter correlations, geographic models, and Power BI dashboards.
+              </p>
+            </div>
+
+            {/* Quick Search */}
+            <div className="relative w-full md:w-64">
               <input
                 type="text"
-                placeholder="Search articles..."
+                placeholder="Search charts & studies..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:border-slate-900 outline-none"
+                className="w-full pl-8 pr-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:border-slate-900 outline-none"
               />
               <Search size={13} className="absolute left-2.5 top-2 text-slate-400 pointer-events-none" />
               {searchQuery && (
@@ -385,173 +433,81 @@ export default function BlogPublicationPage() {
                 </button>
               )}
             </div>
-
-            <Link
-              to="/admin/blogs"
-              className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-              title="Admin Blog Studio"
-            >
-              <FileText size={15} />
-            </Link>
           </div>
-        </div>
 
-        {/* Medium Feed Tabs (For you, Featured, Power BI, SQL, Python, etc.) */}
-        <div className="flex items-center gap-6 overflow-x-auto no-scrollbar border-b border-slate-200 py-3 text-sm font-sans text-slate-600">
-          {feedTabs.map((tab) => {
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-2 border-b-2 font-medium transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
-                    ? 'border-slate-950 text-slate-950 font-bold'
-                    : 'border-transparent text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Medium Article Cards Feed (Matching Screenshot 1) */}
-        <div className="divide-y divide-slate-150 mt-2">
-          {feedItems.length === 0 ? (
-            <div className="py-20 text-center text-slate-500 space-y-3">
-              <BookOpen size={36} className="mx-auto text-slate-300" />
-              <p className="font-serif font-bold text-lg text-slate-800">No articles found</p>
-              <p className="text-xs max-w-xs mx-auto">Try switching tabs or clear your search.</p>
-              <button
-                onClick={() => { setActiveTab('For you'); setSearchQuery(''); }}
-                className="px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-bold"
-              >
-                View all articles
-              </button>
-            </div>
-          ) : (
-            feedItems.map((item) => {
-              const isSaved = bookmarkedIds.has(item.id);
-              const customClaps = clapsMap[item.id] ? item.claps + clapsMap[item.id] : item.claps;
-
+          {/* Teal Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {filterCategories.map((cat) => {
+              const isSelected = selectedCategory === cat;
               return (
-                <article
-                  key={item.id}
-                  onClick={() => navigate(item.href)}
-                  className="py-7 group cursor-pointer transition-colors"
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-sans font-medium transition-all cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[#37B5A8] border-[#37B5A8] text-white font-bold shadow-xs'
+                      : 'bg-white border-[#37B5A8]/30 text-[#37B5A8] hover:bg-[#37B5A8]/10'
+                  }`}
                 >
-                  {/* Publication Subheader Row */}
-                  <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center font-bold">
-                      ➔
-                    </div>
-                    <span className="font-semibold text-slate-900 truncate">
-                      {item.publicationName || `In ${item.category}`}
-                    </span>
-                    <span>by</span>
-                    <span className="text-slate-800 font-medium">{item.authorName || 'Arun Pandian'}</span>
-                    <span>·</span>
-                    <span className="text-slate-500 font-mono text-[11px]">{item.date}</span>
-                  </div>
-
-                  {/* Main Content Split: Left Text + Right Thumbnail (Exact Screenshot 1 Style) */}
-                  <div className="flex items-start justify-between gap-4 sm:gap-6">
-                    
-                    {/* Left Info Column */}
-                    <div className="flex-1 space-y-1.5 min-w-0">
-                      <h2 className="font-serif font-bold text-base sm:text-xl text-slate-950 group-hover:text-blue-700 transition-colors leading-snug line-clamp-2">
-                        {item.title}
-                      </h2>
-
-                      <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed font-sans font-normal">
-                        {item.subtitle || item.description}
-                      </p>
-                    </div>
-
-                    {/* Right Rectangular Thumbnail */}
-                    {item.image && (
-                      <div className="w-28 h-20 sm:w-36 sm:h-24 rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Footer Actions Row (Star, Read Time, Claps, Responses, Bookmark, Share) */}
-                  <div className="flex items-center justify-between pt-4 mt-2 text-xs text-slate-500">
-                    <div className="flex items-center gap-4 sm:gap-5">
-                      {item.featured && (
-                        <span className="text-amber-500 text-sm" title="Featured Member Story">
-                          ★
-                        </span>
-                      )}
-                      
-                      <span className="font-mono text-[11px] text-slate-400">
-                        {item.readTime}
-                      </span>
-
-                      {/* Interactive Claps */}
-                      <button
-                        onClick={(e) => handleClap(e, item.id)}
-                        className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-                        title="Clap"
-                      >
-                        <span className="text-sm">👏</span>
-                        <span className="font-mono text-xs">{customClaps}</span>
-                      </button>
-
-                      {/* Responses / Comments */}
-                      <div className="flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors">
-                        <MessageSquare size={13} />
-                        <span className="font-mono text-xs">{item.responses || 5}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {/* Save / Bookmark Button */}
-                      <button
-                        onClick={(e) => handleBookmarkToggle(e, item.id)}
-                        className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-                          isSaved ? 'text-amber-600 bg-amber-50' : 'text-slate-400 hover:text-slate-800'
-                        }`}
-                        title={isSaved ? "Saved in reading list" : "Save story"}
-                      >
-                        <Bookmark size={15} className={isSaved ? "fill-amber-500" : ""} />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (navigator.share) {
-                            navigator.share({ title: item.title, url: window.location.origin + item.href }).catch(() => {});
-                          } else {
-                            navigator.clipboard.writeText(window.location.origin + item.href);
-                            toast.success('Link copied!', { icon: '🔗' });
-                          }
-                        }}
-                        className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 transition-colors cursor-pointer"
-                        title="Share"
-                      >
-                        <Share2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                </article>
+                  {cat}
+                </button>
               );
-            })
-          )}
-        </div>
+            })}
+          </div>
+
+          {/* Large Visual Cards Grid (Matching 1st Uploaded Screenshot with Rich Graphics & Text) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
+            {filteredItems.map((item) => (
+              <article
+                key={item.id}
+                onClick={() => navigate(item.href)}
+                className="group cursor-pointer bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden"
+              >
+                {/* Large Visual Chart / Graph Image */}
+                <div className="relative aspect-4/3 sm:aspect-16/10 bg-white flex items-center justify-center p-3 overflow-hidden border-b border-slate-100">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded bg-white/95 backdrop-blur-xs text-[10px] font-mono font-bold uppercase tracking-wider text-slate-900 border border-slate-200/80 shadow-xs">
+                    {item.category}
+                  </div>
+                </div>
+
+                {/* Detailed Snippet Text & Narrative Body (Matching 1st Uploaded Screenshot) */}
+                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-serif font-bold text-lg sm:text-xl text-slate-900 group-hover:text-blue-600 transition-colors leading-snug line-clamp-2">
+                      {item.title}
+                    </h3>
+
+                    <p className="text-xs sm:text-[13px] text-slate-600 line-clamp-3 leading-relaxed font-sans font-normal">
+                      {item.subtitle || item.description || 'In-depth methodology breakdown, statistical modeling patterns, and verified business intelligence results.'}
+                    </p>
+                  </div>
+
+                  {/* Card Footer: Tools / Tags & Read Study Action */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
+                    <span className="text-[11px] text-slate-500 font-medium truncate max-w-[180px]">
+                      {Array.isArray(item.tags) ? item.tags.slice(0, 3).join(' · ') : (item.tool || 'SQL · Power BI')}
+                    </span>
+                    <span className="text-blue-600 font-bold group-hover:translate-x-1 transition-transform flex items-center gap-1 shrink-0">
+                      <span>Explore Case Study</span>
+                      <ArrowRight size={13} />
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+        </section>
 
       </main>
 
-      {/* ── EMAIL NEWSLETTER SUBSCRIPTION MODAL ── */}
+      {/* ── EMAIL NEWSLETTER MODAL ── */}
       {isSubscribeOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl relative space-y-4">
@@ -579,7 +535,7 @@ export default function BlogPublicationPage() {
               <input
                 type="email"
                 required
-                placeholder="Enter your work or personal email..."
+                placeholder="Enter your email address..."
                 value={subscribeEmail}
                 onChange={(e) => setSubscribeEmail(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-slate-900 outline-none"
