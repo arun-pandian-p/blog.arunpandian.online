@@ -693,9 +693,9 @@ const Hero = () => {
         <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-gradient-to-br from-amber-400/10 via-orange-300/10 to-blue-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
 
-        <div className="w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          <div className="max-w-xl">
-            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-display font-extrabold text-[clamp(2.5rem,4vw,3.5rem)] leading-[1.1] mb-6">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+          <div className="max-w-xl text-center lg:text-left mx-auto lg:mx-0">
+            <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl leading-[1.15] mb-4 sm:mb-6">
               {(hero.headline || []).map((line, i) => (
                 <span key={i} className="block">{line}</span>
               ))}
@@ -704,13 +704,13 @@ const Hero = () => {
               )}
             </h1>
             {isVisible('subtitle') && (
-              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="text-slate-500 text-lg mb-8 leading-relaxed">
+              <p data-edit-id="hero.subtitle" data-edit-name="Hero · Subtitle" data-edit-kind="text" data-edit-path="hero.subtitle" className="text-slate-500 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
                 {hero.subtitle?.replace(/<[^>]*>/g, '')}
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-5">
               {isVisible('primaryCta') && (
-                <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="px-8 py-3.5 bg-slate-900 text-white rounded-full font-semibold hover:bg-slate-800 hover:shadow-lg transition-all active:scale-95 shadow-md">
+                <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="px-6 sm:px-8 py-3 sm:py-3.5 bg-slate-900 text-white rounded-full font-semibold text-xs sm:text-sm hover:bg-slate-800 hover:shadow-lg transition-all active:scale-95 shadow-md">
                   {hero.primaryCta?.label}
                 </a>
               )}
@@ -724,49 +724,49 @@ const Hero = () => {
                   data-edit-name="Hero · Secondary button" 
                   data-edit-kind="button" 
                   data-edit-path="hero.secondaryCta.label" 
-                  className="group flex items-center gap-3 px-5 py-3 rounded-full bg-white hover:bg-slate-50 border border-slate-200/90 shadow-xs hover:shadow-md font-semibold text-slate-800 hover:text-slate-950 transition-all duration-200 cursor-pointer active:scale-95"
+                  className="group flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-white hover:bg-slate-50 border border-slate-200/90 shadow-xs hover:shadow-md font-semibold text-slate-800 hover:text-slate-950 transition-all duration-200 cursor-pointer active:scale-95 text-xs sm:text-sm"
                 >
-                  <div className="w-9 h-9 bg-slate-100 group-hover:bg-blue-50 text-slate-700 group-hover:text-blue-600 rounded-full flex items-center justify-center transition-colors shrink-0 border border-slate-200/80">
-                    <Download size={15} className="group-hover:translate-y-0.5 transition-transform" />
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 bg-slate-100 group-hover:bg-blue-50 text-slate-700 group-hover:text-blue-600 rounded-full flex items-center justify-center transition-colors shrink-0 border border-slate-200/80">
+                    <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
                   </div>
-                  <span className="text-sm font-semibold">{hero.secondaryCta?.label || 'Download résumé'}</span>
+                  <span className="font-semibold">{hero.secondaryCta?.label || 'Download résumé'}</span>
                 </a>
               )}
             </div>
           </div>
-          <div className="flex gap-6 h-[500px] justify-center lg:justify-end">
+          <div className="flex gap-3 sm:gap-6 h-[320px] sm:h-[420px] lg:h-[500px] justify-center lg:justify-end w-full max-w-md mx-auto lg:max-w-none">
             {gallery.length === 1 ? (
-              <div className="w-64 sm:w-80 h-full">
-                <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Collage 1" className="w-full h-full object-cover rounded-[3rem] shadow-lg" />
+              <div className="w-56 sm:w-72 lg:w-80 h-full">
+                <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Collage 1" className="w-full h-full object-cover rounded-2xl sm:rounded-[3rem] shadow-lg" />
               </div>
             ) : gallery.length === 2 ? (
               <>
-                <div className="w-48 sm:w-56 h-full pt-12">
-                  <img fetchPriority="high" src={gallery[0]?.url} alt="Collage 1" className="w-full h-[80%] object-cover rounded-full shadow-lg" />
+                <div className="w-36 sm:w-48 lg:w-56 h-full pt-6 sm:pt-12">
+                  <img fetchPriority="high" src={gallery[0]?.url} alt="Collage 1" className="w-full h-[85%] object-cover rounded-2xl sm:rounded-full shadow-lg" />
                 </div>
-                <div className="w-48 sm:w-56 h-full pb-12">
-                  <img fetchPriority="high" src={gallery[1]?.url} alt="Collage 2" className="w-full h-[80%] object-cover rounded-[3rem] shadow-lg" />
+                <div className="w-36 sm:w-48 lg:w-56 h-full pb-6 sm:pb-12">
+                  <img fetchPriority="high" src={gallery[1]?.url} alt="Collage 2" className="w-full h-[85%] object-cover rounded-2xl sm:rounded-[3rem] shadow-lg" />
                 </div>
               </>
             ) : gallery.length === 3 ? (
               <>
-                <div className="flex flex-col gap-6 pt-12 w-40 sm:w-48">
-                  <img fetchPriority="high" src={gallery[0]?.url} alt="Collage 1" className="w-full h-[50%] object-cover rounded-full shadow-lg" />
-                  <img fetchPriority="high" src={gallery[1]?.url} alt="Collage 2" className="w-full h-[50%] object-cover rounded-[3rem] shadow-lg" />
+                <div className="flex flex-col gap-3 sm:gap-6 pt-6 sm:pt-12 w-32 sm:w-40 lg:w-48">
+                  <img fetchPriority="high" src={gallery[0]?.url} alt="Collage 1" className="w-full h-[50%] object-cover rounded-xl sm:rounded-full shadow-lg" />
+                  <img fetchPriority="high" src={gallery[1]?.url} alt="Collage 2" className="w-full h-[50%] object-cover rounded-xl sm:rounded-[2.5rem] shadow-lg" />
                 </div>
-                <div className="w-48 sm:w-56 h-full">
-                  <img fetchPriority="high" src={gallery[2]?.url} alt="Collage 3" className="w-full h-[90%] object-cover rounded-[3rem] shadow-lg mt-6" />
+                <div className="w-36 sm:w-48 lg:w-56 h-full">
+                  <img fetchPriority="high" src={gallery[2]?.url} alt="Collage 3" className="w-full h-[90%] object-cover rounded-2xl sm:rounded-[3rem] shadow-lg mt-4 sm:mt-6" />
                 </div>
               </>
             ) : (
               <>
-                <div className="flex flex-col gap-6 pt-12 w-40 sm:w-48">
-                  <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Collage 1" className="w-full h-[60%] object-cover rounded-full shadow-lg" />
-                  <img fetchPriority="high" src={gallery[1]?.url || arunProfile} alt="Collage 2" className="w-full h-[40%] object-cover rounded-[3rem] shadow-lg" />
+                <div className="flex flex-col gap-3 sm:gap-6 pt-6 sm:pt-12 w-32 sm:w-40 lg:w-48">
+                  <img fetchPriority="high" src={gallery[0]?.url || hero.profileImage || arunProfile} alt="Collage 1" className="w-full h-[60%] object-cover rounded-xl sm:rounded-full shadow-lg" />
+                  <img fetchPriority="high" src={gallery[1]?.url || arunProfile} alt="Collage 2" className="w-full h-[40%] object-cover rounded-xl sm:rounded-[2.5rem] shadow-lg" />
                 </div>
-                <div className="flex flex-col gap-6 w-48 sm:w-56">
-                  <img fetchPriority="high" src={gallery[2]?.url || gallery[0]?.url || arunProfile} alt="Collage 3" className="w-full h-[45%] object-cover rounded-[3rem] shadow-lg" />
-                  <img fetchPriority="high" src={gallery[3]?.url || gallery[0]?.url || arunProfile} alt="Collage 4" className="w-full h-[55%] object-cover rounded-full shadow-lg" />
+                <div className="flex flex-col gap-3 sm:gap-6 w-36 sm:w-48 lg:w-56">
+                  <img fetchPriority="high" src={gallery[2]?.url || gallery[0]?.url || arunProfile} alt="Collage 3" className="w-full h-[45%] object-cover rounded-2xl sm:rounded-[2.5rem] shadow-lg" />
+                  <img fetchPriority="high" src={gallery[3]?.url || gallery[0]?.url || arunProfile} alt="Collage 4" className="w-full h-[55%] object-cover rounded-2xl sm:rounded-full shadow-lg" />
                 </div>
               </>
             )}
