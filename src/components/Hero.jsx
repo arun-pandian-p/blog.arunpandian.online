@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, ArrowUpRight, ArrowDownRight, ArrowRight, Compass, ShieldAlert, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Mail, ArrowUpRight, ArrowDownRight, ArrowRight, Compass, ShieldAlert, Sparkles, Volume2, VolumeX, Download, FileText, FileDown } from 'lucide-react';
 import MagneticButton from './MagneticButton';
 import Parallax from './Parallax';
 import arunProfile from '../assets/arun-profile.jpg';
@@ -671,11 +671,28 @@ const Hero = () => {
     );
   }
 
-  // ─── HERO STYLE: LOGOIPSUM (Rounded Collage) ───
+  // ─── HERO STYLE: LOGOIPSUM (Rounded Collage with Grid Lines) ───
   if (heroStyle === 'logoipsum') {
     return (
       <section id="hero" data-edit-id="hero.section" data-edit-name="Hero" data-edit-kind="section" className="relative min-h-screen flex flex-col justify-center bg-white text-slate-900 pt-32 pb-12 overflow-hidden">
-        <div className="absolute inset-y-0 right-0 w-full md:w-[45%] bg-[#fce044] -z-10 rounded-l-[100px] hidden md:block" />
+        {/* Subtle Engineering Data Grid Background */}
+        <div 
+          className="absolute inset-0 pointer-events-none -z-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px',
+            maskImage: 'radial-gradient(ellipse 90% 80% at 50% 45%, #000 65%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 45%, #000 65%, transparent 100%)'
+          }}
+        />
+
+        {/* Ambient Soft Blur Highlights */}
+        <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-gradient-to-br from-amber-400/10 via-orange-300/10 to-blue-400/10 rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
+
         <div className="w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           <div className="max-w-xl">
             <h1 data-edit-id="hero.headline" data-edit-name="Hero · Headline" data-edit-kind="heading" className="font-display font-extrabold text-[clamp(2.5rem,4vw,3.5rem)] leading-[1.1] mb-6">
@@ -683,7 +700,7 @@ const Hero = () => {
                 <span key={i} className="block">{line}</span>
               ))}
               {isVisible('headlineAccent') && (
-                <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-[#fce044] block mt-2">{hero.headlineAccent}</span>
+                <span data-edit-id="hero.accent" data-edit-name="Hero · Accent word" data-edit-kind="text" data-edit-path="hero.headlineAccent" className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-400 block mt-2">{hero.headlineAccent}</span>
               )}
             </h1>
             {isVisible('subtitle') && (
@@ -691,18 +708,28 @@ const Hero = () => {
                 {hero.subtitle?.replace(/<[^>]*>/g, '')}
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-6">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               {isVisible('primaryCta') && (
-                <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="px-8 py-4 bg-slate-900 text-white rounded-[2rem] font-semibold hover:bg-slate-800 transition-colors shadow-lg">
+                <a href={hero.primaryCta?.href || '#projects'} data-edit-id="hero.primaryCta" data-edit-name="Hero · Primary button" data-edit-kind="button" data-edit-path="hero.primaryCta.label" className="px-8 py-3.5 bg-slate-900 text-white rounded-full font-semibold hover:bg-slate-800 hover:shadow-lg transition-all active:scale-95 shadow-md">
                   {hero.primaryCta?.label}
                 </a>
               )}
               {isVisible('secondaryCta') && (
-                <a href={hero.secondaryCta?.href || '#about'} data-edit-id="hero.secondaryCta" data-edit-name="Hero · Secondary button" data-edit-kind="button" data-edit-path="hero.secondaryCta.label" className="flex items-center gap-3 font-semibold text-slate-800 hover:text-slate-600 transition-colors">
-                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-100 shrink-0">
-                    <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-slate-900 border-b-[5px] border-b-transparent ml-1" />
+                <a 
+                  href={hero.secondaryCta?.href || '/resume.pdf'} 
+                  download="Arun_Pandian_Resume.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-edit-id="hero.secondaryCta" 
+                  data-edit-name="Hero · Secondary button" 
+                  data-edit-kind="button" 
+                  data-edit-path="hero.secondaryCta.label" 
+                  className="group flex items-center gap-3 px-5 py-3 rounded-full bg-white hover:bg-slate-50 border border-slate-200/90 shadow-xs hover:shadow-md font-semibold text-slate-800 hover:text-slate-950 transition-all duration-200 cursor-pointer active:scale-95"
+                >
+                  <div className="w-9 h-9 bg-slate-100 group-hover:bg-blue-50 text-slate-700 group-hover:text-blue-600 rounded-full flex items-center justify-center transition-colors shrink-0 border border-slate-200/80">
+                    <Download size={15} className="group-hover:translate-y-0.5 transition-transform" />
                   </div>
-                  {hero.secondaryCta?.label || 'Watch Video'}
+                  <span className="text-sm font-semibold">{hero.secondaryCta?.label || 'Download résumé'}</span>
                 </a>
               )}
             </div>
