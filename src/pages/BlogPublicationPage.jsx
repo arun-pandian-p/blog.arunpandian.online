@@ -118,55 +118,78 @@ export default function BlogPublicationPage() {
   // 1. Unified Projects
   const allProjects = useMemo(() => {
     const rawList = liveDbProjects.length > 0 ? liveDbProjects : contextProjects;
-    return rawList.map((p, idx) => ({
-      id: p.id || p._id || String(idx + 1),
-      title: p.title || 'Data Analytics Project',
-      subtitle: p.subtitle || p.problem || (Array.isArray(p.tags) ? p.tags.slice(0, 3).join(' · ') : 'SQL · Python · Power BI'),
-      tool: Array.isArray(p.tags) ? p.tags.slice(0, 4).join(' · ') : (p.tool || 'Power BI · SQL'),
-      category: p.category || (p.tags?.[0] ? `${p.tags[0]}` : 'Dashboard'),
-      problem: p.problem || p.subtitle || '',
-      insight: p.insight || 'Key statistical pattern and actionable metric discovered.',
-      description: p.problem || p.subtitle || p.description || '',
-      tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
-      image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-      href: `/project/${p.id || p._id || idx + 1}`,
-      date: p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Nov 17, 2024',
-      type: 'project',
-      readTime: '5 MIN READ',
-      claps: 484 + (idx * 47) % 500,
-      responses: 5 + idx * 2,
-      featured: true,
-    }));
+    return rawList.map((p, idx) => {
+      const rawDate = p.updated_at || p.published_at || p.created_at;
+      const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
+      const formattedDate = new Date(timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      return {
+        id: p.id || p._id || String(idx + 1),
+        title: p.title || 'Data Analytics Project',
+        subtitle: p.subtitle || p.problem || (Array.isArray(p.tags) ? p.tags.slice(0, 3).join(' · ') : 'SQL · Python · Power BI'),
+        tool: Array.isArray(p.tags) ? p.tags.slice(0, 4).join(' · ') : (p.tool || 'Power BI · SQL'),
+        category: p.category || (p.tags?.[0] ? `${p.tags[0]}` : 'Dashboard'),
+        problem: p.problem || p.subtitle || '',
+        insight: p.insight || 'Key statistical pattern and actionable metric discovered.',
+        description: p.problem || p.subtitle || p.description || '',
+        tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
+        image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
+        href: `/project/${p.id || p._id || idx + 1}`,
+        timestamp,
+        date: formattedDate,
+        type: 'project',
+        readTime: '5 MIN READ',
+        claps: 484 + (idx * 47) % 500,
+        responses: 5 + idx * 2,
+        featured: true,
+      };
+    });
   }, [liveDbProjects, contextProjects]);
 
   // 2. Unified Blog Articles
   const allBlogs = useMemo(() => {
     const rawList = liveDbBlogs.length > 0 ? liveDbBlogs : contextBlogs;
-    return rawList.map((b, idx) => ({
-      id: b.id || b._id || String(idx + 1),
-      slug: b.slug || String(b.id || idx + 1),
-      title: b.title || 'What 2023 Job-Posting Data Taught Me About Data Hiring',
-      subtitle: b.excerpt || 'Answering four salary-and-skills questions with nothing but Excel, Power Query, and a Power Pivot model.',
-      content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
-      tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Power BI'],
-      image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-      readTime: b.read_time || b.readTime || '4 MIN READ',
-      date: b.published_at || b.created_at ? new Date(b.published_at || b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Nov 17, 2024',
-      category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Newsfeed',
-      authorName: b.author_name || 'Arun Pandian',
-      publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
-      href: `/blog/${b.slug || b.id}`,
-      type: 'article',
-      featured: Boolean(b.featured) || idx === 0,
-      claps: 567 + (idx * 83) % 900,
-      responses: 8 + (idx * 3) % 15,
-      shares: 3 + idx,
-    }));
+    return rawList.map((b, idx) => {
+      const rawDate = b.updated_at || b.published_at || b.created_at;
+      const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
+      const formattedDate = new Date(timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      return {
+        id: b.id || b._id || String(idx + 1),
+        slug: b.slug || String(b.id || idx + 1),
+        title: b.title || 'What 2023 Job-Posting Data Taught Me About Data Hiring',
+        subtitle: b.excerpt || 'Answering four salary-and-skills questions with nothing but Excel, Power Query, and a Power Pivot model.',
+        content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
+        tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Power BI'],
+        image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
+        readTime: b.read_time || b.readTime || '4 MIN READ',
+        timestamp,
+        date: formattedDate,
+        category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Newsfeed',
+        authorName: b.author_name || 'Arun Pandian',
+        publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
+        href: `/blog/${b.slug || b.id}`,
+        type: 'article',
+        featured: Boolean(b.featured) || idx === 0,
+        claps: 567 + (idx * 83) % 900,
+        responses: 8 + (idx * 3) % 15,
+        shares: 3 + idx,
+      };
+    });
   }, [liveDbBlogs, contextBlogs]);
 
-  // Combined Items
+  // Combined Items Sorted Strictly Date-Wise (Latest Update First)
   const allItems = useMemo(() => {
-    return [...allBlogs, ...allProjects];
+    const combined = [...allBlogs, ...allProjects];
+    return combined.sort((a, b) => b.timestamp - a.timestamp);
   }, [allBlogs, allProjects]);
 
   // Filter Categories for Top Pills
@@ -182,29 +205,31 @@ export default function BlogPublicationPage() {
     'Python'
   ];
 
-  // Filtered Items based on category and search
+  // Filtered Items based on category and search (strictly date-wise descending)
   const filteredItems = useMemo(() => {
-    return allItems.filter((item) => {
-      const matchesSearch =
-        !searchQuery.trim() ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
+    return allItems
+      .filter((item) => {
+        const matchesSearch =
+          !searchQuery.trim() ||
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
-      let matchesCat = true;
-      if (selectedCategory !== 'Show all') {
-        matchesCat =
-          item.category?.toLowerCase() === selectedCategory.toLowerCase() ||
-          (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === selectedCategory.toLowerCase()));
-      }
+        let matchesCat = true;
+        if (selectedCategory !== 'Show all') {
+          matchesCat =
+            item.category?.toLowerCase() === selectedCategory.toLowerCase() ||
+            (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase() === selectedCategory.toLowerCase()));
+        }
 
-      return matchesSearch && matchesCat;
-    });
+        return matchesSearch && matchesCat;
+      })
+      .sort((a, b) => b.timestamp - a.timestamp);
   }, [allItems, searchQuery, selectedCategory]);
 
-  // Main News spotlight & Editor's Picks
+  // Main News spotlight & Editor's Picks (Strictly Latest Date First)
   const mainNewsList = useMemo(() => {
-    return allItems.slice(0, 4);
+    return allItems.slice(0, 5);
   }, [allItems]);
 
   const currentMainNews = mainNewsList[mainNewsIndex % mainNewsList.length] || allItems[0];
