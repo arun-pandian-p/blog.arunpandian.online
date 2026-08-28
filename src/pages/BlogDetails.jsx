@@ -6,7 +6,6 @@ import { useContent } from '../context/ContentProvider';
 import Navbar from '../components/Navbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
-import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import {
   ArrowLeft,
@@ -46,28 +45,30 @@ import {
   TrendingUp,
   Tag,
   Star,
-  Flame
+  Flame,
+  Heart,
+  ThumbsUp,
+  Printer,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
+import { 
+  FaLinkedin, 
+  FaGithub, 
+  FaXTwitter, 
+  FaWhatsapp, 
+  FaRedditAlien, 
+  FaFacebookF, 
+  FaEnvelope, 
+  FaMedium 
+} from 'react-icons/fa6';
 import toast from 'react-hot-toast';
 
-const GithubIcon = ({ size = 16 }) => (
+// Custom GitHub Icon
+const GithubIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
     <path d="M9 18c-4.51 2-5-2-7-2" />
-  </svg>
-);
-
-const LinkedinIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
-    <rect width="4" height="12" x="2" y="9" />
-    <circle cx="4" cy="4" r="2" />
-  </svg>
-);
-
-const XTwitterIcon = ({ size = 15 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
 
@@ -84,6 +85,32 @@ export default function BlogDetails() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeHeadingId, setActiveHeadingId] = useState('');
   const [isMobileTocOpen, setIsMobileTocOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Medium-style Likes / Claps & Bookmark state
+  const [likesCount, setLikesCount] = useState(24);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [clapAnim, setClapAnim] = useState(false);
+
+  // Initialize Likes and Bookmarks from localStorage
+  useEffect(() => {
+    if (!slug) return;
+    const storedLikes = localStorage.getItem(`blog_likes_${slug}`);
+    const storedUserLiked = localStorage.getItem(`blog_user_liked_${slug}`);
+    const storedBookmark = localStorage.getItem(`blog_bookmarked_${slug}`);
+
+    if (storedLikes) {
+      setLikesCount(parseInt(storedLikes, 10));
+    } else {
+      // Seed random initial claps between 18 and 42 for social proof
+      const initialSeed = Math.floor(Math.random() * 24) + 18;
+      setLikesCount(initialSeed);
+    }
+
+    if (storedUserLiked) setHasLiked(true);
+    if (storedBookmark) setIsBookmarked(true);
+  }, [slug]);
 
   // Fetch blog directly from Supabase for instant live data
   useEffect(() => {
@@ -191,30 +218,91 @@ export default function BlogDetails() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
+  // Medium-style Clap / Like Handler
+  const handleLike = () => {
+    const newCount = likesCount + 1;
+    setLikesCount(newCount);
+    setHasLiked(true);
+    setClapAnim(true);
+    setTimeout(() => setClapAnim(false), 800);
+
+    localStorage.setItem(`blog_likes_${slug}`, newCount);
+    localStorage.setItem(`blog_user_liked_${slug}`, 'true');
+
+    toast.success(`👏 Clapped for this article! (${newCount})`, {
+      icon: '👏',
+      style: { borderRadius: '12px', background: '#0F172A', color: '#fff', fontSize: '13px' }
+    });
+  };
+
+  // Bookmark Toggle Handler
+  const handleBookmarkToggle = () => {
+    const nextState = !isBookmarked;
+    setIsBookmarked(nextState);
+    if (nextState) {
+      localStorage.setItem(`blog_bookmarked_${slug}`, 'true');
+      toast.success('Article saved to your reading list!', { icon: '🔖' });
+    } else {
+      localStorage.removeItem(`blog_bookmarked_${slug}`);
+      toast('Article removed from reading list.', { icon: '🗑️' });
+    }
+  };
+
+  // Comprehensive Professional Share Function
   const handleShare = (platform) => {
-    const url = window.location.href;
-    const shareTitle = blog?.title || 'Data Analytics Article';
+    const currentUrl = window.location.href;
+    const shareTitle = blog?.title || 'Data Analytics Article & Investigation';
+    const authorHandle = 'arunpandian';
+
+    if (platform === 'native' && navigator.share) {
+      navigator.share({
+        title: shareTitle,
+        text: `${shareTitle} by Arun Pandian`,
+        url: currentUrl,
+      }).catch(() => {});
+      return;
+    }
 
     if (platform === 'linkedin') {
       window.open(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-        '_blank'
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`,
+        '_blank',
+        'width=600,height=600'
       );
     } else if (platform === 'twitter') {
       window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(url)}`,
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareTitle} by @${authorHandle}`)}&url=${encodeURIComponent(currentUrl)}&hashtags=DataAnalytics,SQL,PowerBI,Python`,
+        '_blank',
+        'width=600,height=450'
+      );
+    } else if (platform === 'whatsapp') {
+      window.open(
+        `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this data analytics study: "${shareTitle}" — ${currentUrl}`)}`,
         '_blank'
       );
+    } else if (platform === 'reddit') {
+      window.open(
+        `https://reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(shareTitle)}`,
+        '_blank'
+      );
+    } else if (platform === 'facebook') {
+      window.open(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
+        '_blank',
+        'width=600,height=500'
+      );
+    } else if (platform === 'email') {
+      window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`Hi,\n\nI thought you might find this data publication interesting:\n\n${shareTitle}\n${currentUrl}\n\nBest,`)}`;
     } else if (platform === 'copy') {
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(currentUrl);
       setCopiedLink(true);
       toast.success('Article link copied to clipboard!', { icon: '🔗' });
       setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
-  // Featured and Recent Posts for the 3-Section Split Sidebar
-  const { featuredPosts, recentPosts, prevBlog, nextBlog } = useMemo(() => {
+  // Featured and Recent Posts for Sidebar
+  const { featuredPosts, recentPosts, prevBlog, nextBlog, relatedBlogs } = useMemo(() => {
     const list = allBlogsList.length > 0 ? allBlogsList : contextBlogs;
     const currentIndex = list.findIndex(
       (b) => String(b.slug) === String(slug) || String(b.id) === String(slug)
@@ -223,14 +311,21 @@ export default function BlogDetails() {
     const prev = currentIndex > 0 ? list[currentIndex - 1] : list[list.length - 1];
     const next = currentIndex < list.length - 1 && currentIndex !== -1 ? list[currentIndex + 1] : list[0];
     
-    // Featured posts (featured flag or first 3)
+    // Featured posts (featured flag or top 3)
     const featured = list.filter((b) => b.featured && String(b.slug) !== String(slug)).slice(0, 3);
     const fallbackFeatured = featured.length > 0 ? featured : list.filter((b) => String(b.slug) !== String(slug)).slice(0, 3);
 
     // Recent posts (latest 5)
     const recent = list.filter((b) => String(b.slug) !== String(slug)).slice(0, 5);
+    const related = list.filter((b) => String(b.slug) !== String(slug)).slice(0, 3);
 
-    return { featuredPosts: fallbackFeatured, recentPosts: recent, prevBlog: prev, nextBlog: next };
+    return { 
+      featuredPosts: fallbackFeatured, 
+      recentPosts: recent, 
+      prevBlog: prev, 
+      nextBlog: next, 
+      relatedBlogs: related 
+    };
   }, [allBlogsList, contextBlogs, slug]);
 
   if (loading) {
@@ -246,7 +341,7 @@ export default function BlogDetails() {
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 px-4 text-center">
         <h1 className="text-3xl font-display font-bold mb-3">Article Not Found</h1>
         <p className="text-slate-500 mb-6 max-w-md text-sm">
-          The requested publication or blog post could not be loaded.
+          The requested data publication or blog post could not be loaded.
         </p>
         <Link
           to="/blog"
@@ -260,7 +355,7 @@ export default function BlogDetails() {
 
   // ─── Dynamic Attributes ───
   const title = blog.title || 'Exploring Fitbit Data using Fitbit\'s API';
-  const excerpt = blog.excerpt || blog.summary || '';
+  const excerpt = blog.excerpt || blog.summary || 'An in-depth technical investigation and data modeling case study.';
   const authorName = blog.author_name || settings?.about?.name || 'Arun Pandian';
   const authorRole = settings?.about?.role || 'Data Analyst';
   const authorAvatar =
@@ -292,8 +387,9 @@ export default function BlogDetails() {
   const liveLink = meta.liveLink || '';
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
   const seoDescription = meta.seoDescription || excerpt || title;
+  const currentCanonicalUrl = typeof window !== 'undefined' ? window.location.href : `https://arunpandian.online/blog/${blog.slug || blog.id}`;
 
-  // ─── Markdown Renderer ───
+  // ─── Custom Markdown Renderer ───
   const renderFormattedArticle = (contentStr) => {
     if (!contentStr) return null;
 
@@ -484,7 +580,7 @@ export default function BlogDetails() {
       if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         const items = trimmed.split('\n').map(i => i.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
         return (
-          <ul key={idx} className="my-4 space-y-2 list-disc list-inside text-slate-700 text-[16px] sm:text-[17px] leading-[1.78]">
+          <ul key={idx} className="my-4 space-y-2 list-disc list-inside text-slate-700 text-[16px] sm:text-[17.5px] leading-[1.78]">
             {items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:text-blue-600">
                 {item}
@@ -498,7 +594,7 @@ export default function BlogDetails() {
       if (/^\d+\.\s/.test(trimmed)) {
         const items = trimmed.split('\n').map(i => i.replace(/^\d+\.\s+/, '').trim()).filter(Boolean);
         return (
-          <ol key={idx} className="my-4 space-y-2 list-decimal list-inside text-slate-700 text-[16px] sm:text-[17px] leading-[1.78]">
+          <ol key={idx} className="my-4 space-y-2 list-decimal list-inside text-slate-700 text-[16px] sm:text-[17.5px] leading-[1.78]">
             {items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:font-bold marker:text-slate-800">
                 {item}
@@ -523,7 +619,7 @@ export default function BlogDetails() {
 
       // Horizontal Divider
       if (trimmed === '---' || trimmed === '***') {
-        return <hr key={idx} className="my-8 border-slate-300/80 max-w-sm mx-auto" />;
+        return <hr key={idx} className="my-8 border-slate-200 max-w-md mx-auto" />;
       }
 
       // Responsive Markdown Image: ![Caption](url)
@@ -536,7 +632,7 @@ export default function BlogDetails() {
             <img
               src={imgUrl}
               alt={caption || 'Article Visual'}
-              className="w-full max-w-2xl mx-auto h-auto rounded-2xl border border-slate-200 shadow-sm object-cover"
+              className="w-full h-auto rounded-2xl border border-slate-200 shadow-sm object-cover"
               loading="lazy"
             />
             {caption && (
@@ -559,10 +655,29 @@ export default function BlogDetails() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FBFBFB] text-slate-900 selection:bg-blue-600 selection:text-white">
+      {/* ─── Rich SEO Open Graph & Twitter Social Tags ─── */}
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
-        {meta.socialImage && <meta property="og:image" content={meta.socialImage} />}
+        <link rel="canonical" href={currentCanonicalUrl} />
+        
+        {/* OpenGraph */}
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={currentCanonicalUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Arun Pandian · Data Analytics Publication" />
+        {coverImage && <meta property="og:image" content={coverImage} />}
+        <meta property="article:published_time" content={blog.published_at || blog.created_at} />
+        <meta property="article:author" content={authorName} />
+        <meta property="article:section" content={category} />
+        {tags.map((t) => <meta key={t} property="article:tag" content={t} />)}
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        {coverImage && <meta name="twitter:image" content={coverImage} />}
       </Helmet>
 
       <StyleOverrides />
@@ -579,7 +694,7 @@ export default function BlogDetails() {
 
       <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         
-        {/* ── 01: BREADCRUMBS & ADMIN EDIT BUTTON ── */}
+        {/* ── 01: TOP BREADCRUMBS & ACTION BAR ── */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-200/80 text-xs font-mono text-slate-500">
           <nav className="flex items-center gap-2">
             <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
@@ -589,7 +704,18 @@ export default function BlogDetails() {
             <span className="text-slate-800 font-semibold truncate max-w-[200px] sm:max-w-xs">{category}</span>
           </nav>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
+            {/* Quick Share Trigger */}
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
+              title="Share this article"
+            >
+              <Share2 size={12} className="text-blue-600" />
+              <span>Share</span>
+            </button>
+
+            {/* Admin Edit Link */}
             <Link
               to={`/admin/blogs?edit=${blog.id}`}
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
@@ -602,8 +728,8 @@ export default function BlogDetails() {
         </div>
 
         {/* ═════════════════════════════════════════════════════════════════
-            3-SECTION SPLIT LAYOUT (Matching User's Uploaded Image)
-            Left/Center (Col 8): Tags + Title + Date + GitHub Alert + Body
+            3-SECTION SPLIT LAYOUT (Matching Uploaded Screenshot & Medium UI)
+            Left/Center (Col 8): Tags + Title + Date + GitHub Box + Content
             Right Sidebar (Col 4): Featured Posts + Recent Posts + TOC
             ═════════════════════════════════════════════════════════════════ */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
@@ -613,7 +739,7 @@ export default function BlogDetails() {
               ───────────────────────────────────────────────────────────── */}
           <article className="lg:col-span-8 bg-white p-6 sm:p-10 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
             
-            {/* 1. TOP TAGS PILLS (Matching uploaded image top badges) */}
+            {/* 1. TOP TAGS PILLS */}
             <div className="flex flex-wrap items-center gap-2">
               {tags.map((t) => (
                 <span
@@ -630,8 +756,8 @@ export default function BlogDetails() {
               {title}
             </h1>
 
-            {/* 3. PUBLISH DATE & READ TIME */}
-            <div className="text-xs text-slate-500 font-mono flex items-center gap-3 pb-2">
+            {/* 3. PUBLISH DATE & AUTHOR META */}
+            <div className="text-xs text-slate-500 font-mono flex flex-wrap items-center gap-3 pb-2">
               <span>{publishedDate}</span>
               <span>•</span>
               <span>{readTime}</span>
@@ -639,7 +765,100 @@ export default function BlogDetails() {
               <span className="font-medium text-slate-700">By {authorName}</span>
             </div>
 
-            {/* 4. GITHUB REPOSITORY / CODE NOTICE BANNER (Matching uploaded image) */}
+            {/* ── MEDIUM-STYLE ENGAGEMENT & SHARABLE BAR ── */}
+            <div className="flex flex-wrap items-center justify-between gap-4 py-3.5 px-4 bg-slate-50/80 rounded-xl border border-slate-200/90 text-xs">
+              
+              {/* Left: Claps / Like & Bookmark */}
+              <div className="flex items-center gap-4">
+                {/* Clap Button */}
+                <button
+                  onClick={handleLike}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                    hasLiked
+                      ? 'bg-blue-600 text-white shadow-xs font-bold'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                  title="Clap for this article"
+                >
+                  <span className={`text-base ${clapAnim ? 'scale-125 transition-transform' : ''}`}>👏</span>
+                  <span className="font-mono text-xs">{likesCount}</span>
+                </button>
+
+                {/* Bookmark Toggle */}
+                <button
+                  onClick={handleBookmarkToggle}
+                  className={`p-2 rounded-full border transition-colors cursor-pointer ${
+                    isBookmarked
+                      ? 'bg-amber-50 text-amber-600 border-amber-300'
+                      : 'bg-white text-slate-500 hover:text-slate-800 border-slate-200'
+                  }`}
+                  title={isBookmarked ? "Saved in Reading List" : "Save Article"}
+                >
+                  <Bookmark size={15} className={isBookmarked ? "fill-amber-500" : ""} />
+                </button>
+
+                <button
+                  onClick={() => window.print()}
+                  className="p-2 rounded-full bg-white text-slate-500 hover:text-slate-800 border border-slate-200 transition-colors cursor-pointer hidden sm:inline-flex"
+                  title="Print / Save PDF"
+                >
+                  <Printer size={15} />
+                </button>
+              </div>
+
+              {/* Right: Instant Sharable Links (LinkedIn, X, WhatsApp, Reddit, Copy) */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-400 font-mono text-[11px] mr-1 hidden sm:inline">Share:</span>
+                
+                {/* LinkedIn */}
+                <button
+                  onClick={() => handleShare('linkedin')}
+                  className="p-2 rounded-lg bg-white hover:bg-[#0077B5]/10 text-[#0077B5] border border-slate-200 transition-colors cursor-pointer"
+                  title="Share on LinkedIn"
+                >
+                  <FaLinkedin size={14} />
+                </button>
+
+                {/* Twitter / X */}
+                <button
+                  onClick={() => handleShare('twitter')}
+                  className="p-2 rounded-lg bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 transition-colors cursor-pointer"
+                  title="Share on X"
+                >
+                  <FaXTwitter size={13} />
+                </button>
+
+                {/* WhatsApp */}
+                <button
+                  onClick={() => handleShare('whatsapp')}
+                  className="p-2 rounded-lg bg-white hover:bg-[#25D366]/10 text-[#25D366] border border-slate-200 transition-colors cursor-pointer"
+                  title="Share on WhatsApp"
+                >
+                  <FaWhatsapp size={14} />
+                </button>
+
+                {/* Reddit */}
+                <button
+                  onClick={() => handleShare('reddit')}
+                  className="p-2 rounded-lg bg-white hover:bg-[#FF4500]/10 text-[#FF4500] border border-slate-200 transition-colors cursor-pointer hidden sm:inline-flex"
+                  title="Share on Reddit"
+                >
+                  <FaRedditAlien size={14} />
+                </button>
+
+                {/* Copy Link */}
+                <button
+                  onClick={() => handleShare('copy')}
+                  className="p-2 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer flex items-center gap-1 text-xs"
+                  title="Copy link to clipboard"
+                >
+                  {copiedLink ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                </button>
+              </div>
+
+            </div>
+
+            {/* 4. GITHUB REPOSITORY / CODE NOTICE BANNER */}
             {githubLink && (
               <div className="p-4 sm:p-5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm sm:text-[15px] font-sans leading-relaxed shadow-2xs flex items-start gap-3">
                 <GithubIcon size={20} className="shrink-0 text-slate-900 mt-0.5" />
@@ -658,7 +877,7 @@ export default function BlogDetails() {
               </div>
             )}
 
-            {/* Excerpt Summary (if provided) */}
+            {/* Excerpt Summary */}
             {excerpt && (
               <p className="text-base sm:text-lg text-slate-600 font-sans leading-relaxed italic border-l-2 border-slate-300 pl-4 py-1">
                 {excerpt}
@@ -684,7 +903,7 @@ export default function BlogDetails() {
               </figure>
             )}
 
-            {/* Embedded Video (if provided) */}
+            {/* Embedded Video */}
             {videoUrl && (
               <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-sm aspect-video bg-black">
                 {videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be') ? (
@@ -700,7 +919,7 @@ export default function BlogDetails() {
               </div>
             )}
 
-            {/* Embedded Power BI / Interactive App (if provided) */}
+            {/* Embedded Power BI / Interactive App */}
             {powerbiUrl && (
               <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-900 aspect-16/10">
                 <iframe
@@ -753,30 +972,31 @@ export default function BlogDetails() {
               </div>
             )}
 
-            {/* Social Share Footer */}
-            <div className="flex items-center justify-between pt-6 border-t border-slate-100 text-xs font-mono text-slate-500">
-              <span>Share this article:</span>
+            {/* Bottom Sharable Action Strip */}
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-100">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleShare('linkedin')}
-                  className="p-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-700 border border-slate-200 transition-colors cursor-pointer"
-                  title="Share on LinkedIn"
+                  onClick={handleLike}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
                 >
-                  <LinkedinIcon size={14} />
+                  <span>👏 Clap ({likesCount})</span>
                 </button>
                 <button
-                  onClick={() => handleShare('twitter')}
-                  className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
-                  title="Share on X"
+                  onClick={handleBookmarkToggle}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors cursor-pointer"
                 >
-                  <XTwitterIcon size={14} />
+                  <Bookmark size={14} />
+                  <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
                 </button>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleShare('copy')}
-                  className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer"
-                  title="Copy link"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer"
                 >
-                  {copiedLink ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                  <Share2 size={13} />
+                  <span>Share Full Study</span>
                 </button>
               </div>
             </div>
@@ -789,7 +1009,7 @@ export default function BlogDetails() {
               ───────────────────────────────────────────────────────────── */}
           <aside className="lg:col-span-4 space-y-8 sticky top-24">
             
-            {/* ── SECTION 1: FEATURED POSTS (Hero Cards with Thumbnails) ── */}
+            {/* ── SECTION 1: FEATURED POSTS (Spotlight Cards) ── */}
             {featuredPosts.length > 0 && (
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -797,7 +1017,7 @@ export default function BlogDetails() {
                     <Star size={16} className="text-amber-500 fill-amber-500" />
                     <span>Featured Posts</span>
                   </h3>
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Top Picks</span>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase">Curated</span>
                 </div>
 
                 <div className="space-y-4">
@@ -853,7 +1073,7 @@ export default function BlogDetails() {
                       onClick={() => navigate(`/blog/${rp.slug || rp.id}`)}
                       className="py-3 first:pt-0 last:pb-0 flex items-center gap-3.5 group cursor-pointer"
                     >
-                      {/* Compact Square / Rectangular Thumbnail */}
+                      {/* Compact Thumbnail */}
                       <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-900 shrink-0 border border-slate-200">
                         {rp.cover_image ? (
                           <img
@@ -883,7 +1103,7 @@ export default function BlogDetails() {
               </div>
             )}
 
-            {/* ── SECTION 3: TABLE OF CONTENTS ── */}
+            {/* ── SECTION 3: TABLE OF CONTENTS (Section Outline) ── */}
             {headings.length > 0 && (
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 text-xs font-mono font-bold text-slate-800 uppercase tracking-wider">
@@ -988,7 +1208,164 @@ export default function BlogDetails() {
           )}
         </div>
 
+        {/* ── RELATED PUBLICATIONS GRID ── */}
+        {relatedBlogs.length > 0 && (
+          <section className="mt-16 pt-12 border-t border-slate-200 space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="font-serif font-bold text-xl sm:text-2xl text-slate-900">
+                More Technical Studies & Articles
+              </h4>
+              <Link to="/blog" className="text-xs font-mono text-blue-600 hover:underline font-bold">
+                Explore All Publications →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {relatedBlogs.map((rb) => (
+                <Link
+                  key={rb.id}
+                  to={`/blog/${rb.slug || rb.id}`}
+                  className="p-5 rounded-2xl border border-slate-200 bg-white hover:shadow-md transition-all flex flex-col justify-between group shadow-2xs"
+                >
+                  <div>
+                    {rb.cover_image && (
+                      <img
+                        src={rb.cover_image}
+                        alt={rb.title}
+                        className="w-full h-36 object-cover rounded-xl mb-3.5 bg-slate-900"
+                      />
+                    )}
+                    <span className="text-[10px] font-mono font-bold text-blue-600 uppercase block mb-1">
+                      {rb.category || 'Data Analytics'}
+                    </span>
+                    <h5 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-blue-600 line-clamp-2 leading-snug">
+                      {rb.title}
+                    </h5>
+                    <p className="text-xs text-slate-500 line-clamp-2 mt-2 leading-relaxed">
+                      {rb.excerpt || 'Comprehensive data analysis, methodology, and SQL modeling.'}
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-blue-600 font-bold mt-4 flex items-center gap-1">
+                    <span>Read Study</span>
+                    <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
       </main>
+
+      {/* ── PROFESSIONAL SHARE MODAL ── */}
+      {isShareModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 relative">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
+                <Share2 size={16} className="text-blue-600" />
+                <span>Share Article</span>
+              </h3>
+              <button
+                onClick={() => setIsShareModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Share <strong className="text-slate-900">"{title}"</strong> with your professional network:
+            </p>
+
+            {/* Social Share Grid */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
+              <button
+                onClick={() => handleShare('linkedin')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#0077B5]/10 border border-slate-200 text-slate-700 hover:text-[#0077B5] transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaLinkedin size={22} className="text-[#0077B5]" />
+                <span>LinkedIn</span>
+              </button>
+              <button
+                onClick={() => handleShare('twitter')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaXTwitter size={20} />
+                <span>X / Twitter</span>
+              </button>
+              <button
+                onClick={() => handleShare('whatsapp')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#25D366]/10 border border-slate-200 text-slate-700 hover:text-[#25D366] transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaWhatsapp size={22} className="text-[#25D366]" />
+                <span>WhatsApp</span>
+              </button>
+              <button
+                onClick={() => handleShare('reddit')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#FF4500]/10 border border-slate-200 text-slate-700 hover:text-[#FF4500] transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaRedditAlien size={22} className="text-[#FF4500]" />
+                <span>Reddit</span>
+              </button>
+              <button
+                onClick={() => handleShare('facebook')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#1877F2]/10 border border-slate-200 text-slate-700 hover:text-[#1877F2] transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaFacebookF size={20} className="text-[#1877F2]" />
+                <span>Facebook</span>
+              </button>
+              <button
+                onClick={() => handleShare('email')}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer text-xs font-semibold gap-1.5"
+              >
+                <FaEnvelope size={20} className="text-slate-600" />
+                <span>Email</span>
+              </button>
+            </div>
+
+            {/* Copy Link Input Bar */}
+            <div className="pt-2">
+              <label className="block text-[11px] font-mono text-slate-500 mb-1">Direct Link:</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={currentCanonicalUrl}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 truncate outline-none select-all"
+                />
+                <button
+                  onClick={() => handleShare('copy')}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold font-mono transition-colors shrink-0 cursor-pointer"
+                >
+                  {copiedLink ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Floating Quick Edit & Share Bubble on Bottom Right */}
+      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2">
+        <button
+          onClick={() => setIsShareModalOpen(true)}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/90 hover:bg-white text-slate-800 text-xs font-mono font-semibold shadow-lg border border-slate-200 transition-all hover:scale-105 backdrop-blur-md cursor-pointer"
+          title="Share Article"
+        >
+          <Share2 size={13} className="text-blue-600" />
+          <span className="hidden sm:inline">Share</span>
+        </button>
+        <Link
+          to={`/admin/blogs?edit=${blog.id}`}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-mono font-medium shadow-lg border border-slate-800 transition-all hover:scale-105 backdrop-blur-md cursor-pointer"
+          title="Edit this article in Admin Panel"
+        >
+          <Edit2 size={12} className="text-blue-400" />
+          <span className="hidden sm:inline">Edit in Admin</span>
+        </Link>
+      </div>
     </div>
   );
 }
