@@ -52,6 +52,7 @@ export default function Projects() {
     model_notes: '',
     file_url: '',
     sort_order: 0,
+    created_at: new Date().toISOString().split('T')[0],
     published: true
   };
   const [formData, setFormData] = useState(emptyProject);
@@ -158,12 +159,14 @@ export default function Projects() {
         model_notes: project.model_notes || '',
         file_url: project.file_url || '',
         sort_order: project.sort_order || 0,
+        created_at: project.created_at ? new Date(project.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         published: project.published
       });
     } else {
       setEditingProject(null);
       setFormData({
         ...emptyProject,
+        created_at: new Date().toISOString().split('T')[0],
         sort_order: projects.length > 0 ? Math.max(...projects.map(p => p.sort_order)) + 1 : 0,
       });
     }
@@ -196,6 +199,7 @@ export default function Projects() {
       live_link: formData.live_link || '',
       image_url: allVisuals || '',
       sort_order: Number(formData.sort_order) || 0,
+      created_at: formData.created_at ? new Date(formData.created_at).toISOString() : new Date().toISOString(),
       published: Boolean(formData.published)
     };
 
@@ -321,6 +325,7 @@ export default function Projects() {
                     <input type="checkbox" className="rounded border-slate-300 text-teal-600 focus:ring-teal-600 cursor-pointer" />
                   </th>
                   <th className="px-6 py-4 font-bold text-xs text-slate-500 tracking-wider uppercase border-b border-slate-100">Project Title</th>
+                  <th className="px-6 py-4 font-bold text-xs text-slate-500 tracking-wider uppercase border-b border-slate-100">Date Posted</th>
                   <th className="px-6 py-4 font-bold text-xs text-slate-500 tracking-wider uppercase border-b border-slate-100">Order</th>
                   <th className="px-6 py-4 font-bold text-xs text-slate-500 tracking-wider uppercase border-b border-slate-100">Status</th>
                   <th className="px-6 py-4 font-bold text-xs text-slate-500 tracking-wider uppercase border-b border-slate-100">Actions</th>
@@ -329,7 +334,7 @@ export default function Projects() {
               <tbody className="divide-y divide-slate-100">
                 {filteredProjects.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center text-slate-500">No projects found.</td>
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">No projects found.</td>
                   </tr>
                 ) : (
                   filteredProjects.map((p) => (
@@ -348,6 +353,9 @@ export default function Projects() {
                           )}
                           <span className="font-semibold text-slate-800">{p.title}</span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                        {p.created_at ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                       </td>
                       <td className="px-6 py-4 text-slate-500 font-medium">
                         {p.sort_order}
@@ -439,7 +447,10 @@ export default function Projects() {
                 </p>
                 
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
-                  <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg">Order: {p.sort_order}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg">Order: {p.sort_order}</span>
+                    <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg">{new Date(p.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider ${p.published ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
                     {p.published && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
                     {p.published ? 'Published' : 'Draft'}
@@ -519,15 +530,26 @@ export default function Projects() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1.5">Sort Order</label>
-                <input
-                  required
-                  type="number"
-                  value={formData.sort_order}
-                  onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Date Posted</label>
+                  <input
+                    type="date"
+                    value={formData.created_at}
+                    onChange={e => setFormData({...formData, created_at: e.target.value})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Sort Order</label>
+                  <input
+                    required
+                    type="number"
+                    value={formData.sort_order}
+                    onChange={e => setFormData({...formData, sort_order: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+                  />
+                </div>
               </div>
 
               <div className="md:col-span-2 flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">

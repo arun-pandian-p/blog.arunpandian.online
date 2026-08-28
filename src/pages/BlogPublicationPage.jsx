@@ -120,7 +120,7 @@ export default function BlogPublicationPage() {
   const allProjects = useMemo(() => {
     const rawList = liveDbProjects.length > 0 ? liveDbProjects : contextProjects;
     return rawList.map((p, idx) => {
-      const rawDate = p.updated_at || p.published_at || p.created_at;
+      const rawDate = p.created_at || p.published_at || p.updated_at;
       const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
       const dateObj = new Date(timestamp);
       const formattedDate = dateObj.toLocaleDateString('en-US', {
@@ -158,7 +158,7 @@ export default function BlogPublicationPage() {
   const allBlogs = useMemo(() => {
     const rawList = liveDbBlogs.length > 0 ? liveDbBlogs : contextBlogs;
     return rawList.map((b, idx) => {
-      const rawDate = b.updated_at || b.published_at || b.created_at;
+      const rawDate = b.published_at || b.created_at || b.updated_at;
       const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
       const dateObj = new Date(timestamp);
       const formattedDate = dateObj.toLocaleDateString('en-US', {

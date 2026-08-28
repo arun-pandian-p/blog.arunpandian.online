@@ -414,7 +414,7 @@ const BlogDetails = () => {
   const readTime = blog.read_time || '7 min read';
   const publishedDate = new Date(blog.published_at || blog.created_at || Date.now()).toLocaleDateString(
     'en-US',
-    { month: 'short', day: 'numeric' }
+    { month: 'short', day: 'numeric', year: 'numeric' }
   );
 
   const videoUrl = meta.videoUrl || '';

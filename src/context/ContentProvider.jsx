@@ -365,18 +365,27 @@ function mapProject(row) {
 function mapBlog(row) {
   return {
     _id: row.id,
+    id: row.id,
     title: row.title,
     slug: row.slug,
     excerpt: row.excerpt,
     content: row.content,
     tags: row.tags || [],
     readTime: row.read_time,
+    read_time: row.read_time,
     coverImage: row.cover_image,
     // BlogCard reads the raw column name — keep both shapes wired
     cover_image: row.cover_image,
     authorName: row.author_name,
+    author_name: row.author_name,
     authorAvatar: row.author_avatar,
+    author_avatar: row.author_avatar,
     publishedAt: row.published_at,
+    published_at: row.published_at,
+    created_at: row.created_at,
+    published: row.published,
+    featured: row.featured,
+    sort_order: row.sort_order,
   };
 }
 
