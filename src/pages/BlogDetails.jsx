@@ -74,7 +74,7 @@ const GithubIcon = ({ size = 18 }) => (
   </svg>
 );
 
-export default function BlogDetails() {
+const BlogDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { blogs: contextBlogs = [], projects: contextProjects = [], settings } = useContent();
@@ -425,101 +425,328 @@ export default function BlogDetails() {
   const seoDescription = meta.seoDescription || excerpt || title;
   const currentCanonicalUrl = typeof window !== 'undefined' ? window.location.href : `https://arunpandian.online/blog/${blog.slug || blog.id}`;
 
-  // ─── Custom Markdown Renderer with Interactive Code Snippet Editor ───
+  // ─── Inline Text Formatter (Inline Code, Bold, Italic, Strikethrough, Links) ───
+  const renderInlineText = (text) => {
+    if (!text) return null;
+
+    // Split text into tokens: inline code, bold/italic, links, etc.
+    const parts = [];
+    let remaining = text;
+    let keyIdx = 0;
+
+    // Pattern for inline code, bold, italic, links, strikethrough, highlights
+    const inlineRegex = /(`[^`]+`|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|==[^=]+==|\[[^\]]+\]\([^)]+\))/g;
+    
+    let lastIndex = 0;
+    let match;
+
+    while ((match = inlineRegex.exec(text)) !== null) {
+      // Text before match
+      if (match.index > lastIndex) {
+        parts.push(<span key={keyIdx++}>{text.substring(lastIndex, match.index)}</span>);
+      }
+
+      const rawMatch = match[0];
+
+      // Inline Code: `code`
+      if (rawMatch.startsWith('`') && rawMatch.endsWith('`')) {
+        const codeContent = rawMatch.slice(1, -1);
+        parts.push(
+          <code
+            key={keyIdx++}
+            className="px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 font-mono text-[13px] text-slate-800 font-medium tracking-tight select-all mx-0.5"
+          >
+            {codeContent}
+          </code>
+        );
+      }
+      // Bold + Italic: ***text***
+      else if (rawMatch.startsWith('***') && rawMatch.endsWith('***')) {
+        parts.push(
+          <strong key={keyIdx++} className="font-bold italic text-slate-950">
+            {rawMatch.slice(3, -3)}
+          </strong>
+        );
+      }
+      // Bold: **text**
+      else if (rawMatch.startsWith('**') && rawMatch.endsWith('**')) {
+        parts.push(
+          <strong key={keyIdx++} className="font-bold text-slate-950">
+            {rawMatch.slice(2, -2)}
+          </strong>
+        );
+      }
+      // Italic: *text*
+      else if (rawMatch.startsWith('*') && rawMatch.endsWith('*')) {
+        parts.push(
+          <em key={keyIdx++} className="italic text-slate-800">
+            {rawMatch.slice(1, -1)}
+          </em>
+        );
+      }
+      // Strikethrough: ~~text~~
+      else if (rawMatch.startsWith('~~') && rawMatch.endsWith('~~')) {
+        parts.push(
+          <del key={keyIdx++} className="line-through text-slate-400">
+            {rawMatch.slice(2, -2)}
+          </del>
+        );
+      }
+      // Highlight: ==text==
+      else if (rawMatch.startsWith('==') && rawMatch.endsWith('==')) {
+        parts.push(
+          <mark key={keyIdx++} className="bg-amber-200/80 px-1 py-0.5 rounded text-slate-900 font-medium">
+            {rawMatch.slice(2, -2)}
+          </mark>
+        );
+      }
+      // Link: [title](url)
+      else if (rawMatch.startsWith('[') && rawMatch.includes('](')) {
+        const linkMatch = rawMatch.match(/^\[(.*?)\]\((.*?)\)$/);
+        if (linkMatch) {
+          parts.push(
+            <a
+              key={keyIdx++}
+              href={linkMatch[2]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 font-medium underline underline-offset-2 transition-colors inline-flex items-center gap-0.5"
+            >
+              <span>{linkMatch[1]}</span>
+              <ExternalLink size={11} className="inline opacity-70" />
+            </a>
+          );
+        } else {
+          parts.push(<span key={keyIdx++}>{rawMatch}</span>);
+        }
+      } else {
+        parts.push(<span key={keyIdx++}>{rawMatch}</span>);
+      }
+
+      lastIndex = match.index + rawMatch.length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(<span key={keyIdx++}>{text.substring(lastIndex)}</span>);
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
+  // ─── Comprehensive Markdown Tokenizer & Interactive Renderer ───
   const renderFormattedArticle = (contentStr) => {
     if (!contentStr) return null;
 
-    const sections = contentStr.split('\n\n');
+    // 1. Normalize unicode smart quotes, smart backticks, and H-prefixes
+    let normalized = contentStr
+      .replace(/[‘’`]/g, '`') // Normalize backtick variations
+      .replace(/[“”]/g, '"')
+      .replace(/^(?:H1|h1):\s*/gm, '# ')
+      .replace(/^(?:H2|h2):\s*/gm, '## ')
+      .replace(/^(?:H3|h3):\s*/gm, '### ')
+      .replace(/^(?:H4|h4):\s*/gm, '#### ');
+
+    // 2. Tokenize into distinct blocks: Code blocks, Headers, Callouts, Tables, Lists, Paragraphs
+    const blocks = [];
+    const lines = normalized.split('\n');
+    let i = 0;
     let codeBlockCounter = 0;
 
-    return sections.map((block, idx) => {
-      const trimmed = block.trim();
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
 
-      // Heading 1
-      if (trimmed.startsWith('# ')) {
-        const text = trimmed.replace(/^#\s+/, '').replace(/\*\*|\*|`/g, '');
-        return (
-          <h1 key={idx} className="font-serif font-black text-2xl sm:text-3xl text-slate-900 mt-8 mb-4 tracking-tight">
-            {text}
-          </h1>
-        );
+      // Empty line
+      if (!trimmed) {
+        i++;
+        continue;
       }
 
-      // Heading 2
-      if (trimmed.startsWith('## ')) {
-        const text = trimmed.replace(/^##\s+/, '').replace(/\*\*|\*|`/g, '');
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        return (
-          <h2
-            key={idx}
-            id={id}
-            className="font-serif font-bold text-xl sm:text-2xl text-slate-900 mt-8 mb-3 pt-3 border-t border-slate-100 scroll-mt-20"
-          >
-            {text}
-          </h2>
-        );
-      }
-
-      // Heading 3
-      if (trimmed.startsWith('### ')) {
-        const text = trimmed.replace(/^###\s+/, '').replace(/\*\*|\*|`/g, '');
-        return (
-          <h3 key={idx} className="font-sans font-bold text-lg text-slate-900 mt-6 mb-2">
-            {text}
-          </h3>
-        );
-      }
-
-      // Callout Alert Box
-      if (trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!IMPORTANT]') || trimmed.startsWith('> [!WARNING]')) {
-        const lines = trimmed.split('\n');
-        const alertType = lines[0].replace('> [!', '').replace(']', '').trim();
-        const alertBody = lines.slice(1).map(l => l.replace(/^>\s?/, '')).join(' ');
-
-        return (
-          <div key={idx} className="p-4 rounded-xl border-l-4 border-blue-600 bg-blue-50/80 text-blue-950 my-5 text-sm leading-relaxed">
-            <div className="font-mono font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
-              <Info size={14} />
-              <span>{alertType}</span>
-            </div>
-            <p>{alertBody}</p>
-          </div>
-        );
-      }
-
-      // Standard Blockquote
-      if (trimmed.startsWith('> ')) {
-        const quoteText = trimmed.replace(/^>\s?/gm, '');
-        return (
-          <blockquote key={idx} className="p-4 my-5 border-l-3 border-slate-900 bg-slate-50 italic font-serif text-base sm:text-lg text-slate-800 leading-relaxed">
-            "{quoteText}"
-          </blockquote>
-        );
-      }
-
-      // ── Interactive In-Article Code Snippet Editor & Runner ──
-      if (trimmed.startsWith('```') && trimmed.endsWith('```')) {
+      // ── Code Block Tokenizer: ```lang ... ```
+      if (trimmed.startsWith('```')) {
+        const lang = trimmed.replace(/^```/, '').trim() || 'sql';
+        const codeLines = [];
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          codeLines.push(lines[i]);
+          i++;
+        }
+        if (i < lines.length && lines[i].trim().startsWith('```')) {
+          i++; // skip closing ```
+        }
         codeBlockCounter++;
-        const codeId = `code-block-${codeBlockCounter}`;
-        const lines = trimmed.split('\n');
-        const language = lines[0].replace('```', '').trim() || 'sql';
-        const defaultCode = lines.slice(1, -1).join('\n');
-        const currentCode = editableCodeSnippets[codeId] !== undefined ? editableCodeSnippets[codeId] : defaultCode;
+        blocks.push({
+          type: 'code',
+          lang: lang.toLowerCase(),
+          code: codeLines.join('\n'),
+          codeId: `code-block-${codeBlockCounter}`
+        });
+        continue;
+      }
+
+      // ── Headings
+      if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ') || trimmed.startsWith('#### ')) {
+        const level = trimmed.startsWith('#### ') ? 4 : trimmed.startsWith('### ') ? 3 : trimmed.startsWith('## ') ? 2 : 1;
+        const text = trimmed.replace(/^#{1,4}\s+/, '').trim();
+        blocks.push({ type: 'heading', level, text });
+        i++;
+        continue;
+      }
+
+      // ── Callout Boxes (> [!NOTE], > [!TIP], > [!WARNING], > [!IMPORTANT])
+      if (trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!WARNING]') || trimmed.startsWith('> [!IMPORTANT]')) {
+        const alertType = trimmed.replace('> [!', '').replace(']', '').trim();
+        const bodyLines = [];
+        i++;
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          bodyLines.push(lines[i].trim().replace(/^>\s?/, ''));
+          i++;
+        }
+        blocks.push({ type: 'callout', alertType, body: bodyLines.join(' ') || 'Important analytical insight.' });
+        continue;
+      }
+
+      // ── Blockquote
+      if (trimmed.startsWith('> ')) {
+        const quoteLines = [trimmed.replace(/^>\s?/, '')];
+        i++;
+        while (i < lines.length && lines[i].trim().startsWith('>')) {
+          quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+          i++;
+        }
+        blocks.push({ type: 'quote', text: quoteLines.join(' ') });
+        continue;
+      }
+
+      // ── Markdown Table
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableLines = [trimmed];
+        i++;
+        while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+          tableLines.push(lines[i].trim());
+          i++;
+        }
+        if (tableLines.length >= 2) {
+          const headers = tableLines[0].split('|').map(h => h.trim()).filter(Boolean);
+          const dataRows = tableLines.slice(2).map(r => r.split('|').map(c => c.trim()).filter(Boolean));
+          blocks.push({ type: 'table', headers, rows: dataRows });
+          continue;
+        }
+      }
+
+      // ── Unordered Bullet List (- item or * item)
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const listItems = [trimmed.replace(/^[-*]\s+/, '')];
+        i++;
+        while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+          listItems.push(lines[i].trim().replace(/^[-*]\s+/, ''));
+          i++;
+        }
+        blocks.push({ type: 'bullet-list', items: listItems });
+        continue;
+      }
+
+      // ── Numbered List (1. item)
+      if (/^\d+\.\s/.test(trimmed)) {
+        const numItems = [trimmed.replace(/^\d+\.\s+/, '')];
+        i++;
+        while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+          numItems.push(lines[i].trim().replace(/^\d+\.\s+/, ''));
+          i++;
+        }
+        blocks.push({ type: 'numbered-list', items: numItems });
+        continue;
+      }
+
+      // ── Divider
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        blocks.push({ type: 'divider' });
+        i++;
+        continue;
+      }
+
+      // ── Responsive Image: ![Caption](url)
+      const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imgMatch) {
+        blocks.push({ type: 'image', caption: imgMatch[1], url: imgMatch[2] });
+        i++;
+        continue;
+      }
+
+      // ── Standard Text Paragraph (collect consecutive text lines)
+      const paraLines = [line];
+      i++;
+      while (
+        i < lines.length &&
+        lines[i].trim() &&
+        !lines[i].trim().startsWith('#') &&
+        !lines[i].trim().startsWith('```') &&
+        !lines[i].trim().startsWith('>') &&
+        !lines[i].trim().startsWith('- ') &&
+        !lines[i].trim().startsWith('* ') &&
+        !/^\d+\.\s/.test(lines[i].trim()) &&
+        !lines[i].trim().startsWith('!['))
+      {
+        paraLines.push(lines[i]);
+        i++;
+      }
+      blocks.push({ type: 'paragraph', text: paraLines.join(' ') });
+    }
+
+    // 3. Render Tokens to JSX
+    return blocks.map((block, idx) => {
+      // Headings
+      if (block.type === 'heading') {
+        const cleanText = block.text.replace(/\*\*|\*|`/g, '');
+        const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+        if (block.level === 1) {
+          return (
+            <h1 key={idx} id={id} className="font-serif font-black text-2xl sm:text-3xl text-slate-900 mt-8 mb-4 tracking-tight">
+              {renderInlineText(block.text)}
+            </h1>
+          );
+        }
+        if (block.level === 2) {
+          return (
+            <h2 key={idx} id={id} className="font-serif font-bold text-xl sm:text-2xl text-slate-900 mt-8 mb-3 pt-3 border-t border-slate-100 scroll-mt-20">
+              {renderInlineText(block.text)}
+            </h2>
+          );
+        }
+        if (block.level === 3) {
+          return (
+            <h3 key={idx} id={id} className="font-sans font-bold text-lg text-slate-900 mt-6 mb-2">
+              {renderInlineText(block.text)}
+            </h3>
+          );
+        }
+        return (
+          <h4 key={idx} id={id} className="font-sans font-bold text-xs uppercase tracking-wider text-slate-700 mt-4 mb-1">
+            {renderInlineText(block.text)}
+          </h4>
+        );
+      }
+
+      // Interactive Code Sandbox / Runner Block
+      if (block.type === 'code') {
+        const codeId = block.codeId;
+        const currentCode = editableCodeSnippets[codeId] !== undefined ? editableCodeSnippets[codeId] : block.code;
         const currentTab = activeSnippetTab[codeId] || 'code';
 
         return (
-          <div key={idx} className="my-6 rounded-xl overflow-hidden border border-slate-800 bg-[#0E1726] shadow-md font-mono text-xs">
-            {/* Header: Language, Interactive Tab Toggle & Copy Button */}
+          <div key={idx} className="my-6 rounded-2xl overflow-hidden border border-slate-800 bg-[#0E1726] shadow-lg font-mono text-xs">
+            {/* Header: Language Pill, Editor/Run Tabs & Tools */}
             <div className="px-3 sm:px-4 py-2.5 bg-[#172338] border-b border-slate-800 flex items-center justify-between text-slate-300">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase text-blue-400 tracking-wider">
-                  {language}
+                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold uppercase tracking-wider border border-blue-400/30">
+                  {block.lang || 'SQL'}
                 </span>
                 <span className="text-slate-600">•</span>
                 <button
                   onClick={() => setActiveSnippetTab(prev => ({ ...prev, [codeId]: 'code' }))}
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
-                    currentTab === 'code' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
+                    currentTab === 'code' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   Editor
@@ -529,11 +756,11 @@ export default function BlogDetails() {
                     setActiveSnippetTab(prev => ({ ...prev, [codeId]: 'output' }));
                     toast.success('Simulated execution completed!', { icon: '⚡' });
                   }}
-                  className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors flex items-center gap-1 ${
-                    currentTab === 'output' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                    currentTab === 'output' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  <Terminal size={11} />
+                  <Terminal size={12} />
                   <span>Run</span>
                 </button>
               </div>
@@ -541,17 +768,17 @@ export default function BlogDetails() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    setEditableCodeSnippets(prev => ({ ...prev, [codeId]: defaultCode }));
+                    setEditableCodeSnippets(prev => ({ ...prev, [codeId]: block.code }));
                     toast('Snippet reset to original', { icon: '🔄' });
                   }}
-                  className="text-[10px] text-slate-400 hover:text-white p-1"
+                  className="text-[11px] text-slate-400 hover:text-white p-1 transition-colors"
                   title="Reset snippet"
                 >
-                  <RefreshCw size={11} />
+                  <RefreshCw size={12} />
                 </button>
                 <button
                   onClick={() => copyToClipboard(currentCode, codeId)}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer border border-slate-700"
                   title="Copy code"
                 >
                   {copiedCode === codeId ? (
@@ -569,22 +796,22 @@ export default function BlogDetails() {
               </div>
             </div>
 
-            {/* Body: Editable Code Area or Simulated Terminal Output */}
+            {/* Body: Live Editable Textarea or Terminal Output */}
             {currentTab === 'code' ? (
-              <div className="p-3 sm:p-4 text-blue-200">
+              <div className="p-4 text-blue-200 overflow-x-auto">
                 <textarea
                   value={currentCode}
                   onChange={(e) => setEditableCodeSnippets(prev => ({ ...prev, [codeId]: e.target.value }))}
-                  rows={Math.min(12, Math.max(3, currentCode.split('\n').length))}
-                  className="w-full bg-transparent text-blue-200 outline-none resize-y font-mono text-[13px] leading-relaxed border-0"
+                  rows={Math.min(14, Math.max(3, currentCode.split('\n').length))}
+                  className="w-full bg-transparent text-blue-200 outline-none resize-y font-mono text-[13px] leading-relaxed border-0 select-text"
                   spellCheck="false"
                 />
               </div>
             ) : (
-              <div className="p-4 bg-[#080d16] text-emerald-400 space-y-1.5 text-[12px]">
-                <div className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Execution Output (Query Plan / Result):</div>
-                <div className="p-2 rounded bg-black/40 border border-slate-800 text-emerald-300 whitespace-pre-wrap">
-                  {`✓ Query executed successfully in 42ms\n✓ 1,248 rows affected / returned\n✓ Schema validated (Status: OK)`}
+              <div className="p-4 bg-[#080d16] text-emerald-400 space-y-2 text-[12px] overflow-x-auto">
+                <div className="text-slate-400 font-mono font-bold text-[10px] uppercase tracking-wider">Simulated Execution Telemetry:</div>
+                <div className="p-3 rounded-lg bg-black/50 border border-slate-800 text-emerald-300 whitespace-pre-wrap leading-relaxed font-mono">
+                  {`✓ Query executed successfully in 38ms\n✓ 1,248 rows affected / aggregated\n✓ Schema validated (Status: 200 OK)`}
                 </div>
               </div>
             )}
@@ -592,46 +819,67 @@ export default function BlogDetails() {
         );
       }
 
-      // Markdown Table
-      if (trimmed.includes('|') && trimmed.split('\n').length >= 2) {
-        const rows = trimmed.split('\n').filter(r => r.trim().startsWith('|'));
-        if (rows.length >= 2) {
-          const headers = rows[0].split('|').map(h => h.trim()).filter(Boolean);
-          const dataRows = rows.slice(2).map(r => r.split('|').map(c => c.trim()).filter(Boolean));
+      // Callout Box
+      if (block.type === 'callout') {
+        let alertColor = 'bg-blue-50/90 border-blue-500 text-blue-950';
+        let Icon = Info;
+        if (block.alertType === 'TIP') { alertColor = 'bg-emerald-50/90 border-emerald-500 text-emerald-950'; Icon = Lightbulb; }
+        if (block.alertType === 'WARNING') { alertColor = 'bg-amber-50/90 border-amber-500 text-amber-950'; Icon = AlertTriangle; }
+        if (block.alertType === 'IMPORTANT') { alertColor = 'bg-purple-50/90 border-purple-600 text-purple-950'; Icon = AlertCircle; }
 
-          return (
-            <div key={idx} className="my-5 overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-800">
-                  <tr>
-                    {headers.map((h, hIdx) => (
-                      <th key={hIdx} className="px-3.5 py-2.5 font-mono text-xs uppercase tracking-wider">{h}</th>
+        return (
+          <div key={idx} className={`p-4 rounded-xl border-l-4 my-5 text-sm leading-relaxed ${alertColor} shadow-2xs`}>
+            <div className="font-mono font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <Icon size={14} />
+              <span>{block.alertType}</span>
+            </div>
+            <p>{renderInlineText(block.body)}</p>
+          </div>
+        );
+      }
+
+      // Blockquote
+      if (block.type === 'quote') {
+        return (
+          <blockquote key={idx} className="p-4 my-5 border-l-3 border-slate-900 bg-slate-50 italic font-serif text-base sm:text-lg text-slate-800 leading-relaxed rounded-r-xl">
+            "{renderInlineText(block.text)}"
+          </blockquote>
+        );
+      }
+
+      // Table
+      if (block.type === 'table') {
+        return (
+          <div key={idx} className="my-5 overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-800">
+                <tr>
+                  {block.headers.map((h, hIdx) => (
+                    <th key={hIdx} className="px-3.5 py-2.5 font-mono text-xs uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {block.rows.map((r, rIdx) => (
+                  <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                    {r.map((cell, cIdx) => (
+                      <td key={cIdx} className="px-3.5 py-2.5 leading-snug">{renderInlineText(cell)}</td>
                     ))}
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {dataRows.map((r, rIdx) => (
-                    <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                      {r.map((cell, cIdx) => (
-                        <td key={cIdx} className="px-3.5 py-2.5 leading-snug">{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-        }
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
       }
 
       // Bullet List
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        const items = trimmed.split('\n').map(i => i.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
+      if (block.type === 'bullet-list') {
         return (
           <ul key={idx} className="my-3 space-y-1.5 list-disc list-inside text-slate-700 text-[15px] sm:text-[16px] leading-relaxed">
-            {items.map((item, itemIdx) => (
+            {block.items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:text-blue-600">
-                {item}
+                {renderInlineText(item)}
               </li>
             ))}
           </ul>
@@ -639,13 +887,12 @@ export default function BlogDetails() {
       }
 
       // Numbered List
-      if (/^\d+\.\s/.test(trimmed)) {
-        const items = trimmed.split('\n').map(i => i.replace(/^\d+\.\s+/, '').trim()).filter(Boolean);
+      if (block.type === 'numbered-list') {
         return (
           <ol key={idx} className="my-3 space-y-1.5 list-decimal list-inside text-slate-700 text-[15px] sm:text-[16px] leading-relaxed">
-            {items.map((item, itemIdx) => (
+            {block.items.map((item, itemIdx) => (
               <li key={itemIdx} className="pl-1 marker:font-bold marker:text-slate-800">
-                {item}
+                {renderInlineText(item)}
               </li>
             ))}
           </ol>
@@ -653,36 +900,33 @@ export default function BlogDetails() {
       }
 
       // Divider
-      if (trimmed === '---' || trimmed === '***') {
+      if (block.type === 'divider') {
         return <hr key={idx} className="my-6 border-slate-200" />;
       }
 
-      // Responsive Image: ![Caption](url)
-      const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
-      if (imgMatch) {
-        const caption = imgMatch[1];
-        const imgUrl = imgMatch[2];
+      // Image
+      if (block.type === 'image') {
         return (
           <figure key={idx} className="my-6">
             <img
-              src={imgUrl}
-              alt={caption || 'Article Visual'}
+              src={block.url}
+              alt={block.caption || 'Article Diagram'}
               className="w-full h-auto rounded-xl border border-slate-200 shadow-sm object-cover"
               loading="lazy"
             />
-            {caption && (
+            {block.caption && (
               <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2">
-                {caption}
+                {block.caption}
               </figcaption>
             )}
           </figure>
         );
       }
 
-      // Standard Paragraph
+      // Paragraph
       return (
         <p key={idx} className="text-slate-800 text-[15px] sm:text-[17px] leading-[1.75] my-4 font-normal tracking-[-0.003em]">
-          {trimmed}
+          {renderInlineText(block.text)}
         </p>
       );
     });
@@ -1043,4 +1287,6 @@ export default function BlogDetails() {
       )}
     </div>
   );
-}
+};
+
+export default BlogDetails;

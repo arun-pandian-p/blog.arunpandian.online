@@ -105,69 +105,6 @@ export default function Blogs() {
     }
   };
 
-  // Selection-aware wrapper for Markdown formatting
-  const wrapSelection = (beforeStr, afterStr = beforeStr, defaultText = 'Text') => {
-    const textarea = editorTextareaRef.current;
-    if (!textarea) {
-      insertMarkdownSnippet(`${beforeStr}${defaultText}${afterStr}`);
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentVal = formData.content;
-    const selected = currentVal.substring(start, end);
-    const textToInsert = selected || defaultText;
-
-    const newContent = `${currentVal.substring(0, start)}${beforeStr}${textToInsert}${afterStr}${currentVal.substring(end)}`;
-    updateContentWithHistory(newContent);
-
-    setTimeout(() => {
-      textarea.focus();
-      const cursorStart = start + beforeStr.length;
-      const cursorEnd = cursorStart + textToInsert.length;
-      textarea.setSelectionRange(cursorStart, cursorEnd);
-    }, 40);
-  };
-
-  // Keyboard shortcut listener for Ctrl+Z, Ctrl+Y, Ctrl+B, Ctrl+I, Ctrl+K, Ctrl+S, Tab
-  const handleEditorKeyDown = (e) => {
-    const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const isCtrl = isMac ? e.metaKey : e.ctrlKey;
-
-    if (isCtrl && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-      e.preventDefault();
-      handleUndo();
-    } else if ((isCtrl && e.key.toLowerCase() === 'y') || (isCtrl && e.shiftKey && e.key.toLowerCase() === 'z')) {
-      e.preventDefault();
-      handleRedo();
-    } else if (isCtrl && e.key.toLowerCase() === 'b') {
-      e.preventDefault();
-      wrapSelection('**', '**', 'Bold text');
-    } else if (isCtrl && e.key.toLowerCase() === 'i') {
-      e.preventDefault();
-      wrapSelection('*', '*', 'Italic text');
-    } else if (isCtrl && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      wrapSelection('[', '](https://github.com/arun-pandian-p)', 'Link title');
-    } else if (isCtrl && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      handleSave();
-      toast.success('Quick Saved!', { icon: '💾' });
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = editorTextareaRef.current;
-      if (!textarea) return;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const newContent = `${formData.content.substring(0, start)}  ${formData.content.substring(end)}`;
-      updateContentWithHistory(newContent);
-      setTimeout(() => {
-        textarea.setSelectionRange(start + 2, start + 2);
-      }, 20);
-    }
-  };
-
   useEffect(() => {
     fetchBlogs();
 
@@ -307,14 +244,39 @@ export default function Blogs() {
     setIsModalOpen(true);
   };
 
+  // Selection-aware text wrapper (Code blocks, inline code, bold, italic, headings)
+  const wrapSelection = (beforeStr, afterStr, defaultText = 'text') => {
+    const textarea = editorTextareaRef.current;
+    if (!textarea) {
+      insertMarkdownSnippet(`${beforeStr}${defaultText}${afterStr}`);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    const content = formData.content;
+
+    const replacement = `${beforeStr}${selected || defaultText}${afterStr}`;
+    const newContent = content.substring(0, start) + replacement + content.substring(end);
+    
+    updateContentWithHistory(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      if (selected) {
+        textarea.setSelectionRange(start + beforeStr.length, start + beforeStr.length + selected.length);
+      } else {
+        textarea.setSelectionRange(start + beforeStr.length, start + beforeStr.length + defaultText.length);
+      }
+    }, 50);
+  };
+
   // Helper to insert markdown snippet at cursor or append
   const insertMarkdownSnippet = (snippet) => {
     const textarea = editorTextareaRef.current;
     if (!textarea) {
-      setFormData(prev => ({
-        ...prev,
-        content: prev.content ? `${prev.content}\n\n${snippet}` : snippet
-      }));
+      updateContentWithHistory(formData.content ? `${formData.content}\n\n${snippet}` : snippet);
       toast.success('Element inserted!', { icon: '✨' });
       return;
     }
@@ -329,7 +291,7 @@ export default function Blogs() {
     const suffix = (!after.startsWith('\n\n') && after.length > 0) ? '\n\n' : '';
     
     const newContent = `${before}${prefix}${snippet}${suffix}${after}`;
-    setFormData(prev => ({ ...prev, content: newContent }));
+    updateContentWithHistory(newContent);
 
     setTimeout(() => {
       textarea.focus();
@@ -338,6 +300,86 @@ export default function Blogs() {
     }, 50);
 
     toast.success('Element inserted!', { icon: '✨' });
+  };
+
+  // Comprehensive Editor Keyboard Shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+B, Ctrl+I, Ctrl+E, Ctrl+K, Ctrl+S, Tab)
+  const handleEditorKeyDown = (e) => {
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+
+    // Undo: Ctrl+Z (without shift)
+    if (ctrlKey && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      handleUndo();
+      return;
+    }
+
+    // Redo: Ctrl+Y or Ctrl+Shift+Z
+    if ((ctrlKey && e.key === 'y') || (ctrlKey && e.key === 'z' && e.shiftKey)) {
+      e.preventDefault();
+      handleRedo();
+      return;
+    }
+
+    // Bold: Ctrl+B
+    if (ctrlKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      wrapSelection('**', '**', 'bold text');
+      return;
+    }
+
+    // Italic: Ctrl+I
+    if (ctrlKey && e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      wrapSelection('*', '*', 'italic text');
+      return;
+    }
+
+    // Inline Code: Ctrl+E
+    if (ctrlKey && e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      wrapSelection('`', '`', 'code');
+      return;
+    }
+
+    // Code Block: Ctrl+Shift+C
+    if (ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      wrapSelection('```sql\n', '\n```', '-- SQL Query\nSELECT * FROM data;');
+      return;
+    }
+
+    // Link: Ctrl+K
+    if (ctrlKey && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      wrapSelection('[', '](https://)', 'link title');
+      return;
+    }
+
+    // Quick Save: Ctrl+S
+    if (ctrlKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      handleSave();
+      return;
+    }
+
+    // Indentation: Tab key
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = editorTextareaRef.current;
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const content = formData.content;
+
+      const newContent = content.substring(0, start) + '  ' + content.substring(end);
+      updateContentWithHistory(newContent);
+
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 2;
+      }, 0);
+    }
   };
 
   // Direct Inline Image Upload via Device File Picker
@@ -491,11 +533,198 @@ export default function Blogs() {
       );
     }
 
-    const blocks = markdownText.split('\n\n');
-    let codeIdx = 0;
+    // ─── Inline Text Formatter (Inline Code, Bold, Italic, Strikethrough, Links) ───
+    const renderPreviewInlineText = (text) => {
+      if (!text) return null;
+      const parts = [];
+      const inlineRegex = /(`[^`]+`|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|==[^=]+==|\[[^\]]+\]\([^)]+\))/g;
+      let lastIndex = 0;
+      let match;
+      let keyIdx = 0;
+
+      while ((match = inlineRegex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push(<span key={keyIdx++}>{text.substring(lastIndex, match.index)}</span>);
+        }
+        const rawMatch = match[0];
+        if (rawMatch.startsWith('`') && rawMatch.endsWith('`')) {
+          parts.push(
+            <code key={keyIdx++} className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[11px] text-slate-800 font-medium">
+              {rawMatch.slice(1, -1)}
+            </code>
+          );
+        } else if (rawMatch.startsWith('***') && rawMatch.endsWith('***')) {
+          parts.push(<strong key={keyIdx++} className="font-bold italic text-slate-950">{rawMatch.slice(3, -3)}</strong>);
+        } else if (rawMatch.startsWith('**') && rawMatch.endsWith('**')) {
+          parts.push(<strong key={keyIdx++} className="font-bold text-slate-950">{rawMatch.slice(2, -2)}</strong>);
+        } else if (rawMatch.startsWith('*') && rawMatch.endsWith('*')) {
+          parts.push(<em key={keyIdx++} className="italic text-slate-800">{rawMatch.slice(1, -1)}</em>);
+        } else if (rawMatch.startsWith('~~') && rawMatch.endsWith('~~')) {
+          parts.push(<del key={keyIdx++} className="line-through text-slate-400">{rawMatch.slice(2, -2)}</del>);
+        } else if (rawMatch.startsWith('==') && rawMatch.endsWith('==')) {
+          parts.push(<mark key={keyIdx++} className="bg-amber-200/80 px-1 py-0.5 rounded text-slate-900 font-medium">{rawMatch.slice(2, -2)}</mark>);
+        } else if (rawMatch.startsWith('[') && rawMatch.includes('](')) {
+          const linkMatch = rawMatch.match(/^\[(.*?)\]\((.*?)\)$/);
+          if (linkMatch) {
+            parts.push(
+              <a key={keyIdx++} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">
+                {linkMatch[1]}
+              </a>
+            );
+          } else {
+            parts.push(<span key={keyIdx++}>{rawMatch}</span>);
+          }
+        } else {
+          parts.push(<span key={keyIdx++}>{rawMatch}</span>);
+        }
+        lastIndex = match.index + rawMatch.length;
+      }
+      if (lastIndex < text.length) {
+        parts.push(<span key={keyIdx++}>{text.substring(lastIndex)}</span>);
+      }
+      return parts.length > 0 ? parts : text;
+    };
+
+    // ─── Tokenize Raw Content with Code Blocks & Headings Normalization ───
+    let normalized = (markdownText || '')
+      .replace(/[‘’`]/g, '`')
+      .replace(/[“”]/g, '"')
+      .replace(/^(?:H1|h1):\s*/gm, '# ')
+      .replace(/^(?:H2|h2):\s*/gm, '## ')
+      .replace(/^(?:H3|h3):\s*/gm, '### ')
+      .replace(/^(?:H4|h4):\s*/gm, '#### ');
+
+    const parsedBlocks = [];
+    const lines = normalized.split('\n');
+    let lineIdx = 0;
+    let snippetNum = 0;
+
+    while (lineIdx < lines.length) {
+      const line = lines[lineIdx];
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        lineIdx++;
+        continue;
+      }
+
+      if (trimmed.startsWith('```')) {
+        const lang = trimmed.replace(/^```/, '').trim() || 'sql';
+        const codeLines = [];
+        lineIdx++;
+        while (lineIdx < lines.length && !lines[lineIdx].trim().startsWith('```')) {
+          codeLines.push(lines[lineIdx]);
+          lineIdx++;
+        }
+        if (lineIdx < lines.length && lines[lineIdx].trim().startsWith('```')) {
+          lineIdx++;
+        }
+        snippetNum++;
+        parsedBlocks.push({ type: 'code', lang, code: codeLines.join('\n'), num: snippetNum });
+        continue;
+      }
+
+      if (trimmed.startsWith('# ') || trimmed.startsWith('## ') || trimmed.startsWith('### ') || trimmed.startsWith('#### ')) {
+        const level = trimmed.startsWith('#### ') ? 4 : trimmed.startsWith('### ') ? 3 : trimmed.startsWith('## ') ? 2 : 1;
+        parsedBlocks.push({ type: 'heading', level, text: trimmed.replace(/^#{1,4}\s+/, '').trim() });
+        lineIdx++;
+        continue;
+      }
+
+      if (trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!WARNING]') || trimmed.startsWith('> [!IMPORTANT]')) {
+        const alertType = trimmed.replace('> [!', '').replace(']', '').trim();
+        const bodyLines = [];
+        lineIdx++;
+        while (lineIdx < lines.length && lines[lineIdx].trim().startsWith('>')) {
+          bodyLines.push(lines[lineIdx].trim().replace(/^>\s?/, ''));
+          lineIdx++;
+        }
+        parsedBlocks.push({ type: 'callout', alertType, body: bodyLines.join(' ') || 'Key analytical observation.' });
+        continue;
+      }
+
+      if (trimmed.startsWith('> ')) {
+        const quoteLines = [trimmed.replace(/^>\s?/, '')];
+        lineIdx++;
+        while (lineIdx < lines.length && lines[lineIdx].trim().startsWith('>')) {
+          quoteLines.push(lines[lineIdx].trim().replace(/^>\s?/, ''));
+          lineIdx++;
+        }
+        parsedBlocks.push({ type: 'quote', text: quoteLines.join(' ') });
+        continue;
+      }
+
+      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+        const tableLines = [trimmed];
+        lineIdx++;
+        while (lineIdx < lines.length && lines[lineIdx].trim().startsWith('|') && lines[lineIdx].trim().endsWith('|')) {
+          tableLines.push(lines[lineIdx].trim());
+          lineIdx++;
+        }
+        if (tableLines.length >= 2) {
+          const headers = tableLines[0].split('|').map(h => h.trim()).filter(Boolean);
+          const dataRows = tableLines.slice(2).map(r => r.split('|').map(c => c.trim()).filter(Boolean));
+          parsedBlocks.push({ type: 'table', headers, rows: dataRows });
+          continue;
+        }
+      }
+
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        const listItems = [trimmed.replace(/^[-*]\s+/, '')];
+        lineIdx++;
+        while (lineIdx < lines.length && (lines[lineIdx].trim().startsWith('- ') || lines[lineIdx].trim().startsWith('* '))) {
+          listItems.push(lines[lineIdx].trim().replace(/^[-*]\s+/, ''));
+          lineIdx++;
+        }
+        parsedBlocks.push({ type: 'bullet-list', items: listItems });
+        continue;
+      }
+
+      if (/^\d+\.\s/.test(trimmed)) {
+        const numItems = [trimmed.replace(/^\d+\.\s+/, '')];
+        lineIdx++;
+        while (lineIdx < lines.length && /^\d+\.\s/.test(lines[lineIdx].trim())) {
+          numItems.push(lines[lineIdx].trim().replace(/^\d+\.\s+/, ''));
+          lineIdx++;
+        }
+        parsedBlocks.push({ type: 'numbered-list', items: numItems });
+        continue;
+      }
+
+      if (trimmed === '---' || trimmed === '***' || trimmed === '___') {
+        parsedBlocks.push({ type: 'divider' });
+        lineIdx++;
+        continue;
+      }
+
+      const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imgMatch) {
+        parsedBlocks.push({ type: 'image', caption: imgMatch[1], url: imgMatch[2] });
+        lineIdx++;
+        continue;
+      }
+
+      const paraLines = [line];
+      lineIdx++;
+      while (
+        lineIdx < lines.length &&
+        lines[lineIdx].trim() &&
+        !lines[lineIdx].trim().startsWith('#') &&
+        !lines[lineIdx].trim().startsWith('```') &&
+        !lines[lineIdx].trim().startsWith('>') &&
+        !lines[lineIdx].trim().startsWith('- ') &&
+        !lines[lineIdx].trim().startsWith('* ') &&
+        !/^\d+\.\s/.test(lines[lineIdx].trim()) &&
+        !lines[lineIdx].trim().startsWith('!['))
+      {
+        paraLines.push(lines[lineIdx]);
+        lineIdx++;
+      }
+      parsedBlocks.push({ type: 'paragraph', text: paraLines.join(' ') });
+    }
 
     return (
-      <div className="space-y-4 font-sans text-slate-800 text-sm leading-relaxed max-w-2xl mx-auto">
+      <div className="prose max-w-none text-slate-800 text-xs">
         {formData.cover_image && (
           <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm aspect-video bg-slate-900 mb-6">
             <img src={formData.cover_image} alt={formData.title} className="w-full h-full object-cover" />
@@ -523,157 +752,107 @@ export default function Blogs() {
           </div>
         </div>
 
-        {blocks.map((block, idx) => {
-          const trimmed = block.trim();
-
-          // H1
-          if (trimmed.startsWith('# ')) {
-            return <h1 key={idx} className="font-serif font-black text-2xl text-slate-900 mt-6 mb-2">{trimmed.replace(/^#\s+/, '')}</h1>;
-          }
-          // H2
-          if (trimmed.startsWith('## ')) {
-            return <h2 key={idx} className="font-serif font-bold text-xl text-slate-900 mt-6 mb-2 pb-1 border-b border-slate-100">{trimmed.replace(/^##\s+/, '')}</h2>;
-          }
-          // H3
-          if (trimmed.startsWith('### ')) {
-            return <h3 key={idx} className="font-sans font-bold text-base text-slate-900 mt-4 mb-1">{trimmed.replace(/^###\s+/, '')}</h3>;
-          }
-          // H4
-          if (trimmed.startsWith('#### ')) {
-            return <h4 key={idx} className="font-sans font-bold text-sm text-slate-800 mt-3 mb-1 uppercase tracking-wide text-xs">{trimmed.replace(/^####\s+/, '')}</h4>;
+        {parsedBlocks.map((block, idx) => {
+          if (block.type === 'heading') {
+            if (block.level === 1) return <h1 key={idx} className="font-serif font-black text-2xl text-slate-900 mt-6 mb-2">{renderPreviewInlineText(block.text)}</h1>;
+            if (block.level === 2) return <h2 key={idx} className="font-serif font-bold text-xl text-slate-900 mt-6 mb-2 pb-1 border-b border-slate-100">{renderPreviewInlineText(block.text)}</h2>;
+            if (block.level === 3) return <h3 key={idx} className="font-sans font-bold text-base text-slate-900 mt-4 mb-1">{renderPreviewInlineText(block.text)}</h3>;
+            return <h4 key={idx} className="font-sans font-bold text-sm text-slate-800 mt-3 mb-1 uppercase tracking-wide text-xs">{renderPreviewInlineText(block.text)}</h4>;
           }
 
-          // Callout Boxes (> [!NOTE], > [!TIP], > [!WARNING], > [!IMPORTANT])
-          if (trimmed.startsWith('> [!NOTE]') || trimmed.startsWith('> [!TIP]') || trimmed.startsWith('> [!WARNING]') || trimmed.startsWith('> [!IMPORTANT]')) {
-            const lines = trimmed.split('\n');
-            const alertType = lines[0].replace('> [!', '').replace(']', '').trim();
-            const alertBody = lines.slice(1).map(l => l.replace(/^>\s?/, '')).join(' ');
-
+          if (block.type === 'callout') {
             let alertColor = 'bg-blue-50/80 border-blue-500 text-blue-950';
             let Icon = Info;
-            if (alertType === 'TIP') { alertColor = 'bg-emerald-50/80 border-emerald-500 text-emerald-950'; Icon = Lightbulb; }
-            if (alertType === 'WARNING') { alertColor = 'bg-amber-50/80 border-amber-500 text-amber-950'; Icon = AlertTriangle; }
-            if (alertType === 'IMPORTANT') { alertColor = 'bg-indigo-50/80 border-indigo-600 text-indigo-950'; Icon = AlertCircle; }
+            if (block.alertType === 'TIP') { alertColor = 'bg-emerald-50/80 border-emerald-500 text-emerald-950'; Icon = Lightbulb; }
+            if (block.alertType === 'WARNING') { alertColor = 'bg-amber-50/80 border-amber-500 text-amber-950'; Icon = AlertTriangle; }
+            if (block.alertType === 'IMPORTANT') { alertColor = 'bg-indigo-50/80 border-indigo-600 text-indigo-950'; Icon = AlertCircle; }
 
             return (
               <div key={idx} className={`p-3.5 rounded-xl border-l-4 my-3 text-xs leading-relaxed ${alertColor}`}>
                 <div className="flex items-center gap-1.5 font-mono font-bold uppercase tracking-wider mb-1">
                   <Icon size={14} />
-                  <span>{alertType}</span>
+                  <span>{block.alertType}</span>
                 </div>
-                <p>{alertBody}</p>
+                <p>{renderPreviewInlineText(block.body)}</p>
               </div>
             );
           }
 
-          // Blockquote
-          if (trimmed.startsWith('> ')) {
+          if (block.type === 'quote') {
             return (
               <blockquote key={idx} className="p-3.5 my-3 border-l-4 border-slate-900 bg-slate-50 rounded-r-xl italic font-serif text-slate-700 text-sm">
-                "{trimmed.replace(/^>\s?/gm, '')}"
+                "{renderPreviewInlineText(block.text)}"
               </blockquote>
             );
           }
 
-          // Code block
-          if (trimmed.startsWith('```') && trimmed.endsWith('```')) {
-            codeIdx++;
-            const lines = trimmed.split('\n');
-            const lang = lines[0].replace('```', '').trim() || 'code';
-            const body = lines.slice(1, -1).join('\n');
+          if (block.type === 'code') {
             return (
               <div key={idx} className="my-3 rounded-xl overflow-hidden border border-slate-800 bg-[#0E1726] font-mono text-xs">
                 <div className="px-3 py-1.5 bg-[#172338] border-b border-slate-800 text-[10px] font-bold uppercase text-blue-400 flex justify-between items-center">
-                  <span>{lang}</span>
-                  <span className="text-slate-500">Snippet #{codeIdx}</span>
+                  <span>{block.lang}</span>
+                  <span className="text-slate-500">Live Code Sandbox #{block.num}</span>
                 </div>
                 <pre className="p-3.5 text-blue-200 overflow-x-auto leading-relaxed">
-                  <code>{body}</code>
+                  <code>{block.code}</code>
                 </pre>
               </div>
             );
           }
 
-          // Markdown Image ![Caption](url)
-          const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
-          if (imgMatch) {
+          if (block.type === 'table') {
             return (
-              <figure key={idx} className="my-4">
-                <img src={imgMatch[2]} alt={imgMatch[1]} className="w-full h-auto rounded-xl border border-slate-200 shadow-xs" />
-                {imgMatch[1] && <figcaption className="text-center text-[11px] font-serif italic text-slate-500 mt-1.5">{imgMatch[1]}</figcaption>}
-              </figure>
+              <div key={idx} className="my-3 overflow-x-auto rounded-xl border border-slate-200 text-xs">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                    <tr>
+                      {block.headers.map((h, hIdx) => <th key={hIdx} className="px-3 py-2 font-mono uppercase text-[10px]">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {block.rows.map((r, rIdx) => (
+                      <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
+                        {r.map((c, cIdx) => <td key={cIdx} className="px-3 py-2">{renderPreviewInlineText(c)}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             );
           }
 
-          // Markdown Table
-          if (trimmed.includes('|') && trimmed.split('\n').length >= 2) {
-            const rows = trimmed.split('\n').filter(r => r.trim().startsWith('|'));
-            if (rows.length >= 2) {
-              const headers = rows[0].split('|').map(h => h.trim()).filter(Boolean);
-              const dataRows = rows.slice(2).map(r => r.split('|').map(c => c.trim()).filter(Boolean));
-              return (
-                <div key={idx} className="my-3 overflow-x-auto rounded-xl border border-slate-200 text-xs">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
-                      <tr>
-                        {headers.map((h, hIdx) => <th key={hIdx} className="px-3 py-2 font-mono uppercase text-[10px]">{h}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {dataRows.map((r, rIdx) => (
-                        <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}>
-                          {r.map((c, cIdx) => <td key={cIdx} className="px-3 py-2">{c}</td>)}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            }
-          }
-
-          // Bullet List
-          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            const items = trimmed.split('\n').map(i => i.replace(/^[-*]\s+/, '').trim()).filter(Boolean);
+          if (block.type === 'bullet-list') {
             return (
               <ul key={idx} className="my-2 space-y-1 list-disc list-inside text-slate-700 text-xs">
-                {items.map((item, itemIdx) => <li key={itemIdx} className="marker:text-blue-600">{item}</li>)}
+                {block.items.map((item, itemIdx) => <li key={itemIdx} className="marker:text-blue-600">{renderPreviewInlineText(item)}</li>)}
               </ul>
             );
           }
 
-          // Numbered List
-          if (/^\d+\.\s/.test(trimmed)) {
-            const items = trimmed.split('\n').map(i => i.replace(/^\d+\.\s+/, '').trim()).filter(Boolean);
+          if (block.type === 'numbered-list') {
             return (
               <ol key={idx} className="my-2 space-y-1 list-decimal list-inside text-slate-700 text-xs">
-                {items.map((item, itemIdx) => <li key={itemIdx} className="marker:font-bold">{item}</li>)}
+                {block.items.map((item, itemIdx) => <li key={itemIdx} className="marker:font-bold">{renderPreviewInlineText(item)}</li>)}
               </ol>
             );
           }
 
-          // Collapsible FAQ Details
-          if (trimmed.startsWith('<details>')) {
-            const sumMatch = trimmed.match(/<summary>(.*?)<\/summary>/);
-            const summary = sumMatch ? sumMatch[1] : 'Click to expand';
-            const body = trimmed.replace(/<details>[\s\S]*?<summary>.*?<\/summary>/, '').replace(/<\/details>/, '').trim();
+          if (block.type === 'divider') {
+            return <hr key={idx} className="my-4 border-slate-200" />;
+          }
+
+          if (block.type === 'image') {
             return (
-              <details key={idx} className="my-3 p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs cursor-pointer">
-                <summary className="font-bold text-slate-800">{summary}</summary>
-                <div className="pt-2 mt-2 border-t border-slate-200 text-slate-600">{body}</div>
-              </details>
+              <figure key={idx} className="my-4">
+                <img src={block.url} alt={block.caption || 'Preview Diagram'} className="w-full h-auto rounded-xl border border-slate-200 shadow-xs" />
+                {block.caption && <figcaption className="text-center text-[11px] font-serif italic text-slate-500 mt-1.5">{block.caption}</figcaption>}
+              </figure>
             );
           }
 
-          // Divider
-          if (trimmed === '---' || trimmed === '***') {
-            return <hr key={idx} className="my-6 border-slate-200" />;
-          }
-
-          // Paragraph
           return (
-            <p key={idx} className="text-slate-700 text-xs leading-relaxed">
-              {trimmed}
+            <p key={idx} className="text-slate-800 leading-relaxed text-xs my-2.5">
+              {renderPreviewInlineText(block.text)}
             </p>
           );
         })}
@@ -1196,8 +1375,8 @@ export default function Blogs() {
                 <div className="flex items-center gap-0.5 px-1.5 border-r border-slate-300">
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('```sql\n-- SQL Query\nSELECT category, SUM(amount) AS total\nFROM sales\nGROUP BY category\nORDER BY total DESC;\n```')}
-                    title="Insert SQL Code Block"
+                    onClick={() => wrapSelection('```sql\n', '\n```', '-- SQL Query\nSELECT category, SUM(amount) AS total\nFROM sales\nGROUP BY category;')}
+                    title="Wrap in / Insert SQL Code Block"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-blue-700 font-mono text-[11px] font-bold border border-slate-200 cursor-pointer flex items-center gap-1"
                   >
                     <Database size={11} />
@@ -1205,16 +1384,16 @@ export default function Blogs() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('```python\nimport pandas as pd\nimport numpy as np\n\ndf = pd.read_csv("dataset.csv")\nprint(df.describe())\n```')}
-                    title="Insert Python Code Block"
+                    onClick={() => wrapSelection('```python\n', '\n```', 'import pandas as pd\nimport numpy as np\n\ndf = pd.read_csv("dataset.csv")\nprint(df.describe())')}
+                    title="Wrap in / Insert Python Code Block"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-emerald-700 font-mono text-[11px] font-bold border border-slate-200 cursor-pointer"
                   >
                     Python
                   </button>
                   <button
                     type="button"
-                    onClick={() => insertMarkdownSnippet('```sql\n// DAX Measure\nTotalRevenueYTD =\nTOTALYTD(SUM(Sales[Revenue]), \'Date\'[Date])\n```')}
-                    title="Insert DAX Measure Block"
+                    onClick={() => wrapSelection('```sql\n// DAX Measure\n', '\n```', 'TotalRevenueYTD :=\nTOTALYTD(SUM(Sales[Revenue]), \'Date\'[Date])')}
+                    title="Wrap in / Insert DAX Measure Block"
                     className="px-2 py-1 rounded bg-white hover:bg-slate-200 text-purple-700 font-mono text-[11px] font-bold border border-slate-200 cursor-pointer"
                   >
                     DAX
