@@ -240,7 +240,7 @@ export default function BlogPublicationPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
       <Helmet>
-        <title>Medium · Publications & Articles | {authorName}</title>
+        <title>Publications & Articles | {authorName}</title>
         <meta
           name="description"
           content="Explore data analytics case studies, Power BI architecture, SQL transformations, and statistical modeling articles."
@@ -251,7 +251,7 @@ export default function BlogPublicationPage() {
       <Navbar />
 
       {/* ═════════════════════════════════════════════════════════════════
-          TOP HEADER & MEDIUM PROMO BANNER (Matching Screenshot Image 1 & 2)
+          TOP HEADER & PROMO BANNER
           ═════════════════════════════════════════════════════════════════ */}
       <div className="pt-20 sm:pt-24 bg-amber-400 text-slate-950 px-4 py-2.5 text-center text-xs sm:text-sm font-semibold flex items-center justify-center gap-3">
         <span>Verified Data Analytics Case Studies & Architecture Guides.</span>
@@ -265,14 +265,14 @@ export default function BlogPublicationPage() {
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 pb-24">
         
-        {/* ── MEDIUM MASTHEAD TITLE ── */}
+        {/* ── MASTHEAD TITLE ── */}
         <div className="flex items-center justify-between pt-8 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <h1 className="font-serif font-black text-3xl sm:text-4xl text-slate-950 tracking-tight">
-              Medium
-            </h1>
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold">
+            <h1 className="font-serif font-black text-2xl sm:text-3xl text-slate-950 tracking-tight">
               Arun Pandian
+            </h1>
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+              Data Analyst
             </span>
           </div>
 
