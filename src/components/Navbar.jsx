@@ -84,6 +84,8 @@ const Navbar = () => {
 
   const isLinkActive = (href, isExternal) => {
     if (isExternal) return false;
+    if (location.pathname.startsWith('/project') && href.includes('#projects')) return true;
+    if (location.pathname !== '/' && !location.pathname.startsWith('/project')) return false;
     const targetSection = href.split('#')[1] || 'hero';
     return activeSection === targetSection;
   };

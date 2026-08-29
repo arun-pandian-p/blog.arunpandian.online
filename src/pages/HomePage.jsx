@@ -86,6 +86,18 @@ export default function HomePage() {
       }
     };
     window.addEventListener('scroll', toggleVisibility);
+
+    // If navigated with hash (e.g. /#projects from project details)
+    if (window.location.hash) {
+      const id = window.location.hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }, 150);
+      }
+    }
+
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
 

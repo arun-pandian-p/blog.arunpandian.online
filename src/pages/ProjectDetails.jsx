@@ -224,11 +224,11 @@ export default function ProjectDetails() {
         <header className="mb-8 sm:mb-10 pb-8 border-b border-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
             <Link
-              to="/blog"
+              to="/#projects"
               className="inline-flex items-center gap-1.5 text-xs font-mono tracking-wider uppercase text-slate-600 hover:text-blue-600 font-semibold transition-colors"
             >
               <ChevronLeft size={14} />
-              <span>Blog & Publication Index</span>
+              <span>Back to Featured Projects</span>
             </Link>
             
             <div className="flex flex-wrap items-center gap-3">
