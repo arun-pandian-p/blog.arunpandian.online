@@ -136,8 +136,9 @@ SUPABASE_SECRET_KEY=your_service_role_key
 
 ## 🚀 GitHub Repositories
 
-- **Main Portfolio**: [https://github.com/arun-pandian-p/arunpandian.online](https://github.com/arun-pandian-p/arunpandian.online)
-- **Dedicated Blog**: [https://github.com/arun-pandian-p/blog.arunpandian.online](https://github.com/arun-pandian-p/blog.arunpandian.online)
+- **Main Portfolio**: [https://arunpandian.online](https://arunpandian.online) (`https://github.com/arun-pandian-p/arunpandian.online`)
+- **Dedicated Blog**: [https://blog.arunpandian.online](https://blog.arunpandian.online) (`https://github.com/arun-pandian-p/blog.arunpandian.online`)
+- **Status**: Synchronized & Live (`2026-08-29`)
 
 <br />
 
