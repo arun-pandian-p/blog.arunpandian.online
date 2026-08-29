@@ -39,6 +39,34 @@ export async function sendSubscriberBroadcast(params: BroadcastNotificationParam
 }
 
 /**
+ * Dispatch an automated welcome and introduction email to a new subscriber
+ */
+export async function sendWelcomeEmail(email: string, name?: string): Promise<{
+  success: boolean;
+  message?: string;
+}> {
+  try {
+    const res = await fetch('/api/send-welcome', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, name }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to send welcome email: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error: any) {
+    console.warn('Welcome email notice:', error?.message || error);
+    return { success: false, message: error?.message };
+  }
+}
+
+/**
  * Fetch total count of active newsletter subscribers
  */
 export async function getSubscribersCount(): Promise<number> {

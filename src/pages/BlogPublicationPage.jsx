@@ -60,6 +60,7 @@ import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { isBlogSubdomain, getMainDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
+import { sendWelcomeEmail } from '../services/newsletterService';
 
 const VERIFIED_FALLBACK_IMAGES = [
   'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
@@ -332,8 +333,12 @@ export default function BlogPublicationPage() {
           }]);
         }
       }
+
+      // Automatically dispatch personal Welcome & Introduction email
+      sendWelcomeEmail(cleanEmail).catch((err) => console.warn('Welcome dispatch error:', err));
+
       setSubscribeSuccess(true);
-      toast.success('Subscribed! Updates will come from updates@blogupdates.arunpandian.online', { icon: '📬' });
+      toast.success('Subscribed! Welcome email sent to your inbox 🚀', { icon: '📬' });
       setTimeout(() => {
         setIsSubscribeOpen(false);
         setSubscribeSuccess(false);

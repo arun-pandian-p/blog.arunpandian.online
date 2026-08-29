@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, CheckCircle2, Loader2, Sparkles, Send, ShieldCheck, BellRing } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
+import { sendWelcomeEmail } from '../services/newsletterService';
 
 export default function NewsletterSubscribe({
   source = 'prefooter',
@@ -51,9 +52,12 @@ export default function NewsletterSubscribe({
         }
       }
 
+      // Automatically dispatch personal Welcome & Introduction email
+      sendWelcomeEmail(cleanEmail).catch((err) => console.warn('Welcome dispatch error:', err));
+
       setSubscribed(true);
       setEmail('');
-      toast.success('Subscribed successfully! Updates will come from updates@arunpandian.online', {
+      toast.success('Subscribed! Welcome email sent to your inbox 🚀', {
         duration: 4500,
         icon: '📬'
       });
