@@ -2,7 +2,12 @@ import { supabase } from '../lib/supabaseClient';
 
 export interface BroadcastNotificationParams {
   title: string;
+  subject?: string;
+  headline?: string;
   excerpt?: string;
+  customMessage?: string;
+  ctaText?: string;
+  quote?: string;
   slug?: string;
   url?: string;
   type?: 'blog' | 'project';

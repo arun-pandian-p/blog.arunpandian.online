@@ -84,6 +84,9 @@ export default function Blogs() {
 
   const [formData, setFormData] = useState(emptyBlog);
   const [notifySubscribers, setNotifySubscribers] = useState(true);
+  const [customMailSubject, setCustomMailSubject] = useState('');
+  const [customMailMessage, setCustomMailMessage] = useState('');
+  const [customMailCta, setCustomMailCta] = useState('');
 
   // Push state to undo/redo history stack
   const updateContentWithHistory = (newContent) => {
@@ -543,12 +546,14 @@ export default function Blogs() {
 
         sendSubscriberBroadcast({
           title: payload.title,
+          subject: customMailSubject || undefined,
+          customMessage: customMailMessage || undefined,
+          ctaText: customMailCta || undefined,
           excerpt: payload.excerpt,
           slug: payload.slug,
           type: 'blog',
           imageUrl: payload.cover_image,
-          quote: quote,
-          readersScore: randomReaders
+          quote: quote
         }).then((res) => {
           if (res?.success) {
             toast.success(`Dispatched update to fans! (🔥 ${randomReaders} readers score)`, { icon: '📬', duration: 4000 });
@@ -1816,7 +1821,7 @@ export default function Blogs() {
                         />
                       </div>
 
-                      <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 space-y-2">
+                      <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 space-y-3">
                         <label className="flex items-center gap-2 cursor-pointer font-bold text-blue-950 text-xs">
                           <input
                             type="checkbox"
@@ -1827,8 +1832,51 @@ export default function Blogs() {
                           <span>⚡ Broadcast Email to All Fans &amp; Subscribers</span>
                         </label>
                         <p className="text-[11px] text-blue-800/80 pl-6 leading-relaxed">
-                          Dispatches an instant update containing your uploaded pictures, quote highlights, and dynamic 100–129 active readers badge from <code>updates@arunpandian.online</code>.
+                          Dispatches an instant email with your cover image, personal greeting, custom story, and verified unsubscribe footer from <code>updates@arunpandian.online</code>.
                         </p>
+
+                        {notifySubscribers && (
+                          <div className="pt-2 pl-6 space-y-3 border-t border-blue-200/60">
+                            <div>
+                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
+                                Custom Email Subject (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={customMailSubject}
+                                onChange={(e) => setCustomMailSubject(e.target.value)}
+                                placeholder={`e.g. New Case Study: ${formData.title || 'Data Architecture'}`}
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
+                                Custom Email Story / Message (Optional)
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={customMailMessage}
+                                onChange={(e) => setCustomMailMessage(e.target.value)}
+                                placeholder="Hey! Just published a breakdown of the new SQL pipeline and latency benchmarks..."
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none leading-relaxed"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
+                                CTA Button Text (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                value={customMailCta}
+                                onChange={(e) => setCustomMailCta(e.target.value)}
+                                placeholder="e.g. Read Complete Case Study ➔"
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">

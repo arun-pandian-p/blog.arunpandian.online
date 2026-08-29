@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { 
   Loader2, Plus, Edit2, Trash2, Search, Filter, 
-  List, Grid, RefreshCw, Download, Eye, EyeOff, ExternalLink 
+  List, Grid, RefreshCw, Download, Eye, EyeOff, ExternalLink,
+  Bell, Check, Mail, Sparkles
 } from 'lucide-react';
 import Modal from '../../components/admin/Modal';
 import ConfirmModal from '../../components/admin/ConfirmModal';
@@ -26,6 +27,8 @@ export default function Projects() {
   const [modalTab, setModalTab] = useState('core');
   const [editingProject, setEditingProject] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
+  const [customMailExcerpt, setCustomMailExcerpt] = useState('');
 
   // Deletion Confirm Modal State
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null, title: '' });
@@ -222,15 +225,19 @@ export default function Projects() {
         toast.success('Project created successfully');
       }
 
-      // If published, trigger email dispatch to newsletter subscribers from updates@blogupdates.arunpandian.online
-      if (payload.published) {
+      // If published and notifySubscribers toggle is ON, trigger email dispatch to active newsletter subscribers
+      if (payload.published && notifySubscribers) {
         sendSubscriberBroadcast({
           title: payload.title,
-          excerpt: payload.problem || payload.insight || payload.subtitle,
+          excerpt: customMailExcerpt || payload.problem || payload.insight || payload.subtitle,
           slug: editingProject?.id || '',
           type: 'project',
           imageUrl: payload.image_url
-        }).catch((err) => console.warn('Newsletter broadcast notice:', err));
+        })
+          .then((res) => {
+            if (res?.success) toast.success('⚡ Fan broadcast dispatched to subscribers!', { icon: '📬' });
+          })
+          .catch((err) => console.warn('Newsletter broadcast notice:', err));
       }
 
       setIsModalOpen(false);
@@ -489,18 +496,22 @@ export default function Projects() {
             { id: 'code', label: '🧮 DAX / SQL Code' },
             { id: 'media', label: '🖼️ Media & Embeds' },
             { id: 'files', label: '📥 Download Files' },
+            { id: 'mail', label: '✉️ Fan Mail Dispatch' },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setModalTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1 ${
                 modalTab === tab.id
                   ? 'bg-white text-blue-700 shadow-xs border border-slate-200 font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {tab.label}
+              {tab.id === 'mail' && notifySubscribers && (
+                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              )}
             </button>
           ))}
         </div>
@@ -815,11 +826,130 @@ export default function Projects() {
             </div>
           )}
 
+          {/* TAB 6: FAN MAIL DISPATCH (Custom Broadcast to Subscribed Readers) */}
+          {modalTab === 'mail' && (
+            <div className="space-y-6">
+              {/* Top Toggle Banner */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-slate-900">Email Broadcast to Subscribers</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">
+                      ⚡ Verified Only
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Dispatched from <code className="text-slate-800 font-bold">updates@arunpandian.online</code> with auto unsubscribe footer.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setNotifySubscribers(!notifySubscribers)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                    notifySubscribers
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Bell size={13} className={notifySubscribers ? "animate-pulse" : ""} />
+                  <span>{notifySubscribers ? 'Notify Fans: ON' : 'Notify Fans: OFF'}</span>
+                </button>
+              </div>
+
+              {/* Custom Email Fields */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1.5">
+                    Custom Email Subject Line (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={customMailExcerpt.startsWith('SUB:') ? customMailExcerpt.replace(/^SUB:([^|]+)\|.*/, '$1') : ''}
+                    onChange={(e) => {
+                      const sub = e.target.value;
+                      const msg = customMailExcerpt.includes('|MSG:') ? customMailExcerpt.replace(/.*\|MSG:/, '') : customMailExcerpt;
+                      setCustomMailExcerpt(sub ? `SUB:${sub}|MSG:${msg}` : msg);
+                    }}
+                    placeholder={`e.g. New Project: ${formData.title || 'Interactive Analytics Architecture'}`}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none font-sans"
+                  />
+                  <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                    Default: "New Project: {formData.title || 'Project Title'} 🚀"
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1.5">
+                    Custom Message / Personal Story (Optional)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={customMailExcerpt.includes('|MSG:') ? customMailExcerpt.replace(/.*\|MSG:/, '') : (customMailExcerpt.startsWith('SUB:') ? '' : customMailExcerpt)}
+                    onChange={(e) => {
+                      const msg = e.target.value;
+                      const sub = customMailExcerpt.startsWith('SUB:') ? customMailExcerpt.replace(/^SUB:([^|]+)\|.*/, '$1') : '';
+                      setCustomMailExcerpt(sub ? `SUB:${sub}|MSG:${msg}` : msg);
+                    }}
+                    placeholder="Hey! Just published a brand new case study and live dashboard breakdown. In this project, I resolved high-latency queries and optimized the Power BI Star Schema..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none leading-relaxed"
+                  />
+                  <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                    Leave blank to automatically use the project problem / insight summary.
+                  </span>
+                </div>
+
+                {/* Email Preview Card */}
+                <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-800">
+                    <span className="font-mono font-bold text-blue-400">Live Email Preview</span>
+                    <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded font-mono">100–129 Readers Score</span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-300">
+                    <p className="font-bold text-sm text-white">
+                      {customMailExcerpt.startsWith('SUB:') 
+                        ? customMailExcerpt.replace(/^SUB:([^|]+)\|.*/, '$1') 
+                        : `New Project: ${formData.title || 'Analytics Dashboard'}`}
+                    </p>
+                    <p className="text-[11px] text-slate-400 italic">
+                      "Hey there, check out my latest data analytics implementation..."
+                    </p>
+                    <div className="pt-2">
+                      <span className="inline-block px-3 py-1.5 rounded-lg bg-[#b83a26] text-white font-bold text-[11px]">
+                        Explore Interactive Dashboard ➔
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Actions Footer */}
           <div className="flex items-center justify-between pt-6 mt-6 border-t border-slate-100">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span>Section:</span>
-              <span className="font-semibold text-slate-600 uppercase font-mono">{modalTab}</span>
+            <div className="flex items-center gap-3">
+              {/* Quick Notify Toggle in Footer */}
+              <button
+                type="button"
+                onClick={() => setNotifySubscribers(!notifySubscribers)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                  notifySubscribers
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600'
+                }`}
+                title="Toggle email broadcast to fans on save"
+              >
+                <Bell size={12} className={notifySubscribers ? "text-blue-600" : ""} />
+                <span>{notifySubscribers ? 'Notify Fans: ON' : 'Notify Fans: OFF'}</span>
+                <div
+                  className={`w-3 h-3 rounded-full flex items-center justify-center ${
+                    notifySubscribers ? 'bg-blue-600 text-white' : 'bg-slate-300'
+                  }`}
+                >
+                  {notifySubscribers && <Check size={8} strokeWidth={3} />}
+                </div>
+              </button>
             </div>
             
             <div className="flex items-center gap-3">
