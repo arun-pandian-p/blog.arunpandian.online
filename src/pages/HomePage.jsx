@@ -25,6 +25,7 @@ import CanvasRuntime from '../editor/CanvasRuntime';
 import StyleOverrides from '../editor/StyleOverrides';
 import { TopMarquee, PreloaderCounter, GrainOverlay, RadianScrollNav, Scanlines, toRoman } from '../theme/Modifiers';
 import DoodleGuide from '../components/DoodleGuide';
+import NewsletterSubscribe from '../components/NewsletterSubscribe';
 
 export default function HomePage() {
   const { settings, projects, blogs } = useContent();
@@ -324,6 +325,9 @@ export default function HomePage() {
                 {footerData.name}
               </h3>
               <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-4 sm:mt-6 text-xs sm:text-sm font-bold uppercase tracking-widest max-w-sm">{footerData.tagline}</p>
+              <div className="mt-8 pt-6 border-t-[2px] border-ink/20">
+                <NewsletterSubscribe source="home_footer_karol" />
+              </div>
             </div>
             <div className="w-full md:w-1/3 flex flex-col justify-between">
               <div className="p-5 sm:p-8 flex flex-col gap-3 sm:gap-4">
@@ -347,6 +351,9 @@ export default function HomePage() {
             <Logo size={40} className="text-ink mb-8 sm:mb-12 opacity-80" title="Logo" />
             <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-serif italic text-3xl sm:text-5xl lg:text-6xl font-light mb-4 sm:mb-6">{footerData.name}</h3>
             <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-ink/60 font-serif text-base sm:text-lg max-w-md">{footerData.tagline}</p>
+            <div className="w-full max-w-md mt-8">
+              <NewsletterSubscribe source="home_footer_pelizzari" />
+            </div>
             <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-12 mt-10 sm:mt-16 text-xs sm:text-sm tracking-widest uppercase text-ink/80">
               <a href={footerData.github} className="hover:text-ink transition-colors min-h-[36px] flex items-center">GitHub</a>
               <a href={footerData.linkedin} className="hover:text-ink transition-colors min-h-[36px] flex items-center">LinkedIn</a>
@@ -367,6 +374,9 @@ export default function HomePage() {
               <div className="col-span-1 md:col-span-2 p-4 sm:p-6 border-b md:border-b-0 md:border-r border-ink">
                 <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-mono text-xl sm:text-2xl font-bold uppercase">{footerData.name}</h3>
                 <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="font-mono text-xs sm:text-sm mt-3 sm:mt-4 text-ink-soft">{footerData.tagline}</p>
+                <div className="mt-6 pt-4 border-t border-ink/20">
+                  <NewsletterSubscribe source="home_footer_russell" />
+                </div>
               </div>
               <div className="col-span-1 p-4 sm:p-6 border-b md:border-b-0 md:border-r border-ink flex flex-col gap-3 sm:gap-4 font-mono text-xs sm:text-sm">
                 <span className="font-bold border-b border-ink pb-2 mb-1 sm:mb-2">Socials</span>
@@ -399,6 +409,9 @@ export default function HomePage() {
               <div>
                 <h3 data-edit-id="footer.name" data-edit-name="Footer · Name" data-edit-kind="heading" data-edit-path="footer.name" className="font-display text-3xl sm:text-5xl font-medium tracking-tight mb-3 sm:mb-4">{footerData.name}</h3>
                 <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="text-bg/60 text-base sm:text-lg max-w-sm">{footerData.tagline}</p>
+                <div className="mt-6">
+                  <NewsletterSubscribe source="home_footer_studiomodular" />
+                </div>
               </div>
               <div className="mt-8 sm:mt-12 text-xs font-mono text-bg/40">
                 <p>&copy; {new Date().getFullYear()} {footerData.copyright}</p>
@@ -436,6 +449,11 @@ export default function HomePage() {
                 >{footerData.name}</h3>
                 <p data-edit-id="footer.tagline" data-edit-name="Footer · Tagline" data-edit-kind="text" data-edit-path="footer.tagline" className="mt-2.5 sm:mt-3 text-bg/60 text-xs sm:text-sm max-w-sm">{footerData.tagline}</p>
                 
+                {/* Newsletter Subscribe */}
+                <div className="mt-6 pt-4 border-t border-bg/15 max-w-md">
+                  <NewsletterSubscribe source="home_footer_default" />
+                </div>
+
                 {/* Doodle Art Guide Sticky Note for Footer */}
                 <div className="mt-5">
                   <DoodleGuide

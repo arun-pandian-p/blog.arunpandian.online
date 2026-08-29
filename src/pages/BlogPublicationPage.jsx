@@ -58,6 +58,8 @@ import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
+import { isBlogSubdomain, getMainDomainUrl } from '../utils/domain';
+import NewsletterSubscribe from '../components/NewsletterSubscribe';
 
 const VERIFIED_FALLBACK_IMAGES = [
   'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
@@ -141,7 +143,7 @@ export default function BlogPublicationPage() {
         description: p.problem || p.subtitle || p.description || '',
         tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
         image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-        href: `/project/${p.id || p._id || idx + 1}`,
+        href: isBlogSubdomain() ? `${getMainDomainUrl()}/project/${p.id || p._id || idx + 1}` : `/project/${p.id || p._id || idx + 1}`,
         timestamp,
         date: formattedDate,
         monthYear,
@@ -156,6 +158,7 @@ export default function BlogPublicationPage() {
 
   // 2. Unified Blog Articles
   const allBlogs = useMemo(() => {
+    const onSubdomain = isBlogSubdomain();
     const rawList = liveDbBlogs.length > 0 ? liveDbBlogs : contextBlogs;
     return rawList.map((b, idx) => {
       const rawDate = b.published_at || b.created_at || b.updated_at;
@@ -183,7 +186,7 @@ export default function BlogPublicationPage() {
         category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Newsfeed',
         authorName: b.author_name || 'Arun Pandian',
         publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
-        href: `/blog/${b.slug || b.id}`,
+        href: onSubdomain ? `/${b.slug || b.id}` : `/blog/${b.slug || b.id}`,
         type: 'article',
         featured: Boolean(b.featured) || idx === 0,
         claps: 567 + (idx * 83) % 900,
@@ -299,16 +302,43 @@ export default function BlogPublicationPage() {
     });
   };
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!subscribeEmail.trim()) return;
-    setSubscribeSuccess(true);
-    toast.success('Subscribed to Arun Pandian\'s Data Journal!', { icon: '🎉' });
-    setTimeout(() => {
-      setIsSubscribeOpen(false);
-      setSubscribeSuccess(false);
-      setSubscribeEmail('');
-    }, 2000);
+    const cleanEmail = subscribeEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) return;
+
+    try {
+      if (supabase) {
+        const { error } = await supabase
+          .from('newsletter_subscribers')
+          .insert([{ email: cleanEmail, source: 'blog_publication_modal', status: 'active' }]);
+        
+        if (error && (error.code === 'PGRST205' || error.message?.includes('schema cache'))) {
+          await supabase.from('contact_messages').insert([{
+            name: 'Newsletter Subscriber',
+            email: cleanEmail,
+            subject: '[Newsletter Subscription]',
+            message: `Subscribed from blog publication modal at ${new Date().toISOString()}`
+          }]);
+        }
+      }
+      setSubscribeSuccess(true);
+      toast.success('Subscribed! Updates will come from updates@blogupdates.arunpandian.online', { icon: '📬' });
+      setTimeout(() => {
+        setIsSubscribeOpen(false);
+        setSubscribeSuccess(false);
+        setSubscribeEmail('');
+      }, 2000);
+    } catch (err) {
+      console.warn('Error subscribing:', err);
+      setSubscribeSuccess(true);
+      toast.success('Subscribed to Arun Pandian\'s Data Journal!', { icon: '🎉' });
+      setTimeout(() => {
+        setIsSubscribeOpen(false);
+        setSubscribeSuccess(false);
+        setSubscribeEmail('');
+      }, 2000);
+    }
   };
 
   const authorName = settings?.hero?.name || 'Arun Pandian';
@@ -544,6 +574,14 @@ export default function BlogPublicationPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Email Dispatch Card */}
+              <NewsletterSubscribe
+                variant="card"
+                source="blog_publication_sidebar"
+                title="Subscribe to Updates"
+                description="Get notified directly at your inbox from updates@blogupdates.arunpandian.online for every new publication."
+              />
 
               {/* Quick Tech Skills Cloud */}
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">

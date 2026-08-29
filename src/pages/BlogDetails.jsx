@@ -7,6 +7,8 @@ import Navbar from '../components/Navbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
+import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
+import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import {
   ArrowLeft,
   ArrowRight,
@@ -380,7 +382,7 @@ const BlogDetails = () => {
           The requested data publication or blog post could not be loaded.
         </p>
         <Link
-          to="/blog"
+          to={isBlogSubdomain() ? '/' : '/blog'}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white font-semibold text-sm hover:bg-blue-600 transition-colors"
         >
           <ArrowLeft size={16} /> Return to Blog Index
@@ -423,7 +425,7 @@ const BlogDetails = () => {
   const liveLink = meta.liveLink || '';
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
   const seoDescription = meta.seoDescription || excerpt || title;
-  const currentCanonicalUrl = typeof window !== 'undefined' ? window.location.href : `https://arunpandian.online/blog/${blog.slug || blog.id}`;
+  const currentCanonicalUrl = typeof window !== 'undefined' ? window.location.href : `${getBlogDomainUrl()}/${blog.slug || blog.id}`;
 
   // ─── Inline Text Formatter (Inline Code, Bold, Italic, Strikethrough, Links) ───
   const renderInlineText = (text) => {
@@ -979,7 +981,7 @@ const BlogDetails = () => {
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 text-xs">
           <div className="flex items-center gap-3">
             <Link
-              to="/blog"
+              to={isBlogSubdomain() ? '/' : '/blog'}
               className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
               title="Back to stories"
             >
@@ -1176,11 +1178,21 @@ const BlogDetails = () => {
           </div>
         </div>
 
+        {/* ── EMAIL NEWSLETTER SUBSCRIPTION (From blogupdates.arunpandian.online) ── */}
+        <div className="my-10">
+          <NewsletterSubscribe
+            variant="inline"
+            source="blog_details_article"
+            title="Enjoyed this Data Analytics Deep Dive?"
+            description="Subscribe with your email to receive direct notifications from updates@blogupdates.arunpandian.online whenever new SQL pipelines, Power BI architectures, and portfolio projects are published."
+          />
+        </div>
+
         {/* Prev / Next Story Links */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-10 pt-6 border-t border-slate-100">
           {prevBlog && (
             <Link
-              to={`/blog/${prevBlog.slug || prevBlog.id}`}
+              to={isBlogSubdomain() ? `/${prevBlog.slug || prevBlog.id}` : `/blog/${prevBlog.slug || prevBlog.id}`}
               className="p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
             >
               <span className="text-[10px] font-mono text-slate-400 uppercase block">Previous Story</span>
@@ -1190,7 +1202,7 @@ const BlogDetails = () => {
 
           {nextBlog && (
             <Link
-              to={`/blog/${nextBlog.slug || nextBlog.id}`}
+              to={isBlogSubdomain() ? `/${nextBlog.slug || nextBlog.id}` : `/blog/${nextBlog.slug || nextBlog.id}`}
               className="p-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors text-right sm:col-start-2"
             >
               <span className="text-[10px] font-mono text-slate-400 uppercase block">Next Story</span>

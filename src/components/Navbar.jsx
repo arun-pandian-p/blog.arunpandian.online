@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import Logo from './Logo';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
+import { isBlogSubdomain, getMainDomainUrl, getBlogDomainUrl } from '../utils/domain';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Shared helpers
@@ -45,8 +46,13 @@ const Navbar = () => {
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, mass: 0.3 });
 
-  const isBlogPage   = location.pathname.startsWith('/blog');
+  const onBlogSubdomain = isBlogSubdomain();
+  const isBlogPage   = onBlogSubdomain || location.pathname.startsWith('/blog');
   const navbarStyle  = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'default';
+
+  const mainDomain = getMainDomainUrl();
+  const blogDomain = getBlogDomainUrl();
+  const brandHref  = onBlogSubdomain ? `${mainDomain}/#hero` : '/#hero';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,12 +73,24 @@ const Navbar = () => {
   }, [isBlogPage]);
 
   const navLinks = [
-    { name: 'Home', href: '/#hero' },
-    { name: 'Blog', href: '/blog'  },
+    { 
+      name: 'Home', 
+      href: onBlogSubdomain ? `${mainDomain}/#hero` : '/#hero',
+      isExternal: onBlogSubdomain
+    },
+    { 
+      name: 'Blog', 
+      href: onBlogSubdomain ? '/' : blogDomain,
+      isExternal: !onBlogSubdomain
+    },
   ];
 
-  const isLinkActive = (href) =>
-    href === '/blog' ? isBlogPage : (!isBlogPage && activeSection === (href.split('#')[1] || 'hero'));
+  const isLinkActive = (href, isExternal) => {
+    if (onBlogSubdomain) {
+      return !isExternal && (href === '/' || location.pathname === '/');
+    }
+    return href === '/blog' || href === blogDomain ? isBlogPage : (!isBlogPage && activeSection === (href.split('#')[1] || 'hero'));
+  };
 
   /* ── CSS-var–driven color tokens so every theme preset works ── */
   const surfaceBg = {
@@ -92,19 +110,34 @@ const Navbar = () => {
   /* ── Shared desktop link list ── (hidden on mobile header, shown only on sm+) */
   const DesktopLinks = () => (
     <div data-edit-id="navbar.links" data-edit-name="Navbar Links" data-edit-kind="container" className="hidden sm:flex items-center justify-center gap-1">
-      {navLinks.map(({ name, href }, idx) => (
-        <Link
-          key={name}
-          to={href}
-          data-edit-id={`navbar.link.${idx}`}
-          data-edit-name={`Nav Link · ${name}`}
-          data-edit-kind="link"
-          data-edit-path={`navbar.links.${idx}.name`}
-          className="px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 whitespace-nowrap"
-          style={isLinkActive(href) ? activeLink : idleLink}
-        >
-          {name}
-        </Link>
+      {navLinks.map(({ name, href, isExternal }, idx) => (
+        isExternal ? (
+          <a
+            key={name}
+            href={href}
+            data-edit-id={`navbar.link.${idx}`}
+            data-edit-name={`Nav Link · ${name}`}
+            data-edit-kind="link"
+            data-edit-path={`navbar.links.${idx}.name`}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 whitespace-nowrap"
+            style={isLinkActive(href, isExternal) ? activeLink : idleLink}
+          >
+            {name}
+          </a>
+        ) : (
+          <Link
+            key={name}
+            to={href}
+            data-edit-id={`navbar.link.${idx}`}
+            data-edit-name={`Nav Link · ${name}`}
+            data-edit-kind="link"
+            data-edit-path={`navbar.links.${idx}.name`}
+            className="px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 whitespace-nowrap"
+            style={isLinkActive(href, isExternal) ? activeLink : idleLink}
+          >
+            {name}
+          </Link>
+        )
       ))}
     </div>
   );
@@ -144,19 +177,34 @@ const Navbar = () => {
             style={bg}
           >
             <div className="space-y-1 mb-2">
-              {navLinks.map(({ name, href }) => (
-                <Link
-                  key={name}
-                  to={href}
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between min-h-[46px] px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
-                  style={isLinkActive(href) ? activeLink : idleLink}
-                >
-                  <span>{name}</span>
-                  {isLinkActive(href) && (
-                    <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-primary)' }} />
-                  )}
-                </Link>
+              {navLinks.map(({ name, href, isExternal }) => (
+                isExternal ? (
+                  <a
+                    key={name}
+                    href={href}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between min-h-[46px] px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                    style={isLinkActive(href, isExternal) ? activeLink : idleLink}
+                  >
+                    <span>{name}</span>
+                    {isLinkActive(href, isExternal) && (
+                      <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-primary)' }} />
+                    )}
+                  </a>
+                ) : (
+                  <Link
+                    key={name}
+                    to={href}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-between min-h-[46px] px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                    style={isLinkActive(href, isExternal) ? activeLink : idleLink}
+                  >
+                    <span>{name}</span>
+                    {isLinkActive(href, isExternal) && (
+                      <span className="h-2 w-2 rounded-full" style={{ background: 'var(--color-primary)' }} />
+                    )}
+                  </Link>
+                )
               ))}
             </div>
             <div className="pt-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
@@ -213,7 +261,7 @@ const Navbar = () => {
         >
           <NavGrid>
             {/* Col 1 — Brand (left-aligned) */}
-            <a href="/#hero" data-edit-id="navbar.brand" data-edit-name="Navbar Brand" data-edit-kind="link" className="flex items-center gap-2 sm:gap-2.5 group min-w-0" aria-label={`${brandName} home`}>
+            <a href={brandHref} data-edit-id="navbar.brand" data-edit-name="Navbar Brand" data-edit-kind="link" className="flex items-center gap-2 sm:gap-2.5 group min-w-0" aria-label={`${brandName} home`}>
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
               <div className="min-w-0">
                 <span data-edit-id="navbar.name" data-edit-name="Navbar · Name" data-edit-kind="text" data-edit-path="hero.name" className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>
@@ -252,7 +300,7 @@ const Navbar = () => {
       >
         <div className="relative w-full max-w-7xl">
           <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-4">
-            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+            <a href={brandHref} className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
               <div className="min-w-0">
                 <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
@@ -281,21 +329,14 @@ const Navbar = () => {
       <nav className="fixed top-0 inset-x-0 z-50 border-b-2 flex justify-center" style={darkBg}>
         <div className="relative w-full max-w-7xl">
           <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-3.5">
-            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <a href={brandHref} className="flex items-center gap-2 sm:gap-2.5 min-w-0">
               <Logo size={28} className="invert shrink-0" />
               <div className="min-w-0">
                 <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight text-white truncate">{brandName}</span>
                 <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 text-slate-400 truncate">{role}</span>
               </div>
             </a>
-            <div className="hidden sm:flex items-center justify-center gap-1">
-              {navLinks.map(({ name, href }) => (
-                <Link key={name} to={href}
-                  className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider border transition-colors whitespace-nowrap"
-                  style={isLinkActive(href) ? { color: '#fff', background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.4)' } : { color: 'rgba(255,255,255,0.55)', borderColor: 'transparent' }}
-                >{name}</Link>
-              ))}
-            </div>
+            <DesktopLinks />
             <div className="flex items-center justify-end gap-2 shrink-0">
               <a href={ctaHref} download className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-white text-black hover:bg-slate-100 transition-colors whitespace-nowrap">{ctaLabel} ↓</a>
               <HamburgerBtn color="#ffffff" />
@@ -316,21 +357,14 @@ const Navbar = () => {
       <nav className="fixed top-0 inset-x-0 z-50 flex justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
         <div className="relative w-full max-w-7xl">
           <NavGrid px="px-4 sm:px-10" py="py-2.5 sm:py-4">
-            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <a href={brandHref} className="flex items-center gap-2 sm:gap-2.5 min-w-0">
               <Logo size={28} className="invert shrink-0" />
               <div className="min-w-0">
                 <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight text-white truncate">{brandName}</span>
                 <span className="block text-[9px] sm:text-[10px] font-mono mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.5)' }}>{role}</span>
               </div>
             </a>
-            <div className="hidden sm:flex items-center justify-center gap-1">
-              {navLinks.map(({ name, href }) => (
-                <Link key={name} to={href}
-                  className="px-4 py-1.5 text-xs font-semibold italic transition-all whitespace-nowrap"
-                  style={isLinkActive(href) ? { color: '#fff' } : { color: 'rgba(255,255,255,0.55)' }}
-                >{name}</Link>
-              ))}
-            </div>
+            <DesktopLinks />
             <div className="flex items-center justify-end gap-2 shrink-0">
               <a href={ctaHref} download className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-full border border-white text-white hover:bg-white hover:text-black transition-colors whitespace-nowrap">{ctaLabel} ↓</a>
               <HamburgerBtn color="#ffffff" />
@@ -354,7 +388,7 @@ const Navbar = () => {
           style={surfaceBg}
         >
           <NavGrid px="px-3.5 sm:px-7" py="py-2 sm:py-3">
-            <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
+            <a href={brandHref} className="flex items-center gap-2 sm:gap-2.5 group min-w-0">
               <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105" />
               <div className="min-w-0">
                 <span className="block text-xs sm:text-sm font-extrabold tracking-tight leading-tight truncate" style={{ color: 'var(--color-text)', fontFamily: 'var(--font-display)' }}>{brandName}</span>
@@ -385,7 +419,7 @@ const Navbar = () => {
       <div className="relative w-full max-w-7xl">
         <NavGrid px="px-4 sm:px-8" py="py-2.5 sm:py-3.5">
           {/* Col 1 — Brand */}
-          <a href="/#hero" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0" aria-label={`${brandName} home`}>
+          <a href={brandHref} className="flex items-center gap-2 sm:gap-2.5 group shrink-0 min-w-0" aria-label={`${brandName} home`}>
             <Logo size={28} className="shrink-0 transition-transform duration-300 group-hover:scale-105 sm:w-[30px] sm:h-[30px]" />
             <div className="min-w-0">
               <span

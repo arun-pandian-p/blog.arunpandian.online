@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import { parseArticleMetadata, serializeBlogContent } from '../../utils/blogParser';
+import { sendSubscriberBroadcast } from '../../services/newsletterService';
 import toast from 'react-hot-toast';
 
 export default function Blogs() {
@@ -527,6 +528,18 @@ export default function Blogs() {
         if (error) throw error;
         toast.success('Blog post published successfully!');
       }
+
+      // If published, trigger email dispatch to newsletter subscribers from updates@blogupdates.arunpandian.online
+      if (payload.published) {
+        sendSubscriberBroadcast({
+          title: payload.title,
+          excerpt: payload.excerpt,
+          slug: payload.slug,
+          type: 'blog',
+          imageUrl: payload.cover_image
+        }).catch((err) => console.warn('Newsletter broadcast notice:', err));
+      }
+
       setIsModalOpen(false);
       fetchBlogs();
     } catch (err) {

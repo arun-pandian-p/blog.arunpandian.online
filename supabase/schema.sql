@@ -240,7 +240,7 @@ CREATE PUBLICATION supabase_realtime FOR TABLE site_settings, projects, blogs, e
 
 
 
-CREATE TABLE design_scrapes (
+CREATE TABLE IF NOT EXISTS design_scrapes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   url TEXT NOT NULL,
   colors JSONB,
@@ -249,3 +249,38 @@ CREATE TABLE design_scrapes (
   components JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- 9. NEWSLETTER SUBSCRIBERS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'home_footer',
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public insert newsletter_subscribers" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "Admin all newsletter_subscribers" ON newsletter_subscribers;
+DROP POLICY IF EXISTS "Public read newsletter_subscribers" ON newsletter_subscribers;
+
+-- Anyone can subscribe
+CREATE POLICY "Public insert newsletter_subscribers"
+  ON newsletter_subscribers FOR INSERT
+  WITH CHECK (true);
+
+-- Authenticated admins can view, update, and manage all subscribers
+CREATE POLICY "Admin all newsletter_subscribers"
+  ON newsletter_subscribers FOR ALL
+  USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+-- Public can verify status if needed
+CREATE POLICY "Public read newsletter_subscribers"
+  ON newsletter_subscribers FOR SELECT
+  USING (true);
+

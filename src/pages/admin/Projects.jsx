@@ -8,6 +8,7 @@ import {
 import Modal from '../../components/admin/Modal';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import ImageUpload from '../../components/admin/ui/ImageUpload';
+import { sendSubscriberBroadcast } from '../../services/newsletterService';
 import toast from 'react-hot-toast';
 
 export default function Projects() {
@@ -220,6 +221,18 @@ export default function Projects() {
         if (error) throw error;
         toast.success('Project created successfully');
       }
+
+      // If published, trigger email dispatch to newsletter subscribers from updates@blogupdates.arunpandian.online
+      if (payload.published) {
+        sendSubscriberBroadcast({
+          title: payload.title,
+          excerpt: payload.problem || payload.insight || payload.subtitle,
+          slug: editingProject?.id || '',
+          type: 'project',
+          imageUrl: payload.image_url
+        }).catch((err) => console.warn('Newsletter broadcast notice:', err));
+      }
+
       setIsModalOpen(false);
       fetchProjects();
     } catch (err) {

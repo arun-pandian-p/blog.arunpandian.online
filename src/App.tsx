@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { lazy, Suspense, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
@@ -10,6 +10,7 @@ import BlogPublicationPage from './pages/BlogPublicationPage';
 import BlogDetails from './pages/BlogDetails';
 import NotFound from './pages/NotFound';
 import AdminRoute from './components/admin/AdminRoute';
+import { isBlogSubdomain, getBlogDomainUrl } from './utils/domain';
 
 // Admin bundle is code-split so public visitors never download it
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
@@ -35,8 +36,33 @@ const AdminFallback = () => (
   </div>
 );
 
+// Redirects from main domain (/blog, /blog/:slug) to the blog subdomain
+function ExternalBlogRedirect() {
+  React.useEffect(() => {
+    window.location.replace(getBlogDomainUrl());
+  }, []);
+  return <AdminFallback />;
+}
+
+function ExternalBlogSlugRedirect() {
+  const { slug } = useParams();
+  React.useEffect(() => {
+    const target = slug ? `${getBlogDomainUrl()}/${slug}` : getBlogDomainUrl();
+    window.location.replace(target);
+  }, [slug]);
+  return <AdminFallback />;
+}
+
+// Redirects legacy paths like /blog/:slug on the blog subdomain to /:slug
+function SubdomainLegacySlugRedirect() {
+  const { slug } = useParams();
+  return <Navigate to={slug ? `/${slug}` : '/'} replace />;
+}
+
 function App() {
   const { settings } = useContent() as any;
+  const onBlogSubdomain = useMemo(() => isBlogSubdomain(), []);
+
   // Favicon uses the uploaded favicon, else the site logo, so the tab icon
   // always matches the brand logo shown in the navbar.
   const faviconUrl = settings?.branding?.faviconUrl || settings?.branding?.logoUrl;
@@ -53,45 +79,64 @@ function App() {
       <Toaster position="top-right" />
       <BrowserRouter>
         <Suspense fallback={<AdminFallback />}>
-        <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/blog" element={<BlogPublicationPage />} />
-        <Route path="/blogs" element={<BlogPublicationPage />} />
-        <Route path="/blog/:slug" element={<BlogDetails />} />
-        <Route path="/blogs/:slug" element={<BlogDetails />} />
-        <Route path="/project/:id" element={<ProjectDetails />} />
-        <Route path="/projects/:id" element={<ProjectDetails />} />
+          <Routes>
+            {onBlogSubdomain ? (
+              /* ================= BLOG SUBDOMAIN ROUTES (blog.arunpandian.online) ================= */
+              <>
+                <Route path="/" element={<BlogPublicationPage />} />
+                <Route path="/blog" element={<Navigate to="/" replace />} />
+                <Route path="/blogs" element={<Navigate to="/" replace />} />
+                <Route path="/blog/:slug" element={<SubdomainLegacySlugRedirect />} />
+                <Route path="/blogs/:slug" element={<SubdomainLegacySlugRedirect />} />
+                <Route path="/:slug" element={<BlogDetails />} />
+                <Route path="*" element={<NotFound />} />
+              </>
+            ) : (
+              /* ================= MAIN DOMAIN ROUTES (arunpandian.online) ================= */
+              <>
+                {/* Public Routes */}
+                <Route path="/" element={<HomePage />} />
+                <Route path="/project/:id" element={<ProjectDetails />} />
+                <Route path="/projects/:id" element={<ProjectDetails />} />
 
-        {/* Admin Login Route */}
-        <Route path="/admin/login" element={<Login />} />
+                {/* Subdomain Redirects for /blog */}
+                <Route path="/blog" element={<ExternalBlogRedirect />} />
+                <Route path="/blogs" element={<ExternalBlogRedirect />} />
+                <Route path="/blog/:slug" element={<ExternalBlogSlugRedirect />} />
+                <Route path="/blogs/:slug" element={<ExternalBlogSlugRedirect />} />
 
-        {/* Protected Admin Routes */}
-        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-          <Route index element={<Dashboard />} />
-          <Route path="projects" element={<Projects />} />
-          <Route path="blogs" element={<Blogs />} />
-          <Route path="experiences" element={<Experiences />} />
-          <Route path="inbox" element={<Inbox />} />
-          
-          <Route path="settings" element={<Settings />} />
-          <Route path="settings/hero" element={<HeroSettings />} />
-          <Route path="settings/about" element={<AboutSettings />} />
-          <Route path="settings/skills" element={<SkillsSettings />} />
-          <Route path="settings/certifications" element={<CertificationsSettings />} />
-          <Route path="settings/contact" element={<ContactSettings />} />
-          <Route path="studio" element={<Studio />} />
-          <Route path="canvas" element={<Canvas />} />
-          <Route path="settings/seo" element={<SeoSettings />} />
-        </Route>
-        
-        {/* Catch all redirect to 404 */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      </Suspense>
-    </BrowserRouter>
+                {/* Admin Login Route */}
+                <Route path="/admin/login" element={<Login />} />
+
+                {/* Protected Admin Routes */}
+                <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="projects" element={<Projects />} />
+                  <Route path="blogs" element={<Blogs />} />
+                  <Route path="experiences" element={<Experiences />} />
+                  <Route path="inbox" element={<Inbox />} />
+                  
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="settings/hero" element={<HeroSettings />} />
+                  <Route path="settings/about" element={<AboutSettings />} />
+                  <Route path="settings/skills" element={<SkillsSettings />} />
+                  <Route path="settings/certifications" element={<CertificationsSettings />} />
+                  <Route path="settings/contact" element={<ContactSettings />} />
+                  <Route path="studio" element={<Studio />} />
+                  <Route path="canvas" element={<Canvas />} />
+                  <Route path="settings/seo" element={<SeoSettings />} />
+                </Route>
+                
+                {/* Catch all redirect to 404 */}
+                <Route path="*" element={<NotFound />} />
+              </>
+            )}
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
     </>
   );
 }
 
 export default App;
+
