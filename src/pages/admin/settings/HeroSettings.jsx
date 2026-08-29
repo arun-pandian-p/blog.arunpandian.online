@@ -184,7 +184,7 @@ export default function HeroSettings() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl space-y-8 pb-32">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 pb-32">
       <div>
         <h1 className="font-bold text-2xl text-slate-800">Hero Settings</h1>
         <p className="text-slate-500 mt-1 text-sm">Configure the main landing section of your portfolio.</p>

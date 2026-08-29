@@ -606,11 +606,13 @@ function AdminShell() {
               width: resizable ? `${editorWidth}px` : '100%',
               maxWidth: resizable ? `${editorWidth}px` : '100%',
             }}
-            className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-colors ${
+            className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 transition-colors ${
               isDark ? 'bg-[#141422]' : 'bg-[#F4F6FA]'
             }`}
           >
-            <Outlet context={{ isDark }} />
+            <div className="max-w-5xl mx-auto w-full">
+              <Outlet context={{ isDark }} />
+            </div>
           </div>
 
           {/* Resizer Handle */}

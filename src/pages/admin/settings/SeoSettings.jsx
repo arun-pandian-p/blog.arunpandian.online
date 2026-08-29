@@ -57,9 +57,9 @@ export default function SeoSettings() {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl space-y-8 pb-32">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-8 pb-32">
       <div>
-        <h1 className="font-bold text-2xl text-slate-800">SEO Settings</h1>
+        <h1 className="font-bold text-2xl text-slate-800">SEO & Social Settings</h1>
         <p className="text-slate-500 mt-1 text-sm">Manage how your portfolio appears on search engines and social media.</p>
       </div>
 
