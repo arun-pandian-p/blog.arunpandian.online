@@ -538,82 +538,101 @@ function AdminShell() {
       {/* ─── MAIN CONTENT AREA ─── */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         
-        {/* Top Header Bar */}
-        <header
-          className={`h-16 px-4 sm:px-6 flex items-center justify-between border-b shrink-0 select-none transition-colors ${
-            isDark ? 'bg-[#1E1E2C] border-[#2A2A3E]' : 'bg-white border-[#E8ECF2]'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100"
-            >
-              <Menu size={20} />
-            </button>
+        {/* ─── FLOATING CAPSULE TOP NAVBAR (Across All Admin Sections) ─── */}
+        <div className="pt-3 px-3 sm:px-4 shrink-0 select-none z-30">
+          <header
+            className={`h-13 px-3.5 sm:px-5 flex items-center justify-between rounded-2xl sm:rounded-full border shadow-sm transition-all backdrop-blur-md ${
+              isDark
+                ? 'bg-[#1E1E2C]/95 border-[#2E2E44] text-white shadow-[0_4px_20px_rgba(0,0,0,0.25)]'
+                : 'bg-white/95 border-[#E2E8F0] text-[#1E1E2C] shadow-[0_4px_16px_rgba(0,0,0,0.04)]'
+            }`}
+          >
+            {/* Left: Mobile Menu, Section Icon & Breadcrumb Pill */}
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-1.5 rounded-xl text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                <Menu size={18} />
+              </button>
 
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm sm:text-base tracking-tight">
-                {navItems.find((n) => n.path === location.pathname)?.name || 'Admin Workspace'}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Sidebar Collapse Toggle Button */}
-            <button
-              onClick={toggleNavCollapsed}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-                navCollapsed
-                  ? isDark ? 'bg-[#28283C] text-[#34B1AA] border-[#3C3C54]' : 'bg-slate-100 text-[#34B1AA] border-slate-300'
-                  : isDark ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-              }`}
-              title={navCollapsed ? "Expand Full Sidebar" : "Hide Sidebar for Full Width"}
-            >
-              {navCollapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
-              <span className="hidden sm:inline">{navCollapsed ? 'Expand Sidebar' : 'Hide Sidebar'}</span>
-            </button>
-
-            {/* Split Preview Controls (when on project/blog editors) */}
-            {supportsPreview && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setEditorOpen(!editorOpen)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                    editorOpen
-                      ? isDark ? 'bg-[#28283C] text-white border-[#3C3C54]' : 'bg-slate-100 text-slate-900 border-slate-300'
-                      : 'text-slate-400 border-transparent hover:bg-slate-100'
-                  }`}
-                >
-                  {editorOpen ? 'Hide Editor' : 'Show Editor'}
-                </button>
-                <button
-                  onClick={() => setPreviewOpen(!previewOpen)}
-                  className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                    previewOpen
-                      ? 'bg-[#34B1AA]/10 text-[#34B1AA] border-[#34B1AA]/30'
-                      : 'text-slate-400 border-transparent hover:bg-slate-100'
-                  }`}
-                >
-                  {previewOpen ? <Eye size={13} /> : <EyeOff size={13} />}
-                  <span>Preview {previewOpen ? 'On' : 'Off'}</span>
-                </button>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-7 w-7 rounded-full bg-[#F29F67]/15 text-[#F29F67] flex items-center justify-center font-bold text-xs shrink-0 border border-[#F29F67]/25">
+                  ✦
+                </div>
+                <div className="flex items-center gap-1.5 truncate">
+                  <span className="hidden md:inline text-xs font-medium text-slate-400 font-mono">
+                    Workspace /
+                  </span>
+                  <span className="font-bold text-xs sm:text-sm tracking-tight truncate text-slate-900 dark:text-white">
+                    {navItems.find((n) => n.path === location.pathname)?.name || 'Studio'}
+                  </span>
+                </div>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live
+                </span>
               </div>
-            )}
+            </div>
 
-            {/* Quick Public Site Link */}
-            <Link
-              to="/"
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                isDark
-                  ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]'
-                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>Public Site ↗</span>
-            </Link>
-          </div>
-        </header>
+            {/* Right: Sidebar Toggle Capsule, Preview Controls, Public Site Link */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+              
+              {/* Sidebar Collapse / Expand Capsule Button */}
+              <button
+                onClick={toggleNavCollapsed}
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  navCollapsed
+                    ? isDark ? 'bg-[#28283C] text-[#34B1AA] border-[#3C3C54]' : 'bg-slate-100 text-[#34B1AA] border-slate-300 shadow-2xs font-bold'
+                    : isDark ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
+                title={navCollapsed ? "Expand Full Sidebar" : "Hide Sidebar for Full Screen Studio"}
+              >
+                {navCollapsed ? <PanelLeft size={13} className="text-[#34B1AA]" /> : <PanelLeftClose size={13} />}
+                <span className="hidden sm:inline">{navCollapsed ? 'Expand Sidebar' : 'Hide Sidebar'}</span>
+              </button>
+
+              {/* Split Preview Controls (when on project/blog editors) */}
+              {supportsPreview && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setEditorOpen(!editorOpen)}
+                    className={`px-2.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                      editorOpen
+                        ? isDark ? 'bg-[#28283C] text-white border-[#3C3C54]' : 'bg-slate-100 text-slate-900 border-slate-300'
+                        : 'text-slate-400 border-transparent hover:bg-slate-100'
+                    }`}
+                  >
+                    {editorOpen ? 'Editor' : 'Show'}
+                  </button>
+                  <button
+                    onClick={() => setPreviewOpen(!previewOpen)}
+                    className={`px-2.5 py-1.5 rounded-full border text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      previewOpen
+                        ? 'bg-[#34B1AA]/10 text-[#34B1AA] border-[#34B1AA]/30'
+                        : 'text-slate-400 border-transparent hover:bg-slate-100'
+                    }`}
+                  >
+                    {previewOpen ? <Eye size={13} /> : <EyeOff size={13} />}
+                    <span className="hidden md:inline">Preview {previewOpen ? 'On' : 'Off'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Quick Public Site Capsule Link */}
+              <Link
+                to="/"
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                  isDark
+                    ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <span>Public Site ↗</span>
+              </Link>
+            </div>
+          </header>
+        </div>
 
         {/* Dynamic Split or Full Page Content */}
         <div ref={splitRef} className="flex-1 flex min-h-0 overflow-hidden relative">
