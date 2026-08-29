@@ -219,6 +219,10 @@ function AdminShell() {
 
   const resizable = showPreview && showEditor && isWide;
   const isDark = adminTheme === 'dark';
+  const isStudioView = location.pathname.startsWith('/admin/studio') || 
+                       location.pathname.startsWith('/admin/canvas') || 
+                       location.pathname.startsWith('/admin/theme') ||
+                       location.pathname.startsWith('/admin/inspector');
 
   return (
     <div
@@ -555,7 +559,21 @@ function AdminShell() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Sidebar Collapse Toggle Button */}
+            <button
+              onClick={toggleNavCollapsed}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                navCollapsed
+                  ? isDark ? 'bg-[#28283C] text-[#34B1AA] border-[#3C3C54]' : 'bg-slate-100 text-[#34B1AA] border-slate-300'
+                  : isDark ? 'border-[#2C2C40] bg-[#222234] text-slate-300 hover:bg-[#2C2C42]' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+              title={navCollapsed ? "Expand Full Sidebar" : "Hide Sidebar for Full Width"}
+            >
+              {navCollapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
+              <span className="hidden sm:inline">{navCollapsed ? 'Expand Sidebar' : 'Hide Sidebar'}</span>
+            </button>
+
             {/* Split Preview Controls (when on project/blog editors) */}
             {supportsPreview && (
               <div className="flex items-center gap-2">
@@ -600,19 +618,29 @@ function AdminShell() {
         {/* Dynamic Split or Full Page Content */}
         <div ref={splitRef} className="flex-1 flex min-h-0 overflow-hidden relative">
           
-          {/* Main Outlet Form/Table/Dashboard View */}
+          {/* Main Outlet Form/Table/Dashboard/Studio View */}
           <div
             style={{
               width: resizable ? `${editorWidth}px` : '100%',
               maxWidth: resizable ? `${editorWidth}px` : '100%',
             }}
-            className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 transition-colors ${
+            className={`flex-1 transition-colors ${
+              isStudioView
+                ? 'p-0 overflow-hidden h-full flex flex-col'
+                : 'overflow-y-auto p-4 sm:p-6 lg:p-10'
+            } ${
               isDark ? 'bg-[#141422]' : 'bg-[#F4F6FA]'
             }`}
           >
-            <div className="max-w-5xl mx-auto w-full">
-              <Outlet context={{ isDark }} />
-            </div>
+            {isStudioView ? (
+              <div className="w-full h-full flex-1 overflow-hidden flex flex-col">
+                <Outlet context={{ isDark }} />
+              </div>
+            ) : (
+              <div className="max-w-5xl mx-auto w-full">
+                <Outlet context={{ isDark }} />
+              </div>
+            )}
           </div>
 
           {/* Resizer Handle */}
