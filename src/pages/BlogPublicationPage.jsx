@@ -144,7 +144,7 @@ export default function BlogPublicationPage() {
         description: p.problem || p.subtitle || p.description || '',
         tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
         image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-        href: isBlogSubdomain() ? `${getMainDomainUrl()}/project/${p.id || p._id || idx + 1}` : `/project/${p.id || p._id || idx + 1}`,
+        href: isBlogSubdomain() ? `${getMainDomainUrl()}/project/${p.id || p._id || idx + 1}?from=blog` : `/project/${p.id || p._id || idx + 1}?from=blog`,
         timestamp,
         date: formattedDate,
         monthYear,

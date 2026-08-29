@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabaseClient';
 import Navbar from '../components/Navbar';
 import { useContent } from '../context/ContentProvider';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
+import { isBlogSubdomain } from '../utils/domain';
 import { FaLinkedin, FaGithub } from 'react-icons/fa6';
 import {
   Loader2,
@@ -67,6 +68,8 @@ const GithubIcon = ({ size = 18 }) => (
 
 export default function ProjectDetails() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { projects: contextProjects = [], settings } = useContent();
   const [project, setProject] = useState(null);
   const [allProjectsList, setAllProjectsList] = useState([]);
@@ -76,6 +79,28 @@ export default function ProjectDetails() {
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedCode, setCopiedCode] = useState(null);
   const [activeVisualIndex, setActiveVisualIndex] = useState(0);
+
+  // Dynamic back navigation: Check if came from Blog publication or Home
+  const isFromBlog = useMemo(() => {
+    if (location.state?.from === '/blog' || location.state?.from === 'blog') return true;
+    if (location.search.includes('from=blog')) return true;
+    if (typeof document !== 'undefined' && (document.referrer.includes('/blog') || document.referrer.includes('blog.'))) return true;
+    return false;
+  }, [location]);
+
+  const backLink = isFromBlog ? (isBlogSubdomain() ? '/' : '/blog') : '/#projects';
+  const backLabel = isFromBlog ? 'Back to Blog Publication' : 'Back to Featured Projects';
+
+  const handleBackClick = (e) => {
+    e.preventDefault();
+    if (location.state?.from) {
+      navigate(location.state.from);
+    } else if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate(backLink);
+    }
+  };
 
   // Fetch project & all projects directly from Supabase for instant real-time live data
   useEffect(() => {
@@ -223,33 +248,23 @@ export default function ProjectDetails() {
         {/* ── 01: EDITORIAL HEADER & AUTHOR INFO (Matching sample_blog.pdf) ── */}
         <header className="mb-8 sm:mb-10 pb-8 border-b border-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-            <Link
-              to="/#projects"
-              className="inline-flex items-center gap-1.5 text-xs font-mono tracking-wider uppercase text-slate-600 hover:text-blue-600 font-semibold transition-colors"
+            <button
+              onClick={handleBackClick}
+              className="inline-flex items-center gap-1.5 text-xs font-mono tracking-wider uppercase text-slate-600 hover:text-blue-600 font-semibold transition-colors cursor-pointer"
             >
               <ChevronLeft size={14} />
-              <span>Back to Featured Projects</span>
-            </Link>
+              <span>{backLabel}</span>
+            </button>
             
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                to={`/admin/projects?edit=${project.id}`}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 text-xs font-mono font-medium transition-all shadow-xs cursor-pointer"
-                title="Edit this project in Admin Panel"
-              >
-                <Edit2 size={12} className="text-slate-500" />
-                <span>Edit in Admin</span>
-              </Link>
-              <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Calendar size={13} />
-                  {new Date(project.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Clock size={13} /> 6 min read
-                </span>
-              </div>
+            <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
+              <span className="flex items-center gap-1">
+                <Calendar size={13} />
+                {new Date(project.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Clock size={13} /> 6 min read
+              </span>
             </div>
           </div>
 
@@ -1088,56 +1103,34 @@ CALCULATE(
               </a>
             )}
 
-            <Link
-              to="/#projects"
-              data-edit-id="project.ctaGrid"
-              data-edit-name="CTA Projects Grid Button"
-              data-edit-kind="button"
-              data-edit-path="project.ctaGrid"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
-            >
-              <Grid size={15} />
-              <span>Back to Projects Grid</span>
-            </Link>
-
-            <Link
-              to="/blog"
-              data-edit-id="project.ctaPublication"
-              data-edit-name="CTA Publication Button"
-              data-edit-kind="button"
-              data-edit-path="project.ctaPublication"
+            <button
+              onClick={handleBackClick}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
             >
               <ArrowLeft size={15} />
-              <span>Back to Publication Index</span>
-            </Link>
+              <span>{backLabel}</span>
+            </button>
 
-            <Link
-              to={`/admin/projects?edit=${project.id}`}
-              data-edit-id="project.ctaAdmin"
-              data-edit-name="CTA Edit in Admin Button"
-              data-edit-kind="button"
-              data-edit-path="project.ctaAdmin"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-300 bg-slate-800/80 font-medium text-sm hover:bg-slate-800 hover:text-white transition-all cursor-pointer shadow-2xs"
-            >
-              <Edit2 size={14} className="text-slate-400" />
-              <span>Edit in Admin</span>
-            </Link>
+            {isFromBlog ? (
+              <Link
+                to="/#projects"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
+              >
+                <Grid size={15} />
+                <span>Featured Projects</span>
+              </Link>
+            ) : (
+              <Link
+                to={isBlogSubdomain() ? '/' : '/blog'}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
+              >
+                <ArrowLeft size={15} />
+                <span>Blog Publication</span>
+              </Link>
+            )}
           </div>
         </section>
       </main>
-
-      {/* Floating quick edit button (subtle grey pill) */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <Link
-          to={`/admin/projects?edit=${project.id}`}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium shadow-xl border border-slate-700/80 transition-all hover:scale-105 backdrop-blur-md cursor-pointer"
-          title="Edit this project in Admin Panel"
-        >
-          <Edit2 size={13} className="text-slate-400" />
-          <span>Edit in Admin</span>
-        </Link>
-      </div>
 
       {/* Image / Video Zoom Lightbox Modal */}
       {showImageZoom && activeVisual && (
