@@ -109,7 +109,7 @@ export default async function handler(req, res) {
               </div>
               <div class="footer">
                 You received this update because you subscribed at <a href="https://arunpandian.online" style="color: #2563eb;">arunpandian.online</a>.<br>
-                Dispatched directly from <code>updates@arunpandian.online</code>
+                Dispatched directly from <code>updates@arunpandian.online</code> • <a href="https://blog.arunpandian.online/unsubscribe?email=${encodeURIComponent(recipient)}" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a>
               </div>
             </div>
           </body>

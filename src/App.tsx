@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import ProjectDetails from './pages/ProjectDetails';
 import BlogPublicationPage from './pages/BlogPublicationPage';
 import BlogDetails from './pages/BlogDetails';
+import UnsubscribePage from './pages/UnsubscribePage';
 import NotFound from './pages/NotFound';
 import AdminRoute from './components/admin/AdminRoute';
 import { isBlogSubdomain, getBlogDomainUrl } from './utils/domain';
@@ -82,6 +83,9 @@ function App() {
             {/* Project Details */}
             <Route path="/project/:id" element={<ProjectDetails />} />
             <Route path="/projects/:id" element={<ProjectDetails />} />
+
+            {/* Unsubscribe Route */}
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
 
             {/* Admin Login Route */}
             <Route path="/admin/login" element={<Login />} />

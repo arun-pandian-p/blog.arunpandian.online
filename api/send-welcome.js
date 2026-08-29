@@ -103,9 +103,9 @@ export default async function handler(req, res) {
                 <a href="https://github.com/arun-pandian-p">GitHub</a> •
                 <a href="https://www.linkedin.com/in/arunpandianp-dataanalyst/">LinkedIn</a>
               </div>
-              <p style="margin: 0;">
+              <p style="margin: 0; line-height: 1.6;">
                 You received this because you subscribed at arunpandian.online or blog.arunpandian.online.<br>
-                Dispatched from <code>updates@arunpandian.online</code>
+                Dispatched from <code>updates@arunpandian.online</code> • <a href="https://blog.arunpandian.online/unsubscribe?email=${encodeURIComponent(email)}" style="color: #64748b; text-decoration: underline;">Unsubscribe</a>
               </p>
             </div>
 
