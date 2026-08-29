@@ -268,13 +268,23 @@ export default function BlogPublicationPage() {
     setMainNewsIndex((prev) => (prev - 1 + mainNewsList.length) % mainNewsList.length);
   };
 
+  // Safe navigation for both internal blog routes and external main domain URLs
+  const handleOpenItem = (href) => {
+    if (!href) return;
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      window.location.href = href;
+    } else {
+      navigate(href);
+    }
+  };
+
   // Surprise Me Random Post Feature
   const handleSurpriseMe = () => {
     if (allItems.length === 0) return;
     const randomIndex = Math.floor(Math.random() * allItems.length);
     const randomPost = allItems[randomIndex];
     toast.success(`🎲 Selected: ${randomPost.title}`, { icon: '✨' });
-    navigate(randomPost.href);
+    handleOpenItem(randomPost.href);
   };
 
   const handleBookmarkToggle = (e, id) => {
@@ -397,7 +407,7 @@ export default function BlogPublicationPage() {
             {/* Main News Card (flex-1 to match right column height perfectly) */}
             {currentMainNews && (
               <div
-                onClick={() => navigate(currentMainNews.href)}
+                onClick={() => handleOpenItem(currentMainNews.href)}
                 className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 flex-1 min-h-[440px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-8 border border-slate-200 shadow-md transition-all duration-300 hover:shadow-2xl"
               >
                 {/* Background Image */}
@@ -456,7 +466,7 @@ export default function BlogPublicationPage() {
               {editorsPicks.map((pick, idx) => (
                 <div
                   key={pick.id}
-                  onClick={() => navigate(pick.href)}
+                  onClick={() => handleOpenItem(pick.href)}
                   className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative flex-1 min-h-[210px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
                 >
                   {/* Visual Background */}
@@ -527,7 +537,7 @@ export default function BlogPublicationPage() {
                   </div>
 
                   <div 
-                    onClick={() => navigate(nextFeaturedPost.href)}
+                    onClick={() => handleOpenItem(nextFeaturedPost.href)}
                     className="group cursor-pointer space-y-2"
                   >
                     <div className="aspect-16/10 rounded-xl overflow-hidden bg-slate-900 border border-slate-100">
@@ -558,7 +568,7 @@ export default function BlogPublicationPage() {
                   {recentPosts.map((post) => (
                     <div
                       key={post.id}
-                      onClick={() => navigate(post.href)}
+                      onClick={() => handleOpenItem(post.href)}
                       className="group cursor-pointer space-y-1 pb-3 border-b border-slate-50 last:border-0 last:pb-0"
                     >
                       <span className="text-[10px] font-mono text-blue-600 font-semibold uppercase">
@@ -669,7 +679,7 @@ export default function BlogPublicationPage() {
                     return (
                       <article
                         key={item.id}
-                        onClick={() => navigate(item.href)}
+                        onClick={() => handleOpenItem(item.href)}
                         className="py-6 group cursor-pointer transition-colors"
                       >
                         {/* Header Byline */}
@@ -814,7 +824,7 @@ export default function BlogPublicationPage() {
                         {items.slice(0, 2).map((item) => (
                           <li
                             key={item.id}
-                            onClick={() => navigate(item.href)}
+                            onClick={() => handleOpenItem(item.href)}
                             className="truncate cursor-pointer hover:text-blue-600 transition-colors"
                             title={item.title}
                           >
