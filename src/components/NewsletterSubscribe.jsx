@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, Loader2, Sparkles, Send } from 'lucide-react';
+import { Mail, CheckCircle2, Loader2, Sparkles, Send, ShieldCheck, BellRing } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabaseClient';
 
 export default function NewsletterSubscribe({
-  source = 'home_footer',
-  variant = 'footer', // 'footer' | 'inline' | 'card' | 'minimal'
+  source = 'prefooter',
+  variant = 'prefooter', // 'prefooter' | 'inline' | 'card' | 'footer'
   className = '',
   title = 'Subscribe to Case Studies & Analytics Dispatch',
-  description = 'Receive notifications when new data publications, dashboards, and portfolio projects are released.',
+  description = 'Receive real-time notifications when new data publications, dashboards, and portfolio projects are released.',
 }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,13 +53,12 @@ export default function NewsletterSubscribe({
 
       setSubscribed(true);
       setEmail('');
-      toast.success('Subscribed successfully! Updates will come from updates@blogupdates.arunpandian.online', {
+      toast.success('Subscribed successfully! Updates will come from updates@arunpandian.online', {
         duration: 4500,
         icon: '📬'
       });
     } catch (err) {
       console.warn('Newsletter subscription error:', err);
-      // Still show success to user so UI doesn't break
       setSubscribed(true);
       toast.success('Subscription received! Welcome aboard.', { icon: '🎉' });
     } finally {
@@ -67,7 +66,87 @@ export default function NewsletterSubscribe({
     }
   };
 
-  /* ── 1. INLINE BLOG / ARTICLE VARIANT ── */
+  /* ── 1. PRE-FOOTER INTERACTIVE CARD (STANDALONE SECTION BEFORE FOOTER) ── */
+  if (variant === 'prefooter') {
+    return (
+      <section className={`w-full py-12 sm:py-16 px-4 sm:px-6 relative z-10 ${className}`}>
+        <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-6 sm:p-12 border border-slate-800/80 shadow-2xl relative overflow-hidden text-white">
+          
+          {/* Ambient Glow Orbs */}
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-6 text-center sm:text-left sm:flex sm:items-center sm:justify-between sm:gap-8">
+            
+            {/* Left Content */}
+            <div className="space-y-3 sm:max-w-lg">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono font-bold tracking-wider uppercase">
+                <BellRing size={13} className="animate-pulse" />
+                <span>Newsletter Dispatch</span>
+              </div>
+
+              <h3 className="font-serif font-black text-2xl sm:text-3xl lg:text-4xl text-white tracking-tight leading-tight">
+                {title}
+              </h3>
+
+              <p className="text-xs sm:text-sm text-slate-300 font-sans leading-relaxed">
+                {description}
+              </p>
+
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 pt-1 text-[11px] font-mono text-slate-400">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck size={14} className="text-emerald-400" />
+                  Zero Spam Guarantee
+                </span>
+                <span>•</span>
+                <span className="text-slate-300">
+                  From: updates@arunpandian.online
+                </span>
+              </div>
+            </div>
+
+            {/* Right Form Interaction */}
+            <div className="sm:w-80 sm:shrink-0 pt-4 sm:pt-0">
+              {subscribed ? (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-center space-y-2">
+                  <CheckCircle2 size={28} className="mx-auto text-emerald-400 animate-bounce" />
+                  <p className="text-sm font-bold font-serif text-white">You're Subscribed!</p>
+                  <p className="text-xs font-mono text-emerald-300">Watch your inbox for new project releases.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      placeholder="Enter your email address..."
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3.5 pl-10 rounded-2xl bg-white/10 border border-white/20 text-sm text-white placeholder-slate-400 focus:bg-white/15 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all shadow-inner"
+                    />
+                    <Mail size={16} className="absolute left-3.5 top-4 text-slate-400" />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-mono font-bold text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
+                    <span>Subscribe to Updates</span>
+                  </button>
+                </form>
+              )}
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+    );
+  }
+
+  /* ── 2. INLINE BLOG / ARTICLE VARIANT ── */
   if (variant === 'inline') {
     return (
       <div className={`p-6 sm:p-8 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-xl space-y-4 ${className}`}>
@@ -77,7 +156,7 @@ export default function NewsletterSubscribe({
           </div>
           <div>
             <span className="text-[11px] font-mono text-blue-400 uppercase tracking-wider font-semibold">
-              Updates from updates@blogupdates.arunpandian.online
+              Updates from updates@arunpandian.online
             </span>
             <h3 className="font-serif font-bold text-lg text-white">
               {title}
@@ -118,7 +197,7 @@ export default function NewsletterSubscribe({
     );
   }
 
-  /* ── 2. CARD / SIDEBAR VARIANT ── */
+  /* ── 3. CARD / SIDEBAR VARIANT ── */
   if (variant === 'card') {
     return (
       <div className={`p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 ${className}`}>
@@ -161,7 +240,7 @@ export default function NewsletterSubscribe({
     );
   }
 
-  /* ── 3. DEFAULT FOOTER VARIANT (RESPONSIVE FOR ALL THEMES) ── */
+  /* ── 4. DEFAULT FOOTER FALLBACK ── */
   return (
     <div className={`space-y-3 ${className}`}>
       <div>
@@ -180,7 +259,7 @@ export default function NewsletterSubscribe({
       {subscribed ? (
         <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
           <CheckCircle2 size={15} />
-          <span>Subscribed! Updates will come from blogupdates.arunpandian.online</span>
+          <span>Subscribed! Updates will come from updates@arunpandian.online</span>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-md">
