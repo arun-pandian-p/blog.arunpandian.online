@@ -1,95 +1,120 @@
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=06B6D4&height=200&section=header&text=Arun%20Pandian&fontSize=60&fontAlignY=35&desc=Professional%20Portfolio&descAlignY=55&descSize=20&fontColor=ffffff" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=2563EB&height=200&section=header&text=Arun%20Pandian&fontSize=60&fontAlignY=35&desc=Data%20Analyst%20Portfolio%20%26%20Technical%20Publication&descAlignY=55&descSize=18&fontColor=ffffff" width="100%" />
 
-  **A highly interactive, 3D web experience built for the modern web.**
+  **Modern Data Analytics Portfolio & Decoupled Technical Publication System**
   <br />
 
+  [![Live Portfolio](https://img.shields.io/badge/Live_Portfolio-arunpandian.online-2563EB?style=for-the-badge&logo=vercel&logoColor=white)](https://arunpandian.online)
+  [![Blog Subdomain](https://img.shields.io/badge/Blog_Publication-blog.arunpandian.online-0F172A?style=for-the-badge&logo=googlechrome&logoColor=white)](https://blog.arunpandian.online)
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/arunpandianp-dataanalyst)
-  [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
-  [![Vite](https://img.shields.io/badge/Vite-8.1-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-  [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-  [![Three.js](https://img.shields.io/badge/Three.js-3D-black?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
-  [![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+  [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+  [![Resend](https://img.shields.io/badge/Resend-Email%20Broadcasting-000000?style=for-the-badge&logo=resend&logoColor=white)](https://resend.com)
 
   <br />
-  <a href="#-key-features">Features</a> · <a href="#-project-architecture">Architecture</a> · <a href="#-local-development">Development</a>
+  <a href="#-domains--live-architecture">Live Domains</a> · <a href="#-key-features">Features</a> · <a href="#-project-architecture">Architecture</a> · <a href="#-newsletter--email-automation">Email Automation</a> · <a href="#-local-development">Development</a>
 </div>
 
 <br />
 
-> **Overview**: This project has been fully migrated from its original Next.js/MERN architecture to a highly optimized, strictly typed single-page application (SPA). It features an Awwwards-style 3D interactive hero section powered by Three.js & Framer Motion, smooth scrolling courtesy of Lenis, and a centralized data architecture for effortless resume updates.
+---
+
+## 🌐 Domains & Live Architecture
+
+| Platform | Domain | Description |
+| :--- | :--- | :--- |
+| **Main Portfolio** | [`https://arunpandian.online`](https://arunpandian.online) | Flagship data analytics portfolio showcasing featured SQL pipelines, Power BI dashboards, experience timeline, and visual case studies. |
+| **Data Journal** | [`https://blog.arunpandian.online`](https://blog.arunpandian.online) | Dedicated editorial publication platform with topic filtering, chronological timeline, markdown parsing, and reader engagement. |
+| **Email Dispatch** | `updates@arunpandian.online` | Automated newsletter broadcasting & personalized subscriber onboarding via verified DKIM/SPF DNS records. |
 
 ---
 
 ## ✨ Key Features
 
-- ⚡ **Lightning Fast:** Powered by Vite & React 19 for instantaneous HMR and optimized builds.
-- 🎨 **Awwwards-style UI:** Fluid animations (GSAP & Framer Motion), parallax scrolling, and a dark/light minimalist aesthetic.
-- 🧊 **3D Integration:** Custom Three.js scenes rendered declaratively via `@react-three/fiber` and `@react-three/drei`.
-- 🧩 **Centralized Content:** A strict data model (`src/data/resumeData.ts`) controls the entire site, making updates completely frictionless.
+### 1. 📰 Editorial Technical Publication (`blog.arunpandian.online`)
+- **Dedicated Editorial Branding**: Custom `BlogNavbar` with clean publication navigation, topic filters (`SQL Pipelines`, `Power BI DAX`), and quick links to the main portfolio.
+- **Rich Article Reader**: Real-time reading progress bar, text-to-speech audio reader, formatted code blocks with syntax highlighting, and dynamic table of contents.
+- **Engagement Tools**: Article claps, bookmarking, social sharing modal (LinkedIn, X, WhatsApp), and next/previous story navigation.
+
+### 2. 📬 Automated Newsletter & Welcome Onboarding
+- **Zero-Friction Subscription**: Modern interactive pre-footer card with ambient glow and real-time validation across both the portfolio and blog.
+- **Automated Welcome Email**: Instantly sends a branded introduction email from `updates@arunpandian.online` outlining what new subscribers will receive.
+- **One-Click Broadcast**: Publishing or updating any blog post or project automatically triggers an HTML email dispatch to all active subscribers.
+
+### 3. 🛠️ Real-Time Admin Studio & CMS
+- Built-in management suite for creating, editing, and publishing blogs, projects, experience milestones, and site settings with instant Supabase synchronization.
 
 ---
 
 ## 📂 Project Architecture
 
-The codebase is organized in a scalable, modular pattern designed for maintainability:
-
 ```text
 /
-├── public/                 # Static assets (favicons, PDFs, legacy media)
-│   ├── legacy/             # Archived media files from prior builds
-│   └── resume.pdf          # Linked résumé file
+├── api/
+│   ├── send-newsletter.js       # Vercel serverless broadcast engine to subscribers
+│   └── send-welcome.js          # Automated welcome & introduction email dispatcher
+│
+├── public/                      # Static assets, résumé PDF, media files
 │
 ├── src/
-│   ├── App.tsx             # Root router and global Lenis scroll wrapper
-│   ├── main.tsx            # React DOM rendering entry point
+│   ├── components/
+│   │   ├── BlogNavbar.jsx       # Dedicated editorial publication navbar
+│   │   ├── Navbar.jsx           # Main portfolio navigation with cross-domain linking
+│   │   ├── NewsletterSubscribe.jsx # Reusable newsletter card & modal forms
+│   │   └── admin/               # Admin studio modals, inputs & authentication
 │   │
-│   ├── assets/             # Bundled media files (images, vectors)
+│   ├── context/
+│   │   └── ContentProvider.jsx  # Supabase live data sync & fallback content store
 │   │
-│   ├── components/         # Modular UI Architecture
-│   │   ├── common/         # Global utilities (e.g., Welcome intro screen)
-│   │   ├── layout/         # Structural wrappers (Navbar)
-│   │   ├── sections/       # Core page segments (Hero, About, Contact)
-│   │   └── ui/             # Reusable interactive micro-components
+│   ├── pages/
+│   │   ├── HomePage.jsx         # Flagship portfolio landing page
+│   │   ├── BlogPublicationPage.jsx # 3-split publication feed & highlights
+│   │   ├── BlogDetails.jsx      # High-conversion article reader
+│   │   ├── ProjectDetails.jsx   # Deep-dive project breakdown
+│   │   └── admin/               # Admin dashboard, blog editor & project manager
 │   │
-│   ├── data/               # Centralized content store
-│   │   └── resumeData.ts   # ALL portfolio text, links, and experience data
+│   ├── services/
+│   │   └── newsletterService.ts # Client API service for broadcasts & subscriptions
 │   │
-│   ├── pages/              # Route views
-│   │   └── HomePage.tsx    # Assembles the section components
-│   │
-│   ├── styles/             # Global CSS and Tailwind tokens
-│   │
-│   └── types/              # TypeScript interface contracts
+│   └── utils/
+│       ├── blogParser.ts        # Markdown parser, headings extractor & metadata
+│       └── domain.ts            # Dynamic subdomain routing & URL resolver
 │
-├── vite.config.ts          # Vite build and plugin configuration
-└── package.json            # Dependencies and npm scripts
+├── supabase/
+│   └── schema.sql               # PostgreSQL schema & Row-Level Security policies
+│
+└── vercel.json                  # Serverless function routing & SPA rewrites
 ```
 
 ---
 
-## 🛠️ Data Management & Customization
+## 📬 Newsletter & Email Automation
 
-The site operates as a statically built portfolio without the need for an external CMS or database. 
+The application uses **Resend** and verified custom domain DNS records for fast, reliable delivery:
 
-**To update the site's content, simply modify the TypeScript object:**
-```ts
-// src/data/resumeData.ts
-export const resumeData = {
-  personalInfo: { ... },
-  skills: { ... },
-  experience: [ ... ],
-  projects: [ ... ]
-}
+```sql
+-- Subscribers Table (Supabase)
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'home_footer',
+  status TEXT DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 ```
-All UI components strictly adhere to the interfaces defined in **`src/types/index.ts`** and will instantly reflect changes from this data source safely.
+
+### Environment Variables:
+Add the following to your `.env` or Vercel Environment Variables:
+```env
+RESEND_API_KEY=re_your_api_key_here
+NEWSLETTER_FROM_EMAIL=Arun Pandian <updates@arunpandian.online>
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SECRET_KEY=your_service_role_key
+```
 
 ---
 
 ## 💻 Local Development
-
-Get started locally in 3 steps:
 
 1. **Install dependencies:**
    ```bash
@@ -99,7 +124,9 @@ Get started locally in 3 steps:
    ```bash
    npm run dev
    ```
-   *The site will be available at `http://localhost:5173`.*
+   - Main Portfolio: `http://localhost:5173`
+   - Blog Subdomain Mode: `http://localhost:5173/?subdomain=blog`
+
 3. **Build for production:**
    ```bash
    npm run build
@@ -107,16 +134,14 @@ Get started locally in 3 steps:
 
 ---
 
-## 🌍 Deployment
+## 🚀 GitHub Repositories
 
-This project is configured out-of-the-box for **Vercel** with the `vercel` CLI tool dependency tracked.
-
-1. Ensure Vercel is linked to the repository.
-2. Run standard deployment commands, Vercel will automatically detect Vite and serve the `dist/` folder via standard Node.js pipelines.
+- **Main Portfolio**: [https://github.com/arun-pandian-p/arunpandian.online](https://github.com/arun-pandian-p/arunpandian.online)
+- **Dedicated Blog**: [https://github.com/arun-pandian-p/blog.arunpandian.online](https://github.com/arun-pandian-p/blog.arunpandian.online)
 
 <br />
 
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=06B6D4&height=100&section=footer" width="100%"/>
-  <p>Built with ❤️ by <a href="https://linkedin.com/in/arunpandianp-dataanalyst"><b>Arun Pandian</b></a></p>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=2563EB&height=100&section=footer" width="100%"/>
+  <p>Crafted with 💙 by <a href="https://linkedin.com/in/arunpandianp-dataanalyst"><b>Arun Pandian</b></a></p>
 </div>
