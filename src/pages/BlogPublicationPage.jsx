@@ -385,9 +385,9 @@ export default function BlogPublicationPage() {
             <div className="flex items-center justify-between pb-2 border-b-2 border-[#E5DDD0]">
               <div className="relative">
                 <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-[#1C1A17]">
-                  MAIN NEWS
+                  MAIN UPDATES
                 </h2>
-                <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-[#B83A26] rounded-full" />
+                <div className="absolute -bottom-2.5 left-0 w-20 h-1 bg-[#B83A26] rounded-full" />
               </div>
 
               <div className="flex items-center gap-1.5 text-xs font-mono text-[#8C8479]">
