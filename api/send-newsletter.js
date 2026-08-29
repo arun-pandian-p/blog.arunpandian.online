@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1. Fetch active subscribers
+    // 1. Fetch strictly ACTIVE verified subscribers from Supabase
     const { data: subscribers, error: dbError } = await supabase
       .from('newsletter_subscribers')
       .select('email')
@@ -32,9 +32,23 @@ export default async function handler(req, res) {
       console.error('Error fetching subscribers:', dbError);
     }
 
-    const subscriberEmails = subscribers && subscribers.length > 0
-      ? subscribers.map((s) => s.email)
-      : [];
+    // Clean, validate, and deduplicate subscriber emails
+    const subscriberEmails = Array.from(
+      new Set(
+        (subscribers || [])
+          .map((s) => s.email?.trim().toLowerCase())
+          .filter((email) => email && email.includes('@') && email.includes('.'))
+      )
+    );
+
+    // If 0 active subscribers exist, safely stop without sending
+    if (subscriberEmails.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No active subscribers found in database. 0 emails dispatched.',
+        count: 0
+      });
+    }
 
     const targetUrl = url || (type === 'project' 
       ? `https://arunpandian.online/project/${slug || ''}`
@@ -45,7 +59,7 @@ export default async function handler(req, res) {
     // Random reader count between 100 and 129
     const randomReaders = Math.floor(Math.random() * (129 - 100 + 1)) + 100;
 
-    // 2. If Resend API Key is configured, dispatch emails
+    // 2. If Resend API Key is configured, dispatch emails ONLY to active subscribers
     if (resendApiKey && subscriberEmails.length > 0) {
       const senderEmail = process.env.NEWSLETTER_FROM_EMAIL || 'Arun Pandian <updates@arunpandian.online>';
       const emailPayloads = subscriberEmails.map((recipient) => ({
