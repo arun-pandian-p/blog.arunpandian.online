@@ -78,6 +78,7 @@ export default function Blogs() {
     social_image: '',
     published: true,
     featured: false,
+    allow_comments: true,
     sort_order: 0
   };
 
@@ -509,6 +510,7 @@ export default function Blogs() {
       cover_image: formData.cover_image || '',
       published: Boolean(formData.published),
       featured: Boolean(formData.featured),
+      allow_comments: formData.allow_comments !== false,
       sort_order: Number(formData.sort_order) || 0,
       published_at: formData.published_at ? new Date(formData.published_at).toISOString() : new Date().toISOString(),
       created_at: formData.published_at ? new Date(formData.published_at).toISOString() : new Date().toISOString()
@@ -1847,6 +1849,15 @@ export default function Blogs() {
                             className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                           />
                           <span>Pin as Featured Article</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
+                          <input
+                            type="checkbox"
+                            checked={formData.allow_comments !== false}
+                            onChange={(e) => setFormData({ ...formData, allow_comments: e.target.checked })}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                          <span>Allow Reader Comments (Auto-cleared after 15 days)</span>
                         </label>
                       </div>
                     </div>

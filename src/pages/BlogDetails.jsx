@@ -9,6 +9,7 @@ import arunProfile from '../assets/arun-profile.jpg';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
+import BlogComments from '../components/BlogComments';
 import {
   ArrowLeft,
   ArrowRight,
@@ -102,6 +103,7 @@ const BlogDetails = () => {
   const [hasLiked, setHasLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
 
   // Load from localStorage
   useEffect(() => {
@@ -1151,11 +1153,14 @@ const BlogDetails = () => {
             </button>
 
             <button
-              onClick={() => setIsShareModalOpen(true)}
-              className="flex items-center gap-1 text-slate-500 hover:text-slate-900 text-xs"
+              onClick={() => setIsCommentModalOpen(true)}
+              className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors text-xs cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100"
+              title="Discussions & Responses (15-day verified feed)"
             >
               <MessageSquare size={16} />
-              <span className="font-mono">5</span>
+              <span className="font-mono text-xs font-semibold">
+                {blog?.allow_comments === false ? 'Closed' : 'Responses'}
+              </span>
             </button>
           </div>
 
@@ -1297,6 +1302,16 @@ const BlogDetails = () => {
           </div>
         </div>
       )}
+
+      {/* ── 15-DAY VERIFIED BLOG COMMENTS & RESPONSES MODAL ── */}
+      <BlogComments
+        isOpen={isCommentModalOpen}
+        onClose={() => setIsCommentModalOpen(false)}
+        blogId={blog?.id}
+        blogSlug={slug}
+        blogTitle={title}
+        allowComments={blog?.allow_comments !== false}
+      />
     </div>
   );
 };
