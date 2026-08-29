@@ -9,7 +9,7 @@ import {
   Info, Lightbulb, AlertTriangle, AlertCircle,
   Columns, Type, Heading1, Heading2, Heading3, Heading4, Bold, Italic,
   Quote, ListOrdered, Minus, Database, Upload, X, ChevronDown, ChevronRight,
-  Settings, Globe, Share2, Layers, BookOpen, Undo, Redo
+  Settings, Globe, Share2, Layers, BookOpen, Undo, Redo, Bell, Send, Mail
 } from 'lucide-react';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import { parseArticleMetadata, serializeBlogContent } from '../../utils/blogParser';
@@ -82,6 +82,7 @@ export default function Blogs() {
   };
 
   const [formData, setFormData] = useState(emptyBlog);
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
 
   // Push state to undo/redo history stack
   const updateContentWithHistory = (newContent) => {
@@ -529,14 +530,27 @@ export default function Blogs() {
         toast.success('Blog post published successfully!');
       }
 
-      // If published, trigger email dispatch to newsletter subscribers from updates@blogupdates.arunpandian.online
-      if (payload.published) {
+      // If notifySubscribers is ON and post is published, broadcast to all newsletter fans
+      if (payload.published && notifySubscribers) {
+        // Pick random reading social proof between 100-129 for this publication
+        const randomReaders = Math.floor(Math.random() * (129 - 100 + 1)) + 100;
+        
+        // Extract notable quote from content if present
+        let quoteMatch = payload.content.match(/^>\s*(.+)$/m);
+        const quote = quoteMatch ? quoteMatch[1] : '';
+
         sendSubscriberBroadcast({
           title: payload.title,
           excerpt: payload.excerpt,
           slug: payload.slug,
           type: 'blog',
-          imageUrl: payload.cover_image
+          imageUrl: payload.cover_image,
+          quote: quote,
+          readersScore: randomReaders
+        }).then((res) => {
+          if (res?.success) {
+            toast.success(`Dispatched update to fans! (🔥 ${randomReaders} readers score)`, { icon: '📬', duration: 4000 });
+          }
         }).catch((err) => console.warn('Newsletter broadcast notice:', err));
       }
 
@@ -1447,9 +1461,32 @@ export default function Blogs() {
               </button>
             </div>
 
-            {/* RIGHT: Manage Dropdown, Publish Button, Close Button */}
+            {/* RIGHT: Notify Fans Toggle, Manage Dropdown, Publish Button, Close Button */}
             <div className="flex items-center gap-2 sm:gap-3">
               
+              {/* Notify Fans & Subscribers Email Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setNotifySubscribers(!notifySubscribers)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                  notifySubscribers
+                    ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600'
+                }`}
+                title={notifySubscribers ? "⚡ Email broadcast to all fans ENABLED on Update/Publish (with cover pic, quotes & 100-129 reader score)" : "Email broadcast DISABLED"}
+              >
+                <Bell size={13} className={notifySubscribers ? "text-blue-600 animate-pulse" : "text-slate-400"} />
+                <span className="hidden sm:inline">{notifySubscribers ? 'Notify Fans: ON' : 'Notify Fans: OFF'}</span>
+                <span className="sm:hidden">Notify</span>
+                <div
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
+                    notifySubscribers ? 'bg-blue-600 text-white' : 'bg-slate-300'
+                  }`}
+                >
+                  {notifySubscribers && <Check size={9} strokeWidth={3} />}
+                </div>
+              </button>
+
               {/* Manage Dropdown Button */}
               <button
                 type="button"
@@ -1775,6 +1812,21 @@ export default function Blogs() {
                           onChange={(e) => setFormData({ ...formData, sort_order: Number(e.target.value) })}
                           className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:border-blue-500 outline-none"
                         />
+                      </div>
+
+                      <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 space-y-2">
+                        <label className="flex items-center gap-2 cursor-pointer font-bold text-blue-950 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={notifySubscribers}
+                            onChange={(e) => setNotifySubscribers(e.target.checked)}
+                            className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                          <span>⚡ Broadcast Email to All Fans &amp; Subscribers</span>
+                        </label>
+                        <p className="text-[11px] text-blue-800/80 pl-6 leading-relaxed">
+                          Dispatches an instant update containing your uploaded pictures, quote highlights, and dynamic 100–129 active readers badge from <code>updates@arunpandian.online</code>.
+                        </p>
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
