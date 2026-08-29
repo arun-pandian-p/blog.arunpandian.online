@@ -95,33 +95,82 @@ export default function Blogs() {
   const [loadingSubscribers, setLoadingSubscribers] = useState(false);
   const [sendingCustomMail, setSendingCustomMail] = useState(false);
   const [subscriberSearch, setSubscriberSearch] = useState('');
+  const [newRecipientInput, setNewRecipientInput] = useState('');
 
   const openCustomMailModal = async () => {
     setCustomMailModalOpen(true);
     setLoadingSubscribers(true);
-    try {
-      if (supabase) {
-        const { data } = await supabase
-          .from('newsletter_subscribers')
-          .select('email, created_at, status')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false });
+    const emailsMap = new Map();
 
-        if (data && data.length > 0) {
-          const validEmails = data.map((d) => d.email).filter(Boolean);
-          setSubscribersList(data);
-          setSelectedEmails(new Set(validEmails));
-        } else {
-          // If empty in database, provide fallback sample for immediate testing
-          setSubscribersList([]);
-          setSelectedEmails(new Set());
-        }
+    try {
+      // 1. Fetch from backend endpoint
+      const res = await fetch('/api/get-subscribers').catch(() => null);
+      if (res && res.ok) {
+        const json = await res.json();
+        (json.subscribers || []).forEach((s) => {
+          if (s.email) emailsMap.set(s.email.toLowerCase(), s);
+        });
       }
+
+      // 2. Fetch directly from supabase newsletter_subscribers
+      if (supabase) {
+        const { data: subs } = await supabase
+          .from('newsletter_subscribers')
+          .select('email, created_at, status, source');
+        
+        (subs || []).forEach((s) => {
+          if (s.email && s.status !== 'unsubscribed') {
+            const em = s.email.toLowerCase();
+            if (!emailsMap.has(em)) {
+              emailsMap.set(em, { email: em, source: s.source || 'Newsletter', created_at: s.created_at });
+            }
+          }
+        });
+
+        // 3. Fetch from contact_messages
+        const { data: contacts } = await supabase
+          .from('contact_messages')
+          .select('email, created_at, name');
+
+        (contacts || []).forEach((c) => {
+          if (c.email) {
+            const em = c.email.toLowerCase();
+            if (!emailsMap.has(em)) {
+              emailsMap.set(em, { email: em, source: 'Contact Form', name: c.name, created_at: c.created_at });
+            }
+          }
+        });
+      }
+
+      const mergedList = Array.from(emailsMap.values());
+      setSubscribersList(mergedList);
+      setSelectedEmails(new Set(mergedList.map((s) => s.email)));
     } catch (err) {
-      console.warn('Error fetching subscribers:', err);
+      console.warn('Error loading subscribers:', err);
     } finally {
       setLoadingSubscribers(false);
     }
+  };
+
+  const handleAddNewRecipient = (e) => {
+    e.preventDefault();
+    const clean = newRecipientInput.trim().toLowerCase();
+    if (!clean || !clean.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (selectedEmails.has(clean)) {
+      toast('Email is already selected', { icon: 'ℹ️' });
+      setNewRecipientInput('');
+      return;
+    }
+
+    const newObj = { email: clean, source: 'Custom Added', created_at: new Date().toISOString() };
+    setSubscribersList((prev) => [newObj, ...prev.filter((p) => p.email !== clean)]);
+    setSelectedEmails((prev) => new Set([...prev, clean]));
+    setNewRecipientInput('');
+    toast.success(`Added ${clean} to recipients`, { icon: '✨' });
   };
 
   const toggleSelectEmail = (email) => {
@@ -2222,14 +2271,31 @@ export default function Blogs() {
                   </button>
                 </div>
 
+                {/* Quick Add Custom Recipient Form */}
+                <form onSubmit={handleAddNewRecipient} className="flex gap-1.5">
+                  <input
+                    type="email"
+                    placeholder="Enter email to add..."
+                    value={newRecipientInput}
+                    onChange={(e) => setNewRecipientInput(e.target.value)}
+                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 font-mono"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </form>
+
                 {/* Search Box */}
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search subscriber email..."
+                    placeholder="Search subscriber list..."
                     value={subscriberSearch}
                     onChange={(e) => setSubscriberSearch(e.target.value)}
-                    className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500"
+                    className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 font-mono"
                   />
                   <Search size={12} className="absolute left-2.5 top-2 text-slate-400 pointer-events-none" />
                 </div>
@@ -2239,12 +2305,12 @@ export default function Blogs() {
                   {loadingSubscribers ? (
                     <div className="flex items-center justify-center py-10 text-slate-400 text-xs gap-2">
                       <Loader2 size={14} className="animate-spin text-blue-600" />
-                      <span>Loading active subscribers...</span>
+                      <span>Loading all verified subscribers &amp; contacts...</span>
                     </div>
                   ) : subscribersList.length === 0 ? (
                     <div className="p-4 text-center text-slate-500 text-xs bg-slate-50 rounded-xl space-y-1">
-                      <p className="font-bold">No active subscribers yet</p>
-                      <p className="text-[11px] text-slate-400">Add test subscribers from the frontend newsletter box.</p>
+                      <p className="font-bold">No subscribers found</p>
+                      <p className="text-[11px] text-slate-400">Use the "+ Add" box above to enter recipient emails.</p>
                     </div>
                   ) : (
                     subscribersList
@@ -2253,7 +2319,7 @@ export default function Blogs() {
                         const isChecked = selectedEmails.has(sub.email);
                         // Clean short name preview
                         const cleanName = sub.email.split('@')[0].replace(/\d+$/, '').split(/[._\-+]/)[0];
-                        const capName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1) : 'Friend';
+                        const capName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase() : 'Friend';
 
                         return (
                           <label
@@ -2269,8 +2335,13 @@ export default function Blogs() {
                               className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                             />
                             <div className="flex-1 min-w-0">
-                              <span className="block truncate">{sub.email}</span>
-                              <span className="text-[10px] text-slate-400 font-mono">Hey {capName},</span>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="block truncate font-mono text-[11px] font-bold">{sub.email}</span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
+                                  {sub.source || 'Subscriber'}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-emerald-700 font-mono font-semibold">Salutation: Hey {capName},</span>
                             </div>
                           </label>
                         );
