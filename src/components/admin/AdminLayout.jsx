@@ -43,7 +43,7 @@ const navGroups = [
     label: 'Overview',
     items: [
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Inbox', path: '/admin/inbox', icon: Mail },
+      { name: 'Mails & Followups', path: '/admin/inbox', icon: Mail },
     ],
   },
   {

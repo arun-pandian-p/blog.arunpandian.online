@@ -97,8 +97,8 @@ export default function Blogs() {
   const [subscriberSearch, setSubscriberSearch] = useState('');
   const [newRecipientInput, setNewRecipientInput] = useState('');
 
-  const openCustomMailModal = async () => {
-    setCustomMailModalOpen(true);
+  const openCustomMailPage = async () => {
+    setEditorViewMode('mail');
     setLoadingSubscribers(true);
     const emailsMap = new Map();
 
@@ -1610,12 +1610,22 @@ export default function Blogs() {
               {/* Dedicated Custom Send Mail Button on Navbar */}
               <button
                 type="button"
-                onClick={openCustomMailModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 transition-all cursor-pointer shadow-xs"
-                title="Select specific subscribers and send custom email with personalized Hey {Name} salutation"
+                onClick={() => {
+                  if (editorViewMode === 'mail') {
+                    setEditorViewMode('write');
+                  } else {
+                    openCustomMailPage();
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-xs ${
+                  editorViewMode === 'mail'
+                    ? 'border-amber-500 bg-amber-500 text-white'
+                    : 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                }`}
+                title="Open dedicated Custom Email Broadcast Studio"
               >
-                <Mail size={13} className="text-amber-600" />
-                <span>Custom Send Mail</span>
+                <Mail size={13} className={editorViewMode === 'mail' ? 'text-white' : 'text-amber-600'} />
+                <span>{editorViewMode === 'mail' ? '← Article Editor' : 'Custom Send Mail'}</span>
               </button>
 
               {/* Notify Fans & Subscribers Email Toggle Button */}
@@ -1685,6 +1695,222 @@ export default function Blogs() {
 
           {/* ── MAIN PUBLICATION CANVAS ── */}
           <main className="flex-1 overflow-y-auto bg-white flex flex-col relative">
+            {editorViewMode === 'mail' ? (
+              <div className="max-w-6xl mx-auto w-full px-6 sm:px-10 py-8 flex-1 flex flex-col space-y-6">
+                
+                {/* Mail Studio Top Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditorViewMode('write')}
+                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                    >
+                      <ArrowLeft size={14} />
+                      <span>Back to Article Editor</span>
+                    </button>
+                    <div>
+                      <h2 className="font-serif font-bold text-xl text-slate-900">
+                        ✉️ Custom Email Broadcast Studio
+                      </h2>
+                      <p className="text-xs text-slate-500 font-mono">
+                        Personalized newsletter dispatch with <code>Hey &#123;FirstName&#125;,</code> salutations
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                      Targeting: <strong className="text-slate-900">{selectedEmails.size}</strong> verified subscribers
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDirectSendCustomMail}
+                      disabled={sendingCustomMail || selectedEmails.size === 0}
+                      className="px-5 py-2.5 rounded-xl bg-[#b83a26] hover:bg-[#992817] text-white text-xs font-mono font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {sendingCustomMail ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin" />
+                          <span>Sending Broadcast...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Mail size={13} />
+                          <span>Dispatch Custom Email ({selectedEmails.size})</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2-Column Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  
+                  {/* LEFT: Subscribers Selector (lg:col-span-5) */}
+                  <div className="lg:col-span-5 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                      <span className="text-xs font-mono font-bold text-slate-800 uppercase">
+                        Select Recipients ({selectedEmails.size} / {subscribersList.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={toggleSelectAllEmails}
+                        className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer"
+                      >
+                        {selectedEmails.size === subscribersList.length && subscribersList.length > 0 ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+
+                    {/* Quick Add Custom Recipient Form */}
+                    <form onSubmit={handleAddNewRecipient} className="flex gap-1.5">
+                      <input
+                        type="email"
+                        placeholder="Enter email to add..."
+                        value={newRecipientInput}
+                        onChange={(e) => setNewRecipientInput(e.target.value)}
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-slate-900 font-mono"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
+                      >
+                        + Add
+                      </button>
+                    </form>
+
+                    {/* Search Box */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search subscriber list..."
+                        value={subscriberSearch}
+                        onChange={(e) => setSubscriberSearch(e.target.value)}
+                        className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-slate-900 font-mono"
+                      />
+                      <Search size={12} className="absolute left-2.5 top-2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Subscribers Checkbox List */}
+                    <div className="max-h-[380px] overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100 bg-white p-2 rounded-xl border border-slate-200">
+                      {loadingSubscribers ? (
+                        <div className="flex items-center justify-center py-10 text-slate-400 text-xs gap-2">
+                          <Loader2 size={14} className="animate-spin text-blue-600" />
+                          <span>Loading all verified subscribers &amp; contacts...</span>
+                        </div>
+                      ) : subscribersList.length === 0 ? (
+                        <div className="p-4 text-center text-slate-500 text-xs bg-slate-50 rounded-xl space-y-1">
+                          <p className="font-bold">No subscribers found</p>
+                          <p className="text-[11px] text-slate-400">Use the "+ Add" box above to enter recipient emails.</p>
+                        </div>
+                      ) : (
+                        subscribersList
+                          .filter((s) => s.email.toLowerCase().includes(subscriberSearch.toLowerCase()))
+                          .map((sub) => {
+                            const isChecked = selectedEmails.has(sub.email);
+                            const cleanName = sub.email.split('@')[0].replace(/\d+$/, '').split(/[._\-+]/)[0];
+                            const capName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase() : 'Friend';
+
+                            return (
+                              <label
+                                key={sub.email}
+                                className={`flex items-start gap-2.5 p-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                                  isChecked ? 'bg-blue-50/70 text-blue-950 font-medium' : 'hover:bg-slate-50 text-slate-700'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleSelectEmail(sub.email)}
+                                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="block truncate font-mono text-[11px] font-bold">{sub.email}</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
+                                      {sub.source || 'Subscriber'}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-emerald-700 font-mono font-semibold">Salutation: Hey {capName},</span>
+                                </div>
+                              </label>
+                            );
+                          })
+                      )}
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-mono">
+                      ✦ Every subscriber receives an individual email starting with <strong>Hey [Their Name],</strong> with an instant unsubscribe link.
+                    </div>
+                  </div>
+
+                  {/* RIGHT: Email Narrative Composer (lg:col-span-7) */}
+                  <div className="lg:col-span-7 space-y-5">
+                    <div>
+                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
+                        Email Subject Line *
+                      </label>
+                      <input
+                        type="text"
+                        value={customMailSubject}
+                        onChange={(e) => setCustomMailSubject(e.target.value)}
+                        placeholder={`e.g. New Case Study: ${formData.title || 'Power BI DAX & SQL Pipeline'}`}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none font-medium"
+                      />
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                        Default: "New Case Study: {formData.title || 'Article Title'} 🚀"
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
+                        Personal Story / Newsletter Narrative (Supports Multi-Paragraphs)
+                      </label>
+                      <textarea
+                        rows={7}
+                        value={customMailMessage}
+                        onChange={(e) => setCustomMailMessage(e.target.value)}
+                        placeholder="Hey! Just published an in-depth breakdown of how we optimized query latency by 76% using partitioned parquet and dynamic DAX filters. Here are the 3 key takeaways..."
+                        className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none leading-relaxed"
+                      />
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
+                        Separate paragraphs with double newlines. It automatically formats each with clean editorial styling.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
+                        CTA Button Label
+                      </label>
+                      <input
+                        type="text"
+                        value={customMailCta}
+                        onChange={(e) => setCustomMailCta(e.target.value)}
+                        placeholder="Read Complete Case Study ➔"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none"
+                      />
+                    </div>
+
+                    {/* Live Inbox Preview Box */}
+                    <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
+                        <span className="text-amber-400 font-bold">Inbox Preview</span>
+                        <span>🔥 100–129 Readers Active</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-bold text-slate-200">
+                          Subject: {customMailSubject || `New Case Study: ${formData.title || 'Title'}`}
+                        </p>
+                        <p className="text-slate-300 font-mono text-[11px]">
+                          Salutation: <span className="text-emerald-400">Hey [SubscriberName],</span>
+                        </p>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className={`max-w-4xl mx-auto w-full px-6 sm:px-12 py-8 sm:py-12 flex-1 flex flex-col ${editorViewMode === 'split' ? 'max-w-7xl' : ''}`}>
 
               {/* 1. COVER IMAGE AREA (Matches user reference card) */}
@@ -1837,6 +2063,7 @@ export default function Blogs() {
               )}
 
             </div>
+          )}
           </main>
 
           {/* ── FLOATING BOTTOM-RIGHT STATUS PILL (Matching user reference) ── */}
@@ -2220,248 +2447,6 @@ export default function Blogs() {
             </div>
           )}
 
-        </div>
-      )}
-
-      {/* Custom Email Broadcast Modal with Subscriber Selector */}
-      {customMailModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#b83a26] text-white flex items-center justify-center">
-                  <Mail size={16} />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-base text-slate-900">
-                    Custom Email Broadcast Composer
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono">
-                    Select target subscribers and personalize your newsletter story
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setCustomMailModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body: 2 Columns */}
-            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
-              
-              {/* ── LEFT: SUBSCRIBERS SELECTOR (md:col-span-5) ── */}
-              <div className="md:col-span-5 space-y-3 flex flex-col border-r border-slate-100 pr-0 md:pr-4">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-                  <span className="text-xs font-mono font-bold text-slate-800 uppercase">
-                    Select Recipients ({selectedEmails.size})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleSelectAllEmails}
-                    className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer"
-                  >
-                    {selectedEmails.size === subscribersList.length && subscribersList.length > 0 ? 'Deselect All' : 'Select All'}
-                  </button>
-                </div>
-
-                {/* Quick Add Custom Recipient Form */}
-                <form onSubmit={handleAddNewRecipient} className="flex gap-1.5">
-                  <input
-                    type="email"
-                    placeholder="Enter email to add..."
-                    value={newRecipientInput}
-                    onChange={(e) => setNewRecipientInput(e.target.value)}
-                    className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 font-mono"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
-                  >
-                    + Add
-                  </button>
-                </form>
-
-                {/* Search Box */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search subscriber list..."
-                    value={subscriberSearch}
-                    onChange={(e) => setSubscriberSearch(e.target.value)}
-                    className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 font-mono"
-                  />
-                  <Search size={12} className="absolute left-2.5 top-2 text-slate-400 pointer-events-none" />
-                </div>
-
-                {/* Subscribers Checkbox List */}
-                <div className="flex-1 min-h-[220px] max-h-[300px] overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-50">
-                  {loadingSubscribers ? (
-                    <div className="flex items-center justify-center py-10 text-slate-400 text-xs gap-2">
-                      <Loader2 size={14} className="animate-spin text-blue-600" />
-                      <span>Loading all verified subscribers &amp; contacts...</span>
-                    </div>
-                  ) : subscribersList.length === 0 ? (
-                    <div className="p-4 text-center text-slate-500 text-xs bg-slate-50 rounded-xl space-y-1">
-                      <p className="font-bold">No subscribers found</p>
-                      <p className="text-[11px] text-slate-400">Use the "+ Add" box above to enter recipient emails.</p>
-                    </div>
-                  ) : (
-                    subscribersList
-                      .filter((s) => s.email.toLowerCase().includes(subscriberSearch.toLowerCase()))
-                      .map((sub) => {
-                        const isChecked = selectedEmails.has(sub.email);
-                        // Clean short name preview
-                        const cleanName = sub.email.split('@')[0].replace(/\d+$/, '').split(/[._\-+]/)[0];
-                        const capName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase() : 'Friend';
-
-                        return (
-                          <label
-                            key={sub.email}
-                            className={`flex items-start gap-2.5 p-2 rounded-lg text-xs cursor-pointer transition-colors ${
-                              isChecked ? 'bg-blue-50/70 text-blue-950 font-medium' : 'hover:bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleSelectEmail(sub.email)}
-                              className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="block truncate font-mono text-[11px] font-bold">{sub.email}</span>
-                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
-                                  {sub.source || 'Subscriber'}
-                                </span>
-                              </div>
-                              <span className="text-[10px] text-emerald-700 font-mono font-semibold">Salutation: Hey {capName},</span>
-                            </div>
-                          </label>
-                        );
-                      })
-                  )}
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-mono">
-                  ✦ Each recipient receives an individual email starting with <strong>Hey [Their Name],</strong> with an instant unsubscribe link.
-                </div>
-              </div>
-
-              {/* ── RIGHT: EMAIL STORY COMPOSER (md:col-span-7) ── */}
-              <div className="md:col-span-7 space-y-4">
-                
-                {/* Subject */}
-                <div>
-                  <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                    Email Subject Line *
-                  </label>
-                  <input
-                    type="text"
-                    value={customMailSubject}
-                    onChange={(e) => setCustomMailSubject(e.target.value)}
-                    placeholder={`e.g. New Case Study: ${formData.title || 'Power BI DAX & SQL Pipeline'}`}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none font-medium"
-                  />
-                  <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                    Default: "New Case Study: {formData.title || 'Article Title'} 🚀"
-                  </span>
-                </div>
-
-                {/* Custom Narrative / Story Message */}
-                <div>
-                  <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                    Personal Story / Takeaways (Supports Multi-Paragraphs)
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={customMailMessage}
-                    onChange={(e) => setCustomMailMessage(e.target.value)}
-                    placeholder="Hey! Just published an in-depth breakdown of how we optimized query latency by 76% using partitioned parquet and dynamic DAX filters. Here are the 3 key takeaways..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none leading-relaxed"
-                  />
-                  <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                    Separate paragraphs with double newlines. It automatically wraps each into clean readable styling.
-                  </span>
-                </div>
-
-                {/* CTA Button Label */}
-                <div>
-                  <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                    CTA Button Label
-                  </label>
-                  <input
-                    type="text"
-                    value={customMailCta}
-                    onChange={(e) => setCustomMailCta(e.target.value)}
-                    placeholder="Read Complete Case Study ➔"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none"
-                  />
-                </div>
-
-                {/* Live Preview Box */}
-                <div className="p-3.5 rounded-xl bg-slate-900 text-white space-y-2 text-xs">
-                  <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
-                    <span className="text-amber-400 font-bold">Inbox Preview</span>
-                    <span>🔥 100–129 Readers Active</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-bold text-slate-200">
-                      Subject: {customMailSubject || `New Case Study: ${formData.title || 'Title'}`}
-                    </p>
-                    <p className="text-slate-300 font-mono text-[11px]">
-                      Salutation: <span className="text-emerald-400">Hey [SubscriberName],</span>
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-              <span className="text-xs font-mono text-slate-500">
-                Targeting: <strong className="text-slate-900">{selectedEmails.size}</strong> verified subscribers
-              </span>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCustomMailModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200/60 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDirectSendCustomMail}
-                  disabled={sendingCustomMail || selectedEmails.size === 0}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#b83a26] hover:bg-[#992817] text-white text-xs font-mono font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  {sendingCustomMail ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" />
-                      <span>Sending Broadcast...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mail size={13} />
-                      <span>Dispatch Custom Email ({selectedEmails.size})</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-          </div>
         </div>
       )}
 
