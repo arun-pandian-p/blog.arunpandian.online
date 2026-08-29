@@ -937,7 +937,7 @@ const BlogDetails = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#FBF9F5] text-[#1C1A17] selection:bg-[#1C1A17] selection:text-[#FAF7F2]">
       <Helmet>
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
@@ -952,9 +952,9 @@ const BlogDetails = () => {
       <StyleOverrides />
 
       {/* Top Reading Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-100 z-50">
+      <div className="fixed top-0 left-0 right-0 h-1 bg-[#EBE4D8] z-50">
         <div
-          className="h-full bg-slate-900 transition-all duration-150 ease-out"
+          className="h-full bg-[#B83A26] transition-all duration-150 ease-out"
           style={{ width: `${scrollProgress}%` }}
         />
       </div>
@@ -962,13 +962,13 @@ const BlogDetails = () => {
       <BlogNavbar onSubscribeClick={() => setIsShareModalOpen(false)} />
 
       {/* ═════════════════════════════════════════════════════════════════
-          TOP MEDIUM-STYLE PROMO BAR (Matching Screenshot Image 1)
+          TOP EDITORIAL PROMO BAR
           ═════════════════════════════════════════════════════════════════ */}
-      <div className="pt-20 sm:pt-24 bg-amber-400 text-slate-950 px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2">
-        <span>Verified Data Analytics Case Studies & Architecture Guides.</span>
+      <div className="pt-20 sm:pt-24 bg-[#F2ECE1] text-[#2B2723] border-b border-[#DDD5C7] px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 font-mono">
+        <span>Verified Data Analytics Case Studies &amp; Architecture Guides.</span>
         <button
           onClick={() => setIsShareModalOpen(true)}
-          className="underline font-bold hover:text-slate-800"
+          className="underline font-bold text-[#B83A26] hover:text-[#8F2819] cursor-pointer"
         >
           Share now
         </button>
@@ -977,19 +977,19 @@ const BlogDetails = () => {
       {/* ═════════════════════════════════════════════════════════════════
           ARTICLE READING VIEW (Clean Mobile & Desktop Architecture)
           ═════════════════════════════════════════════════════════════════ */}
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 pt-6 pb-20">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 pt-8 pb-20">
         
         {/* Top Header Row (Back arrow, publication badge, listen button, share) */}
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 text-xs">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E8E1D5] text-xs">
           <div className="flex items-center gap-3">
             <Link
               to={isBlogSubdomain() ? '/' : '/blog'}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-700 transition-colors"
+              className="p-1.5 rounded-full hover:bg-[#EAE2D5] text-[#4A453E] transition-colors"
               title="Back to stories"
             >
               <ArrowLeft size={18} />
             </Link>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold text-xs font-mono">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F4EFE6] text-[#B83A26] border border-[#DDD5C7] font-bold text-xs font-mono">
               <span>➔</span>
               <span>{category}</span>
             </div>
@@ -1000,7 +1000,7 @@ const BlogDetails = () => {
             <button
               onClick={toggleSpeechAudio}
               className={`p-2 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
-                isPlayingAudio ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                isPlayingAudio ? 'bg-[#B83A26] text-white border-[#B83A26]' : 'bg-[#FFFDFB] text-[#4A453E] hover:bg-[#F4EFE6] border-[#DDD5C7]'
               }`}
               title="Listen to story audio"
             >
@@ -1010,7 +1010,7 @@ const BlogDetails = () => {
 
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className="p-2 rounded-full hover:bg-slate-100 text-slate-600 cursor-pointer"
+              className="p-2 rounded-full hover:bg-[#F4EFE6] text-[#4A453E] cursor-pointer"
               title="Share"
             >
               <Share2 size={16} />

@@ -359,7 +359,7 @@ export default function BlogPublicationPage() {
   const authorName = settings?.hero?.name || 'Arun Pandian';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFDFD] text-slate-900 selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#FBF9F5] text-[#1C1A17] selection:bg-[#1C1A17] selection:text-[#FAF7F2]">
       <Helmet>
         <title>Publications & Case Studies | {authorName}</title>
         <meta
@@ -382,18 +382,18 @@ export default function BlogPublicationPage() {
           <div className="lg:col-span-8 flex flex-col space-y-3">
             
             {/* Header with Red Accent Underline & Next/Prev Controls */}
-            <div className="flex items-center justify-between pb-2 border-b-2 border-slate-200">
+            <div className="flex items-center justify-between pb-2 border-b-2 border-[#E5DDD0]">
               <div className="relative">
-                <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-slate-900">
+                <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-[#1C1A17]">
                   MAIN NEWS
                 </h2>
-                <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-red-600 rounded-full" />
+                <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-[#B83A26] rounded-full" />
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs font-mono text-slate-500">
+              <div className="flex items-center gap-1.5 text-xs font-mono text-[#8C8479]">
                 <button
                   onClick={handlePrevMainNews}
-                  className="p-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="p-1 rounded hover:bg-[#EFE9DF] text-[#4A453E] hover:text-[#1C1A17] transition-colors cursor-pointer"
                   title="Previous news"
                 >
                   <ChevronLeft size={16} />
@@ -401,7 +401,7 @@ export default function BlogPublicationPage() {
                 <span>{mainNewsIndex + 1} / {mainNewsList.length}</span>
                 <button
                   onClick={handleNextMainNews}
-                  className="p-1 rounded hover:bg-slate-100 text-slate-600 hover:text-slate-950 transition-colors cursor-pointer"
+                  className="p-1 rounded hover:bg-[#EFE9DF] text-[#4A453E] hover:text-[#1C1A17] transition-colors cursor-pointer"
                   title="Next news"
                 >
                   <ChevronRight size={16} />
@@ -413,7 +413,7 @@ export default function BlogPublicationPage() {
             {currentMainNews && (
               <div
                 onClick={() => handleOpenItem(currentMainNews.href)}
-                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-slate-950 flex-1 min-h-[440px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-8 border border-slate-200 shadow-md transition-all duration-300 hover:shadow-2xl"
+                className="group cursor-pointer relative rounded-2xl overflow-hidden bg-[#161513] flex-1 min-h-[440px] sm:min-h-[480px] flex flex-col justify-end p-6 sm:p-8 border border-[#DDD5C7] shadow-sm transition-all duration-300 hover:shadow-xl"
               >
                 {/* Background Image */}
                 <img
@@ -423,29 +423,29 @@ export default function BlogPublicationPage() {
                 />
                 
                 {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#161513]/95 via-[#161513]/55 to-transparent" />
 
                 {/* Content Overlay */}
                 <div className="relative z-10 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded bg-red-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded bg-[#B83A26] text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-2xs">
                       {currentMainNews.category || 'Newsfeed'}
                     </span>
-                    <span className="px-2.5 py-1 rounded bg-blue-600 text-white text-[10px] font-mono font-bold uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded bg-[#1D4ED8] text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-2xs">
                       {currentMainNews.readTime || '5 MIN READ'}
                     </span>
                   </div>
 
-                  <h3 className="font-serif font-black text-2xl sm:text-3xl md:text-4xl text-white group-hover:text-blue-300 transition-colors leading-tight">
+                  <h3 className="font-serif font-black text-2xl sm:text-3xl md:text-4xl text-[#FAF7F2] group-hover:text-[#E2DAD0] transition-colors leading-tight">
                     {currentMainNews.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed max-w-2xl font-sans">
+                  <p className="text-xs sm:text-sm text-[#D8D2C5] line-clamp-2 leading-relaxed max-w-2xl font-sans">
                     {currentMainNews.subtitle || currentMainNews.description}
                   </p>
 
-                  <div className="flex items-center gap-3 pt-1 text-xs font-mono text-slate-400">
-                    <span className="text-slate-300 font-semibold">@{currentMainNews.authorName || 'Arun Pandian'}</span>
+                  <div className="flex items-center gap-3 pt-1 text-xs font-mono text-[#AAA396]">
+                    <span className="text-[#FAF7F2] font-semibold">@{currentMainNews.authorName || 'Arun Pandian'}</span>
                     <span>•</span>
                     <span>{currentMainNews.date}</span>
                   </div>
@@ -459,11 +459,11 @@ export default function BlogPublicationPage() {
           <div className="lg:col-span-4 flex flex-col space-y-3">
             
             {/* Header with Red Accent Underline */}
-            <div className="relative pb-2 border-b-2 border-slate-200">
-              <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-slate-900">
+            <div className="relative pb-2 border-b-2 border-[#E5DDD0]">
+              <h2 className="font-sans font-black text-sm sm:text-base tracking-wider uppercase text-[#1C1A17]">
                 EDITOR'S PICKS
               </h2>
-              <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-red-600 rounded-full" />
+              <div className="absolute -bottom-2.5 left-0 w-16 h-1 bg-[#B83A26] rounded-full" />
             </div>
 
             {/* Stacked Cards (matching height with zero gap) */}
@@ -472,7 +472,7 @@ export default function BlogPublicationPage() {
                 <div
                   key={pick.id}
                   onClick={() => handleOpenItem(pick.href)}
-                  className="group cursor-pointer rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative flex-1 min-h-[210px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
+                  className="group cursor-pointer rounded-2xl overflow-hidden bg-[#161513] border border-[#DDD5C7] relative flex-1 min-h-[210px] flex flex-col justify-end p-5 shadow-xs hover:shadow-xl transition-all"
                 >
                   {/* Visual Background */}
                   <img
@@ -480,11 +480,11 @@ export default function BlogPublicationPage() {
                     alt={pick.title}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#161513]/95 via-[#161513]/40 to-transparent" />
 
                   {/* Play / Video Icon on Top Right if first pick */}
                   {idx === 0 && (
-                    <div className="absolute top-4 left-4 w-7 h-7 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
+                    <div className="absolute top-4 left-4 w-7 h-7 rounded-full bg-[#B83A26] text-white flex items-center justify-center shadow-md">
                       <Play size={13} className="ml-0.5" />
                     </div>
                   )}
@@ -492,21 +492,21 @@ export default function BlogPublicationPage() {
                   {/* Content Overlay */}
                   <div className="relative z-10 space-y-1.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded bg-[#1D4ED8] text-white text-[9px] font-mono font-bold uppercase tracking-wider shadow-2xs">
                         {pick.category || 'Analytics'}
                       </span>
                       {idx === 1 && (
-                        <span className="px-2 py-0.5 rounded bg-red-600 text-white text-[9px] font-mono font-bold uppercase tracking-wider">
+                        <span className="px-2 py-0.5 rounded bg-[#B83A26] text-white text-[9px] font-mono font-bold uppercase tracking-wider shadow-2xs">
                           Featured
                         </span>
                       )}
                     </div>
 
-                    <h4 className="font-serif font-bold text-sm sm:text-base text-white group-hover:text-blue-200 transition-colors line-clamp-2 leading-snug">
+                    <h4 className="font-serif font-bold text-sm sm:text-base text-[#FAF7F2] group-hover:text-[#E2DAD0] transition-colors line-clamp-2 leading-snug">
                       {pick.title}
                     </h4>
 
-                    <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2 pt-0.5">
+                    <div className="text-[11px] font-mono text-[#AAA396] flex items-center gap-2 pt-0.5">
                       <span>{pick.date}</span>
                       <span>•</span>
                       <span>{pick.readTime}</span>
@@ -524,7 +524,7 @@ export default function BlogPublicationPage() {
             2. 3-SPLIT TECHNICAL BLOG SECTION (CareerFoundry Inspired)
             Left: Recent Posts & Next Story | Centre: Main Chronological Feed | Right: Date & Time Highlights
             ═════════════════════════════════════════════════════════════════ */}
-        <section className="pt-8 border-t border-slate-200">
+        <section className="pt-8 border-t border-[#E5DDD0]">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
@@ -535,9 +535,9 @@ export default function BlogPublicationPage() {
               
               {/* Next Story Spotlight Card */}
               {nextFeaturedPost && (
-                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
-                  <div className="flex items-center justify-between text-xs font-mono text-slate-400 pb-2 border-b border-slate-100">
-                    <span className="font-bold text-blue-600 uppercase tracking-wider">Next Story</span>
+                <div className="p-4 rounded-2xl bg-[#FFFDFB] border border-[#E8E1D5] shadow-xs space-y-3">
+                  <div className="flex items-center justify-between text-xs font-mono text-[#8C8479] pb-2 border-b border-[#EFE9DF]">
+                    <span className="font-bold text-[#B83A26] uppercase tracking-wider">Next Story</span>
                     <span>{nextFeaturedPost.readTime}</span>
                   </div>
 
@@ -545,17 +545,17 @@ export default function BlogPublicationPage() {
                     onClick={() => handleOpenItem(nextFeaturedPost.href)}
                     className="group cursor-pointer space-y-2"
                   >
-                    <div className="aspect-16/10 rounded-xl overflow-hidden bg-slate-900 border border-slate-100">
+                    <div className="aspect-16/10 rounded-xl overflow-hidden bg-[#161513] border border-[#E8E1D5]">
                       <img 
                         src={nextFeaturedPost.image} 
                         alt={nextFeaturedPost.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
                     </div>
-                    <h4 className="font-serif font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                    <h4 className="font-serif font-bold text-sm text-[#1C1A17] group-hover:text-[#B83A26] transition-colors line-clamp-2">
                       {nextFeaturedPost.title}
                     </h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-2">
+                    <p className="text-[11px] text-[#6E665C] line-clamp-2 leading-relaxed">
                       {nextFeaturedPost.subtitle}
                     </p>
                   </div>
@@ -563,9 +563,9 @@ export default function BlogPublicationPage() {
               )}
 
               {/* Recent Publications Mini List */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-                <h3 className="font-sans font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                  <Clock size={14} className="text-blue-600" />
+              <div className="p-5 rounded-2xl bg-[#FFFDFB] border border-[#E8E1D5] shadow-xs space-y-4">
+                <h3 className="font-sans font-bold text-xs uppercase tracking-wider text-[#1C1A17] flex items-center gap-1.5 pb-2 border-b border-[#EFE9DF]">
+                  <Clock size={14} className="text-[#B83A26]" />
                   <span>Recent Post Dispatch</span>
                 </h3>
 
@@ -574,15 +574,15 @@ export default function BlogPublicationPage() {
                     <div
                       key={post.id}
                       onClick={() => handleOpenItem(post.href)}
-                      className="group cursor-pointer space-y-1 pb-3 border-b border-slate-50 last:border-0 last:pb-0"
+                      className="group cursor-pointer space-y-1 pb-3 border-b border-[#F4EFE6] last:border-0 last:pb-0"
                     >
-                      <span className="text-[10px] font-mono text-blue-600 font-semibold uppercase">
+                      <span className="text-[10px] font-mono text-[#B83A26] font-semibold uppercase">
                         {post.category}
                       </span>
-                      <h5 className="font-serif font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug">
+                      <h5 className="font-serif font-bold text-xs text-[#2B2723] group-hover:text-[#B83A26] transition-colors line-clamp-2 leading-snug">
                         {post.title}
                       </h5>
-                      <span className="text-[10px] font-mono text-slate-400 block">
+                      <span className="text-[10px] font-mono text-[#8C8479] block">
                         {post.date}
                       </span>
                     </div>
@@ -595,20 +595,20 @@ export default function BlogPublicationPage() {
                 variant="card"
                 source="blog_publication_sidebar"
                 title="Subscribe to Updates"
-                description="Get notified directly at your inbox from updates@blogupdates.arunpandian.online for every new publication."
+                description="Get notified directly at your inbox from updates@arunpandian.online for every new publication."
               />
 
               {/* Quick Tech Skills Cloud */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-amber-500" />
+              <div className="p-5 rounded-2xl bg-[#F4EFE6]/80 border border-[#E2DAD0] space-y-3">
+                <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-[#4A453E] flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-[#B83A26]" />
                   <span>Core Competencies</span>
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {['SQL Pipelines', 'Power BI DAX', 'Python Pandas', 'Lakehouse', 'ETL', 'Statistical Modeling'].map((tag) => (
                     <span
                       key={tag}
-                      className="px-2.5 py-1 rounded-md bg-white border border-slate-200 text-[11px] font-mono text-slate-700 font-medium shadow-2xs"
+                      className="px-2.5 py-1 rounded-md bg-[#FFFDFB] border border-[#DDD5C7] text-[11px] font-mono text-[#4A453E] font-medium shadow-2xs"
                     >
                       {tag}
                     </span>
@@ -626,7 +626,7 @@ export default function BlogPublicationPage() {
               {/* Category Filter Tabs & Search Bar */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-serif font-black text-xl sm:text-2xl text-slate-950 tracking-tight">
+                  <h2 className="font-serif font-black text-xl sm:text-2xl text-[#1C1A17] tracking-tight">
                     All Publications by Date
                   </h2>
 
@@ -636,9 +636,9 @@ export default function BlogPublicationPage() {
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-7 pr-2.5 py-1 rounded-full border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 focus:border-slate-900 outline-none"
+                      className="w-full pl-7 pr-2.5 py-1 rounded-full border border-[#DDD5C7] bg-[#FFFDFB] text-xs text-[#1C1A17] placeholder-[#8C8479] focus:border-[#1C1A17] outline-none"
                     />
-                    <Search size={12} className="absolute left-2.5 top-1.5 text-slate-400 pointer-events-none" />
+                    <Search size={12} className="absolute left-2.5 top-1.5 text-[#8C8479] pointer-events-none" />
                   </div>
                 </div>
 
@@ -652,8 +652,8 @@ export default function BlogPublicationPage() {
                         onClick={() => setSelectedCategory(cat)}
                         className={`px-3 py-1 rounded-full text-xs font-sans font-medium whitespace-nowrap transition-all cursor-pointer border ${
                           isSelected
-                            ? 'bg-slate-950 border-slate-950 text-white font-bold shadow-xs'
-                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                            ? 'bg-[#1C1A17] border-[#1C1A17] text-[#FAF7F2] font-bold shadow-xs'
+                            : 'bg-[#F4EFE6] border-[#DDD5C7] text-[#5C554B] hover:bg-[#EFE8DC]'
                         }`}
                       >
                         {cat}
@@ -664,14 +664,14 @@ export default function BlogPublicationPage() {
               </div>
 
               {/* Feed Items (CareerFoundry / Medium Layout by Dates) */}
-              <div className="divide-y divide-slate-150">
+              <div className="divide-y divide-[#EAE2D5]">
                 {filteredItems.length === 0 ? (
-                  <div className="py-16 text-center text-slate-500 space-y-2">
-                    <BookOpen size={32} className="mx-auto text-slate-300" />
-                    <p className="font-serif font-bold text-base text-slate-800">No matching publications found</p>
+                  <div className="py-16 text-center text-[#8C8479] space-y-2">
+                    <BookOpen size={32} className="mx-auto text-[#DDD4C5]" />
+                    <p className="font-serif font-bold text-base text-[#2B2723]">No matching publications found</p>
                     <button
                       onClick={() => { setSelectedCategory('All'); setSearchQuery(''); }}
-                      className="px-4 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold"
+                      className="px-4 py-1.5 rounded-full bg-[#1C1A17] text-[#FAF7F2] text-xs font-bold"
                     >
                       Reset filters
                     </button>
@@ -688,30 +688,30 @@ export default function BlogPublicationPage() {
                         className="py-6 group cursor-pointer transition-colors"
                       >
                         {/* Header Byline */}
-                        <div className="flex items-center gap-2 text-xs text-slate-600 mb-2">
-                          <div className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] flex items-center justify-center font-bold">
+                        <div className="flex items-center gap-2 text-xs text-[#6E665C] mb-2">
+                          <div className="w-4 h-4 rounded-full bg-[#B83A26] text-white text-[9px] flex items-center justify-center font-bold">
                             ➔
                           </div>
-                          <span className="font-semibold text-slate-900 truncate">
+                          <span className="font-semibold text-[#1C1A17] truncate">
                             {item.publicationName || `In ${item.category}`}
                           </span>
                           <span>·</span>
-                          <span className="text-slate-500 font-mono text-[11px]">{item.date}</span>
+                          <span className="text-[#8C8479] font-mono text-[11px]">{item.date}</span>
                         </div>
 
                         {/* Split: Left Text + Right Thumbnail */}
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-1.5 min-w-0">
-                            <h3 className="font-serif font-bold text-base sm:text-lg text-slate-950 group-hover:text-blue-700 transition-colors leading-snug line-clamp-2">
+                            <h3 className="font-serif font-bold text-base sm:text-lg text-[#1C1A17] group-hover:text-[#B83A26] transition-colors leading-snug line-clamp-2">
                               {item.title}
                             </h3>
-                            <p className="text-xs sm:text-[13px] text-slate-600 line-clamp-2 leading-relaxed font-sans">
+                            <p className="text-xs sm:text-[13px] text-[#6E665C] line-clamp-2 leading-relaxed font-sans">
                               {item.subtitle || item.description}
                             </p>
                           </div>
 
                           {item.image && (
-                            <div className="w-24 h-18 sm:w-28 sm:h-20 rounded-lg overflow-hidden bg-slate-950 shrink-0 border border-slate-200">
+                            <div className="w-24 h-18 sm:w-28 sm:h-20 rounded-lg overflow-hidden bg-[#161513] shrink-0 border border-[#DDD5C7]">
                               <img
                                 src={item.image}
                                 alt={item.title}
@@ -723,19 +723,19 @@ export default function BlogPublicationPage() {
                         </div>
 
                         {/* Footer Row */}
-                        <div className="flex items-center justify-between pt-3 text-xs text-slate-500">
+                        <div className="flex items-center justify-between pt-3 text-xs text-[#8C8479]">
                           <div className="flex items-center gap-4">
-                            <span className="font-mono text-[10px] text-slate-400">
+                            <span className="font-mono text-[10px] text-[#8C8479]">
                               {item.readTime}
                             </span>
                             <button
                               onClick={(e) => handleClap(e, item.id)}
-                              className="flex items-center gap-1 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                              className="flex items-center gap-1 text-[#4A453E] hover:text-[#1C1A17] transition-colors cursor-pointer"
                             >
                               <span>👏</span>
                               <span className="font-mono text-xs">{customClaps}</span>
                             </button>
-                            <div className="flex items-center gap-1 text-slate-500">
+                            <div className="flex items-center gap-1 text-[#6E665C]">
                               <MessageSquare size={12} />
                               <span className="font-mono text-xs">{item.responses || 4}</span>
                             </div>
@@ -745,11 +745,11 @@ export default function BlogPublicationPage() {
                             <button
                               onClick={(e) => handleBookmarkToggle(e, item.id)}
                               className={`p-1 rounded-full transition-colors cursor-pointer ${
-                                isSaved ? 'text-amber-600 bg-amber-50' : 'text-slate-400 hover:text-slate-800'
+                                isSaved ? 'text-[#B83A26] bg-[#F4EFE6]' : 'text-[#8C8479] hover:text-[#1C1A17]'
                               }`}
                               title={isSaved ? "Saved" : "Save"}
                             >
-                              <Bookmark size={14} className={isSaved ? "fill-amber-500" : ""} />
+                              <Bookmark size={14} className={isSaved ? "fill-[#B83A26]" : ""} />
                             </button>
                           </div>
                         </div>
@@ -767,8 +767,8 @@ export default function BlogPublicationPage() {
             <aside className="lg:col-span-3 space-y-6 order-3">
               
               {/* Author Overview Card */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3 text-center">
-                <div className="w-16 h-16 rounded-full overflow-hidden mx-auto border-2 border-slate-900 shadow-xs">
+              <div className="p-5 rounded-2xl bg-[#FFFDFB] border border-[#E8E1D5] shadow-xs space-y-3 text-center">
+                <div className="w-16 h-16 rounded-full overflow-hidden mx-auto border-2 border-[#1C1A17] shadow-xs">
                   <img
                     src="https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png"
                     alt="Arun Pandian"
@@ -776,18 +776,18 @@ export default function BlogPublicationPage() {
                   />
                 </div>
                 <div>
-                  <h4 className="font-serif font-bold text-base text-slate-950">Arun Pandian</h4>
-                  <p className="text-xs text-slate-500 font-mono">Data Analyst & BI Engineer</p>
+                  <h4 className="font-serif font-bold text-base text-[#1C1A17]">Arun Pandian</h4>
+                  <p className="text-xs text-[#8C8479] font-mono">Data Analyst &amp; BI Engineer</p>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed font-sans">
+                <p className="text-[11px] text-[#6E665C] leading-relaxed font-sans">
                   Crafting end-to-end data analytics solutions, Power BI dashboards, and high-throughput SQL pipelines.
                 </p>
-                <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-center gap-2 pt-2 border-t border-[#EFE9DF]">
                   <a
                     href="https://github.com/arun-pandian-p"
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                    className="p-2 rounded-lg bg-[#F4EFE6] text-[#4A453E] hover:bg-[#EAE2D5] transition-colors"
                   >
                     <FaGithub size={14} />
                   </a>
@@ -795,13 +795,13 @@ export default function BlogPublicationPage() {
                     href="https://linkedin.com"
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2 rounded-lg bg-slate-100 text-blue-600 hover:bg-blue-50 transition-colors"
+                    className="p-2 rounded-lg bg-[#F4EFE6] text-[#1D4ED8] hover:bg-[#EAE2D5] transition-colors"
                   >
                     <FaLinkedin size={14} />
                   </a>
                   <Link
                     to="/admin/blogs"
-                    className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                    className="p-2 rounded-lg bg-[#F4EFE6] text-[#4A453E] hover:bg-[#EAE2D5] transition-colors"
                     title="Studio"
                   >
                     <FileText size={14} />
@@ -810,27 +810,27 @@ export default function BlogPublicationPage() {
               </div>
 
               {/* Date & Time Highlights Timeline Widget */}
-              <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-                <h3 className="font-sans font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5 pb-2 border-b border-slate-100">
-                  <Calendar size={14} className="text-red-600" />
+              <div className="p-5 rounded-2xl bg-[#FFFDFB] border border-[#E8E1D5] shadow-xs space-y-4">
+                <h3 className="font-sans font-bold text-xs uppercase tracking-wider text-[#1C1A17] flex items-center gap-1.5 pb-2 border-b border-[#EFE9DF]">
+                  <Calendar size={14} className="text-[#B83A26]" />
                   <span>Chronological Highlights</span>
                 </h3>
 
                 <div className="space-y-4">
                   {timelineDates.map(([period, items]) => (
                     <div key={period} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-800">
+                      <div className="flex items-center justify-between text-xs font-mono font-bold text-[#2B2723]">
                         <span>{period}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-[#F4EFE6] text-[#5C554B] border border-[#E2DAD0]">
                           {items.length} post{items.length > 1 ? 's' : ''}
                         </span>
                       </div>
-                      <ul className="space-y-1 pl-2 border-l-2 border-slate-100 text-[11px] text-slate-600">
+                      <ul className="space-y-1 pl-2 border-l-2 border-[#E8E1D5] text-[11px] text-[#6E665C]">
                         {items.slice(0, 2).map((item) => (
                           <li
                             key={item.id}
                             onClick={() => handleOpenItem(item.href)}
-                            className="truncate cursor-pointer hover:text-blue-600 transition-colors"
+                            className="truncate cursor-pointer hover:text-[#B83A26] transition-colors"
                             title={item.title}
                           >
                             • {item.title}
@@ -843,18 +843,18 @@ export default function BlogPublicationPage() {
               </div>
 
               {/* Reading Stats Widget */}
-              <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
-                <div className="flex items-center gap-2 text-amber-400 font-mono text-xs font-bold">
+              <div className="p-4 rounded-2xl bg-[#1C1A17] text-[#FAF7F2] space-y-2 border border-[#2D2A26]">
+                <div className="flex items-center gap-2 text-[#F59E0B] font-mono text-xs font-bold">
                   <Flame size={14} />
                   <span>Journal Stats</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div className="p-2 rounded-lg bg-slate-800/80">
-                    <span className="text-[10px] text-slate-400 block font-mono">Total Stories</span>
+                  <div className="p-2 rounded-lg bg-[#2B2723]/90 border border-[#3D3832]">
+                    <span className="text-[10px] text-[#A8A095] block font-mono">Total Stories</span>
                     <strong className="text-base font-serif">{allItems.length}</strong>
                   </div>
-                  <div className="p-2 rounded-lg bg-slate-800/80">
-                    <span className="text-[10px] text-slate-400 block font-mono">Avg Read</span>
+                  <div className="p-2 rounded-lg bg-[#2B2723]/90 border border-[#3D3832]">
+                    <span className="text-[10px] text-[#A8A095] block font-mono">Avg Read</span>
                     <strong className="text-base font-serif">5 min</strong>
                   </div>
                 </div>
