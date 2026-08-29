@@ -52,7 +52,7 @@ import {
   Shuffle
 } from 'lucide-react';
 import { FaLinkedin, FaGithub, FaXTwitter, FaWhatsapp, FaMedium } from 'react-icons/fa6';
-import Navbar from '../components/Navbar';
+import BlogNavbar from '../components/BlogNavbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
@@ -364,7 +364,7 @@ export default function BlogPublicationPage() {
       </Helmet>
 
       <StyleOverrides />
-      <Navbar />
+      <BlogNavbar onSubscribeClick={() => setIsSubscribeOpen(true)} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-24 space-y-12">
         

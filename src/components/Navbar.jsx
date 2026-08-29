@@ -73,23 +73,19 @@ const Navbar = () => {
   }, [isBlogPage]);
 
   const navLinks = [
-    { 
-      name: 'Home', 
-      href: onBlogSubdomain ? `${mainDomain}/#hero` : '/#hero',
-      isExternal: onBlogSubdomain
-    },
-    { 
-      name: 'Blog', 
-      href: onBlogSubdomain ? '/' : blogDomain,
-      isExternal: !onBlogSubdomain
-    },
+    { name: 'Home', href: '/#hero', isExternal: false },
+    { name: 'About', href: '/#about', isExternal: false },
+    { name: 'Projects', href: '/#projects', isExternal: false },
+    { name: 'Experience', href: '/#experience', isExternal: false },
+    { name: 'Skills', href: '/#skills', isExternal: false },
+    { name: 'Blog', href: blogDomain, isExternal: true },
+    { name: 'Contact', href: '/#contact', isExternal: false },
   ];
 
   const isLinkActive = (href, isExternal) => {
-    if (onBlogSubdomain) {
-      return !isExternal && (href === '/' || location.pathname === '/');
-    }
-    return href === '/blog' || href === blogDomain ? isBlogPage : (!isBlogPage && activeSection === (href.split('#')[1] || 'hero'));
+    if (isExternal) return false;
+    const targetSection = href.split('#')[1] || 'hero';
+    return activeSection === targetSection;
   };
 
   /* ── CSS-var–driven color tokens so every theme preset works ── */

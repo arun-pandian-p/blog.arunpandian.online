@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '../lib/supabaseClient';
 import { useContent } from '../context/ContentProvider';
-import Navbar from '../components/Navbar';
+import BlogNavbar from '../components/BlogNavbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
@@ -957,7 +957,7 @@ const BlogDetails = () => {
         />
       </div>
 
-      <Navbar />
+      <BlogNavbar onSubscribeClick={() => setIsShareModalOpen(false)} />
 
       {/* ═════════════════════════════════════════════════════════════════
           TOP MEDIUM-STYLE PROMO BAR (Matching Screenshot Image 1)
