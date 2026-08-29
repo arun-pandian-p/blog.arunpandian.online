@@ -18,7 +18,8 @@ export default async function handler(req, res) {
       url,
       type = 'blog',
       imageUrl,
-      quote
+      quote,
+      targetEmails
     } = req.body;
 
     if (!title && !customSubject) {
@@ -50,13 +51,24 @@ export default async function handler(req, res) {
     }
 
     // Clean, validate, and deduplicate subscriber emails
-    const subscriberEmails = Array.from(
+    let subscriberEmails = Array.from(
       new Set(
         (subscribers || [])
           .map((s) => s.email?.trim().toLowerCase())
           .filter((email) => email && email.includes('@') && email.includes('.'))
       )
     );
+
+    // If specific targetEmails are provided by admin selection, filter to only those
+    if (targetEmails && Array.isArray(targetEmails) && targetEmails.length > 0) {
+      const targetSet = new Set(targetEmails.map((e) => e.trim().toLowerCase()));
+      subscriberEmails = subscriberEmails.filter((email) => targetSet.has(email));
+      
+      // If admin entered specific test emails, allow them as long as valid
+      if (subscriberEmails.length === 0) {
+        subscriberEmails = Array.from(targetSet).filter((e) => e.includes('@') && e.includes('.'));
+      }
+    }
 
     // If 0 active subscribers exist, safely stop without sending
     if (subscriberEmails.length === 0) {
@@ -89,8 +101,11 @@ export default async function handler(req, res) {
     if (resendApiKey && subscriberEmails.length > 0) {
       const senderEmail = process.env.NEWSLETTER_FROM_EMAIL || 'Arun Pandian <updates@arunpandian.online>';
       const emailPayloads = subscriberEmails.map((recipient) => {
-        const recipientName = recipient.split('@')[0].replace(/[._-]/g, ' ');
-        const capitalizedName = recipientName.charAt(0).toUpperCase() + recipientName.slice(1);
+        // Clean short name extraction: e.g. arunpandi47777@gmail.com -> Arunpandi, john.doe -> John
+        const rawUser = recipient.split('@')[0];
+        const cleanUser = rawUser.replace(/\d+$/, '');
+        const namePart = (cleanUser || rawUser).split(/[._\-+]/)[0];
+        const shortName = namePart ? namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase() : 'Friend';
         const unsubscribeLink = `https://blog.arunpandian.online/unsubscribe?email=${encodeURIComponent(recipient)}`;
 
         return {
@@ -138,7 +153,7 @@ export default async function handler(req, res) {
                 </div>
 
                 <div class="content">
-                  <div class="salutation">Hey ${capitalizedName},</div>
+                  <div class="salutation">Hey ${shortName},</div>
 
                   <h1 class="title">${finalHeadline}</h1>
 
