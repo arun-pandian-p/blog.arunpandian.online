@@ -22,10 +22,12 @@ import {
   Code2,
   BookOpen,
   LayoutGrid,
-  Columns
+  Columns,
+  Share2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectChartPreview from './ProjectChartPreview';
+import ShareModal from './ShareModal';
 import { useThemeStore } from '../theme/store';
 
 const GithubIcon = ({ size = 16 }) => (
@@ -87,6 +89,7 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
   const themeProjectsScroll = theme?.layout?.projectsScroll;
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState(null);
+  const [shareProject, setShareProject] = useState(null);
   const [layoutMode, setLayoutMode] = useState(themeProjectsScroll === 'vertical' || themeProjectsScroll === 'grid' ? 'vertical' : 'horizontal');
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const scrollContainerRef = useRef(null);
@@ -608,14 +611,25 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
 
               {/* Modal Footer */}
               <div className="sticky bottom-0 z-20 p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-3">
-                <Link
-                  to={`/project/${selectedProject._id || selectedProject.id || 1}`}
-                  onClick={() => setSelectedProject(null)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-colors shadow-2xs"
-                >
-                  <span>Open Full Article</span>
-                  <ArrowUpRight size={13} />
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to={`/project/${selectedProject._id || selectedProject.id || 1}`}
+                    onClick={() => setSelectedProject(null)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 transition-colors shadow-2xs"
+                  >
+                    <span>Open Full Article</span>
+                    <ArrowUpRight size={13} />
+                  </Link>
+
+                  <button
+                    onClick={() => setShareProject(selectedProject)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
+                    title="Share Project"
+                  >
+                    <Share2 size={13} />
+                    <span>Share</span>
+                  </button>
+                </div>
 
                 <a
                   href={(selectedProject.githubLink || 'https://github.com/arun-pandian-p').replace('shadow-byte-warrior', 'arun-pandian-p')}
@@ -631,6 +645,20 @@ export default function PortfolioGrid({ projects = [], sectionConfig = {} }) {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Share Modal */}
+      {shareProject && (
+        <ShareModal
+          isOpen={Boolean(shareProject)}
+          onClose={() => setShareProject(null)}
+          title={shareProject?.title}
+          description={shareProject?.problem || shareProject?.insight || shareProject?.subtitle}
+          url={`${typeof window !== 'undefined' ? window.location.origin : ''}/project/${shareProject._id || shareProject.id || 1}`}
+          image={shareProject?.image_url || shareProject?.imageUrl || shareProject?.image}
+          tags={shareProject?.tags || ['Analytics']}
+          type="Project"
+        />
+      )}
     </section>
   );
 }

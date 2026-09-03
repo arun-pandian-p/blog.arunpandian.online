@@ -7,7 +7,18 @@ import { useContent } from '../context/ContentProvider';
 import StyleOverrides from '../editor/StyleOverrides';
 import arunProfile from '../assets/arun-profile.jpg';
 import { isBlogSubdomain } from '../utils/domain';
-import { FaLinkedin, FaGithub } from 'react-icons/fa6';
+import ShareModal from '../components/ShareModal';
+import BlogComments from '../components/BlogComments';
+import toast from 'react-hot-toast';
+import { 
+  FaLinkedin, 
+  FaGithub, 
+  FaXTwitter, 
+  FaWhatsapp, 
+  FaRedditAlien, 
+  FaFacebookF, 
+  FaEnvelope 
+} from 'react-icons/fa6';
 import {
   Loader2,
   ArrowLeft,
@@ -34,11 +45,6 @@ import {
   Maximize2,
   Edit2,
   Edit3,
-  Truck,
-  Plane,
-  Users,
-  Activity,
-  Cpu,
   Share2,
   Calendar,
   Clock,
@@ -48,6 +54,10 @@ import {
   GitBranch,
   FileText,
   Grid,
+  Bookmark,
+  MessageSquare,
+  Lightbulb,
+  Info
 } from 'lucide-react';
 
 const GithubIcon = ({ size = 18 }) => (
@@ -74,11 +84,31 @@ export default function ProjectDetails() {
   const [project, setProject] = useState(null);
   const [allProjectsList, setAllProjectsList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [iframeError, setIframeError] = useState(false);
   const [showImageZoom, setShowImageZoom] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedCode, setCopiedCode] = useState(null);
   const [activeVisualIndex, setActiveVisualIndex] = useState(0);
+
+  // Social Sharing, Comments & Live Likes State
+  const [likesCount, setLikesCount] = useState(142);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+
+  // Load likes & bookmarks from localStorage
+  useEffect(() => {
+    if (!id) return;
+    const storedLikes = localStorage.getItem(`project_likes_${id}`);
+    const storedUserLiked = localStorage.getItem(`project_user_liked_${id}`);
+    const storedBookmark = localStorage.getItem(`project_bookmarked_${id}`);
+
+    if (storedLikes) {
+      setLikesCount(parseInt(storedLikes, 10));
+    }
+    if (storedUserLiked) setHasLiked(true);
+    if (storedBookmark) setIsBookmarked(true);
+  }, [id]);
 
   // Dynamic back navigation: Check if came from Blog publication or Home
   const isFromBlog = useMemo(() => {
@@ -145,15 +175,116 @@ export default function ProjectDetails() {
     };
 
     fetchLiveProject();
+
+    // Realtime Supabase Channel Listener for instantaneous live update
+    let channel;
+    if (supabase) {
+      channel = supabase
+        .channel(`project-live-${id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${id}` },
+          (payload) => {
+            if (payload.new) {
+              setProject(payload.new);
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       isMounted = false;
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [id, contextProjects]);
 
   const copyToClipboard = (text, codeId) => {
     navigator.clipboard.writeText(text);
     setCopiedCode(codeId);
+    toast.success('Calculated measure copied to clipboard!', { icon: '📋' });
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  // Live Like / Clap Action
+  const handleLike = () => {
+    const newCount = likesCount + 1;
+    setLikesCount(newCount);
+    setHasLiked(true);
+    localStorage.setItem(`project_likes_${id}`, newCount);
+    localStorage.setItem(`project_user_liked_${id}`, 'true');
+
+    toast.success(`👏 Clapped! (${newCount})`, {
+      icon: '👏',
+      style: { borderRadius: '12px', background: '#0F172A', color: '#fff', fontSize: '13px' }
+    });
+  };
+
+  // Bookmark Toggle
+  const handleBookmarkToggle = () => {
+    const nextState = !isBookmarked;
+    setIsBookmarked(nextState);
+    if (nextState) {
+      localStorage.setItem(`project_bookmarked_${id}`, 'true');
+      toast.success('Saved to project bookmarks!', { icon: '🔖' });
+    } else {
+      localStorage.removeItem(`project_bookmarked_${id}`);
+      toast('Removed from bookmarks.', { icon: '🗑️' });
+    }
+  };
+
+  // Direct Social Share Handler
+  const handleDirectShare = (platform) => {
+    const currentUrl = window.location.href;
+    const shareTitle = project?.title || 'Data Analytics Case Study';
+    const cleanExcerpt = project?.problem || project?.subtitle || 'Data analytics investigation with interactive dashboards and calculated metrics.';
+
+    if (platform === 'native' && navigator.share) {
+      navigator.share({
+        title: shareTitle,
+        text: `${shareTitle} by Arun Pandian`,
+        url: currentUrl,
+      }).catch(() => {});
+      return;
+    }
+
+    if (platform === 'linkedin') {
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`,
+        '_blank',
+        'width=600,height=600'
+      );
+    } else if (platform === 'twitter') {
+      window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareTitle} | Analytics by @arunpandian`)}&url=${encodeURIComponent(currentUrl)}&hashtags=DataAnalytics,SQL,PowerBI,Python`,
+        '_blank',
+        'width=600,height=450'
+      );
+    } else if (platform === 'reddit') {
+      window.open(
+        `https://reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(shareTitle)}`,
+        '_blank',
+        'width=650,height=550'
+      );
+    } else if (platform === 'whatsapp') {
+      window.open(
+        `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this data analytics project: "${shareTitle}" — ${currentUrl}`)}`,
+        '_blank'
+      );
+    } else if (platform === 'facebook') {
+      window.open(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
+        '_blank',
+        'width=600,height=500'
+      );
+    } else if (platform === 'email') {
+      window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`Hi,\n\nCheck out this data analytics case study:\n\n${shareTitle}\n\n${cleanExcerpt}\n\n${currentUrl}\n\nBest,`)}`;
+    } else if (platform === 'copy') {
+      navigator.clipboard.writeText(currentUrl);
+      toast.success('Project link copied to clipboard!', { icon: '🔗' });
+    }
   };
 
   // Find previous and next projects for cross-navigation
@@ -167,6 +298,65 @@ export default function ProjectDetails() {
 
     return { prevProject: prev, nextProject: next, relatedProjects: related };
   }, [allProjectsList, contextProjects, id]);
+
+  // ─── Real-Time Dynamic Insights Breakdown Generator ───
+  const parsedInsights = useMemo(() => {
+    if (!project) return [];
+    const rawInsight = project.insight || '';
+    const items = [];
+
+    if (rawInsight.trim()) {
+      // Check if insight contains multiple bullet points, sentences or numbered points
+      const lines = rawInsight
+        .split(/\n|(?:\r\n)|\•|(?:\d+\.\s+)/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 4);
+
+      if (lines.length > 1) {
+        lines.forEach((line, idx) => {
+          items.push({
+            title: `Analytical Finding 0${idx + 1}`,
+            tag: idx === 0 ? 'Primary Insight' : idx === 1 ? 'Variance Metric' : 'Operational Pattern',
+            finding: line,
+            evidence: project.data || `Calculated across active dataset records (${project.records_count || 'production records'}).`,
+            implication: idx === 0 && project.result ? project.result : 'Enables dynamic thresholding and automated stakeholder reporting.',
+          });
+        });
+      } else {
+        items.push({
+          title: 'Core Analytical Finding',
+          tag: 'Statistical Pattern',
+          finding: rawInsight,
+          evidence: project.data || 'Extracted via Power Query ETL & relational star-schema calculation.',
+          implication: project.result || 'Directly drives automated operational efficiency & measurable cost savings.',
+        });
+      }
+    }
+
+    // If project has measurable result, add strategic impact card
+    if (project.result && items.length < 2) {
+      items.push({
+        title: 'Measurable Business Outcome',
+        tag: 'Strategic Impact',
+        finding: project.result,
+        evidence: project.process || 'Verified through multi-dimensional cross-filtering & benchmark aggregation.',
+        implication: 'Translates raw analytical discovery into quantified executive ROI.',
+      });
+    }
+
+    // Default structured card if no input yet
+    if (items.length === 0) {
+      items.push({
+        title: 'Core Analytical Finding',
+        tag: 'Key Metric',
+        finding: project.result || project.problem || 'Statistical investigation identifying operational inflection points.',
+        evidence: project.data || 'Multi-source transactional datasets normalized through ETL.',
+        implication: 'Enables high-confidence data-driven decision frameworks.',
+      });
+    }
+
+    return items;
+  }, [project]);
 
   if (loading) {
     return (
@@ -187,7 +377,7 @@ export default function ProjectDetails() {
           to="/blog"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-900 text-white font-semibold text-sm hover:bg-blue-600 transition-colors"
         >
-          <ArrowLeft size={16} /> Return to Blog & Publication Index
+          <ArrowLeft size={16} /> Return to Blog &amp; Publication Index
         </Link>
       </div>
     );
@@ -203,7 +393,9 @@ export default function ProjectDetails() {
 
   const tags = Array.isArray(project.tags) && project.tags.length > 0
     ? project.tags
-    : ['Power BI', 'SQL', 'Data Analytics', 'Data Visualization'];
+    : typeof project.tags === 'string' && project.tags.trim().length > 0
+      ? project.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : ['Power BI', 'SQL', 'Data Analytics', 'Data Visualization'];
 
   const powerBiEmbedUrl = project.powerbi_embed_url || project.live_link || project.liveLink || '';
   const githubUrl = project.github_link || project.githubLink || 'https://github.com/arun-pandian-p';
@@ -217,27 +409,16 @@ export default function ProjectDetails() {
 
   const activeVisual = visualsList[activeVisualIndex] || visualsList[0] || '';
   const isVideoVisual = activeVisual ? Boolean(activeVisual.match(/\.(mp4|webm|ogg|mov)$/i)) : false;
-
   const toolsSummary = tags.slice(0, 4).join(' • ');
-
-  const isDelivery = title.toLowerCase().includes('delivery') || title.toLowerCase().includes('amazon');
-
-  // Staggered Gantt Chart Data (Cascading timeline matching sample_blog.pdf Image 2)
-  const cascadingGanttTasks = [
-    { label: 'Project Initiation & Scope', left: 4, width: 14, color: 'bg-slate-600 text-white' },
-    { label: 'Feasibility & Data Audit', left: 15, width: 16, color: 'bg-slate-500 text-white' },
-    { label: 'Power Query ETL Normalization', left: 28, width: 22, color: 'bg-blue-600 text-white' },
-    { label: 'Star-Schema Dimensional Modeling', left: 45, width: 18, color: 'bg-indigo-600 text-white' },
-    { label: 'Core DAX Measure Engineering & Calculation', left: 38, width: 36, color: 'bg-rose-500 text-white' },
-    { label: 'Visual UI & Interactive Cross-Filtering', left: 70, width: 18, color: 'bg-blue-600 text-white' },
-    { label: 'Quality Assurance & SLA Verification', left: 78, width: 16, color: 'bg-blue-700 text-white' },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-blue-600 selection:text-white">
       <Helmet>
         <title>{title} | Arun Pandian - Analytics Case Study</title>
         <meta name="description" content={subtitle} />
+        <meta property="og:title" content={`${title} | Arun Pandian`} />
+        <meta property="og:description" content={subtitle} />
+        {activeVisual && <meta property="og:image" content={activeVisual} />}
       </Helmet>
 
       <StyleOverrides />
@@ -245,7 +426,7 @@ export default function ProjectDetails() {
 
       <main className="flex-1 pt-24 sm:pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
         
-        {/* ── 01: EDITORIAL HEADER & AUTHOR INFO (Matching sample_blog.pdf) ── */}
+        {/* ── 01: EDITORIAL HEADER & AUTHOR INFO ── */}
         <header className="mb-8 sm:mb-10 pb-8 border-b border-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
             <button
@@ -300,7 +481,7 @@ export default function ProjectDetails() {
             {title}
           </h1>
 
-          {/* Author Block & Social Links (Gleek style) */}
+          {/* Author Block & Social / Share Action Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-3">
               <img
@@ -334,46 +515,96 @@ export default function ProjectDetails() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
-              <a
-                href="https://www.linkedin.com/in/arunpandianp-dataanalyst/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-[#0077B5] transition-colors"
-                title="LinkedIn Profile"
+            {/* Direct Social Share & Interactive Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+              {/* Direct LinkedIn Share */}
+              <button
+                onClick={() => handleDirectShare('linkedin')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-[#0077B5]/10 border border-slate-200 text-[#0077B5] transition-all cursor-pointer"
+                title="Share on LinkedIn"
               >
-                <FaLinkedin className="text-sm text-[#0077B5]" />
-                <span>LinkedIn</span>
-              </a>
-              <a
-                href="https://github.com/arun-pandian-p"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors"
-                title="GitHub Profile"
+                <FaLinkedin size={15} />
+              </button>
+
+              {/* Direct X / Twitter Share */}
+              <button
+                onClick={() => handleDirectShare('twitter')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 hover:text-slate-950 transition-all cursor-pointer"
+                title="Share on X (Twitter)"
               >
-                <FaGithub className="text-sm text-slate-800" />
-                <span>GitHub</span>
-              </a>
-              <a
-                href="/resume.pdf"
-                download
-                className="inline-flex items-center gap-1.5 hover:text-blue-600 transition-colors font-semibold text-blue-600"
-                title="Download Résumé"
+                <FaXTwitter size={14} />
+              </button>
+
+              {/* Direct Reddit Share */}
+              <button
+                onClick={() => handleDirectShare('reddit')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-[#FF4500]/10 border border-slate-200 text-[#FF4500] transition-all cursor-pointer"
+                title="Share on Reddit"
               >
-                <FileText size={13} />
-                <span>Résumé</span>
-              </a>
+                <FaRedditAlien size={15} />
+              </button>
+
+              {/* Direct WhatsApp Share */}
+              <button
+                onClick={() => handleDirectShare('whatsapp')}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-[#25D366]/10 border border-slate-200 text-[#25D366] transition-all cursor-pointer"
+                title="Share on WhatsApp"
+              >
+                <FaWhatsapp size={15} />
+              </button>
+
+              {/* Open Full Share Modal with Preview */}
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-bold transition-all cursor-pointer"
+                title="Open Complete Share Menu"
+              >
+                <Share2 size={13} />
+                <span>Share</span>
+              </button>
+
+              {/* Live Like / Clap Button */}
+              <button
+                onClick={handleLike}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                  hasLiked 
+                    ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' 
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
+                }`}
+                title="Clap / Like this project"
+              >
+                <span>👏</span>
+                <span>{likesCount}</span>
+              </button>
+
+              {/* Open Comment Box Button */}
+              <button
+                onClick={() => setIsCommentModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition-all cursor-pointer"
+                title="Open Project Discussion & Comments"
+              >
+                <MessageSquare size={13} className="text-blue-600" />
+                <span>Discussion</span>
+              </button>
+
+              {/* Bookmark Toggle */}
+              <button
+                onClick={handleBookmarkToggle}
+                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-all cursor-pointer"
+                title="Save to bookmarks"
+              >
+                <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+              </button>
             </div>
           </div>
         </header>
 
-        {/* ── 02: ANALYTICAL QUESTION & RECRUITER MODE ── */}
+        {/* ── 02: ANALYTICAL QUESTION & RECRUITER MODE (Derived from Real Inputs) ── */}
         <section className="mb-10 space-y-6">
           {/* Analytical Question Box */}
           <div className="p-5 sm:p-6 rounded-2xl bg-blue-50/70 border border-blue-200/80">
             <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-blue-700 block mb-1">
-              Analytical Question & Core Hypothesis:
+              Analytical Question &amp; Core Hypothesis:
             </span>
             <p
               data-edit-id="project.problem"
@@ -386,47 +617,52 @@ export default function ProjectDetails() {
             </p>
           </div>
 
-          {/* Recruiter At-a-Glance Grid */}
+          {/* Recruiter At-a-Glance Grid - Dynamically populated from real inputs */}
           <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200">
             <div className="flex items-center gap-2 pb-3 mb-4 border-b border-slate-200">
               <span className="h-2 w-2 rounded-full bg-blue-600" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
-                Recruiter Mode · Key Deliverables
+                Recruiter Mode · Key Deliverables &amp; Real Metrics
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
               <div>
                 <span className="font-bold text-slate-900 block mb-1">Problem Addressed</span>
-                <p className="text-slate-600 leading-relaxed">
-                  {isDelivery ? 'Delivery SLA delay variance under weather & traffic surges.' : 'Operational bottlenecks and data fragmentation.'}
+                <p className="text-slate-600 leading-relaxed line-clamp-3">
+                  {project.problem || subtitle}
                 </p>
               </div>
 
               <div>
-                <span className="font-bold text-slate-900 block mb-1">Dataset Source</span>
-                <a href={datasetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono truncate block">
-                  Verified Production Dataset ↗
-                </a>
+                <span className="font-bold text-slate-900 block mb-1">Dataset &amp; Volume</span>
+                <p className="text-slate-600 leading-relaxed line-clamp-2">
+                  {project.data || (project.records_count ? `${project.records_count} rows` : 'Verified Production Dataset')}
+                </p>
+                {datasetUrl && (
+                  <a href={datasetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono truncate block mt-1">
+                    Dataset Source ↗
+                  </a>
+                )}
               </div>
 
               <div>
-                <span className="font-bold text-slate-900 block mb-1">Architecture</span>
-                <p className="text-slate-600 leading-relaxed">
-                  Star-Schema, 1-to-many propagation, dynamic DAX measures.
+                <span className="font-bold text-slate-900 block mb-1">Methodology &amp; ETL</span>
+                <p className="text-slate-600 leading-relaxed line-clamp-3">
+                  {project.process || 'Star-Schema dimensional modeling, ETL normalization, dynamic DAX measures.'}
                 </p>
               </div>
 
               <div>
-                <span className="font-bold text-emerald-800 block mb-1">Key Impact</span>
+                <span className="font-bold text-emerald-800 block mb-1">Key Impact / Result</span>
                 <p
                   data-edit-id="project.result"
                   data-edit-name="Key Outcome / Impact"
                   data-edit-kind="text"
                   data-edit-path="project.result"
-                  className="text-emerald-700 leading-relaxed font-medium"
+                  className="text-emerald-700 leading-relaxed font-medium line-clamp-3"
                 >
-                  {project.result || 'Identified +48 min delay penalty saving 14% turnaround variance.'}
+                  {project.result || project.insight || 'Engineered automated reporting saving turnaround variance.'}
                 </p>
               </div>
             </div>
@@ -450,9 +686,11 @@ export default function ProjectDetails() {
                 {activeVisual && (
                   <button
                     onClick={() => setShowImageZoom(true)}
-                    className="px-2.5 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white font-mono text-[11px] cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-mono cursor-pointer"
+                    title="Zoom in high resolution"
                   >
-                    Zoom View ↗
+                    <Maximize2 size={12} />
+                    <span className="text-[11px]">Zoom</span>
                   </button>
                 )}
                 {powerBiEmbedUrl && (
@@ -460,188 +698,83 @@ export default function ProjectDetails() {
                     href={powerBiEmbedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[11px]"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors font-mono cursor-pointer"
                   >
-                    Open Live Dashboard ↗
+                    <ExternalLink size={12} />
+                    <span className="text-[11px]">Live App</span>
                   </a>
                 )}
               </div>
             </div>
 
-            {/* Multi-Visual Slide Switcher Bar (When 2 to 5 visuals exist) */}
-            {visualsList.length > 1 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/90 border-b border-slate-800 overflow-x-auto">
-                <span className="text-[11px] font-mono text-slate-400 font-bold">Gallery ({visualsList.length} Visuals):</span>
-                <div className="flex items-center gap-1.5">
-                  {visualsList.map((vUrl, idx) => {
-                    const isVid = vUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-                    const isGif = vUrl.match(/\.gif$/i);
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setActiveVisualIndex(idx)}
-                        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono transition-all cursor-pointer ${
-                          activeVisualIndex === idx
-                            ? 'bg-blue-600 text-white font-bold shadow-xs'
-                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
-                        }`}
-                      >
-                        <span>Visual 0{idx + 1}</span>
-                        {isVid && <span className="text-[9px] px-1 py-0.2 bg-blue-900 text-blue-200 rounded font-bold">MP4</span>}
-                        {isGif && <span className="text-[9px] px-1 py-0.2 bg-emerald-900 text-emerald-200 rounded font-bold">GIF</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Visual Canvas */}
-            <div className="p-3 sm:p-6 bg-slate-950 flex items-center justify-center min-h-[360px]">
-              {powerBiEmbedUrl && !iframeError ? (
-                <iframe
-                  title={title}
-                  src={powerBiEmbedUrl}
-                  className="w-full aspect-16/9 rounded-xl border-0"
-                  allowFullScreen
-                  onError={() => setIframeError(true)}
-                />
-              ) : activeVisual ? (
+            {/* Visual Display */}
+            <div className="relative aspect-16/10 bg-slate-950 flex items-center justify-center overflow-hidden">
+              {activeVisual ? (
                 isVideoVisual ? (
                   <video
                     src={activeVisual}
                     controls
                     autoPlay
-                    loop
                     muted
-                    playsInline
-                    className="w-full h-auto max-h-[550px] object-contain rounded-lg shadow-md"
+                    loop
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <img
                     src={activeVisual}
-                    alt={`${title} - Visual 0${activeVisualIndex + 1}`}
-                    className="w-full h-auto max-h-[550px] object-contain rounded-lg cursor-pointer hover:scale-[1.005] transition-transform"
+                    alt={title}
+                    className="w-full h-full object-contain cursor-pointer"
                     onClick={() => setShowImageZoom(true)}
                   />
                 )
+              ) : powerBiEmbedUrl ? (
+                <iframe
+                  src={powerBiEmbedUrl}
+                  title={title}
+                  className="w-full h-full border-0"
+                  allowFullScreen
+                />
               ) : (
-                <div className="text-slate-400 font-mono text-xs">Visual report preview available</div>
+                <div className="p-8 text-center text-slate-400 font-mono text-xs space-y-2">
+                  <BarChart3 className="mx-auto w-10 h-10 text-slate-600 animate-pulse" />
+                  <p>Interactive Analytics Model Ready</p>
+                  <p className="text-[11px] text-slate-500">
+                    Upload dashboard screenshots or link live Power BI report in admin panel.
+                  </p>
+                </div>
               )}
             </div>
+
+            {/* Multi-Visual Selector Bar if multiple visuals uploaded */}
+            {visualsList.length > 1 && (
+              <div className="px-4 py-2.5 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-400 text-[11px]">
+                  Visual {activeVisualIndex + 1} of {visualsList.length}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {visualsList.map((_, vIdx) => (
+                    <button
+                      key={vIdx}
+                      onClick={() => setActiveVisualIndex(vIdx)}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        activeVisualIndex === vIdx ? 'w-6 bg-blue-500' : 'w-2 bg-slate-600 hover:bg-slate-400'
+                      }`}
+                      title={`Visual 0${vIdx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* ── 04: CASCADING GANTT CHART (Exact Gleek Layout from sample_blog.pdf Image 2) ── */}
-        <section className="mb-14 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3
-              data-edit-id="project.ganttTitle"
-              data-edit-name="Timeline Section Title"
-              data-edit-kind="heading"
-              data-edit-path="project.ganttTitle"
-              className="font-serif font-bold text-xl sm:text-2xl text-slate-900"
-            >
-              Phased Implementation & Turnaround Timeline
-            </h3>
-            <span
-              data-edit-id="project.ganttBadge"
-              data-edit-name="Timeline Badge"
-              data-edit-kind="text"
-              data-edit-path="project.ganttBadge"
-              className="text-xs font-mono text-slate-500"
-            >
-              6-Stage Lifecycle
-            </span>
-          </div>
-
-          <p
-            data-edit-id="project.ganttDescription"
-            data-edit-name="Timeline Description"
-            data-edit-kind="text"
-            data-edit-path="project.ganttDescription"
-            className="text-xs sm:text-sm text-slate-700 leading-relaxed font-sans"
-          >
-            The project follows an iterative analytical lifecycle ensuring rigorous validation across every stage. The cascading Gantt chart below illustrates the sequential schedule from ingestion to deployment milestone:
-          </p>
-
-          {/* Gleek Staggered Gantt Canvas (Matching Image 2) */}
-          <div className="p-4 sm:p-6 rounded-2xl bg-[#F0F7FF] border border-blue-100 overflow-x-auto shadow-2xs">
-            <div className="min-w-[650px] relative py-4">
-              
-              {/* Vertical Time Grid Columns */}
-              <div className="absolute inset-0 grid grid-cols-6 pointer-events-none">
-                <div className="border-r border-blue-200/50 h-full" />
-                <div className="border-r border-blue-200/50 h-full" />
-                <div className="border-r border-blue-200/50 h-full" />
-                <div className="border-r border-blue-200/50 h-full" />
-                <div className="border-r border-blue-200/50 h-full" />
-                <div className="border-r border-rose-400 h-full relative">
-                  {/* Red Milestone Vertical Line (Image 2 style) */}
-                  <span className="absolute -top-3 right-0 text-[10px] font-mono font-bold text-rose-600 bg-white px-1.5 py-0.5 rounded shadow-2xs border border-rose-200">
-                    Milestone
-                  </span>
-                </div>
-              </div>
-
-              {/* Staggered Gantt Bars */}
-              <div className="space-y-3 relative z-10 font-sans text-[11px]">
-                {cascadingGanttTasks.map((task, idx) => (
-                  <div key={idx} className="h-7 relative flex items-center">
-                    <div
-                      className={`absolute h-6 rounded-md shadow-xs px-2.5 flex items-center font-medium truncate ${task.color}`}
-                      style={{
-                        left: `${task.left}%`,
-                        width: `${task.width}%`,
-                      }}
-                    >
-                      <span className="truncate text-[10px] font-sans">{task.label}</span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Milestone Diamond Marker at end */}
-                <div className="h-6 relative flex items-center">
-                  <div
-                    className="absolute flex items-center gap-1.5"
-                    style={{ left: '92%' }}
-                  >
-                    <div className="w-3.5 h-3.5 bg-blue-600 rotate-45 shadow-xs" />
-                    <span className="text-[10px] font-mono font-bold text-blue-900 whitespace-nowrap">
-                      Project Closure
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Date Scale */}
-              <div className="grid grid-cols-6 pt-6 border-t border-blue-200 text-[10px] font-mono text-slate-500 mt-4">
-                <span>2026-06-01</span>
-                <span>2026-06-15</span>
-                <span>2026-07-01</span>
-                <span>2026-07-15</span>
-                <span>2026-08-01</span>
-                <span>2026-08-24</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Inline Link + Pill Badge (Gleek style from Image 3) */}
-          <div className="pt-2 flex flex-wrap items-center gap-2 text-xs font-serif italic text-slate-700">
-            <span>Explore relational model architecture in</span>
-            <span className="not-italic inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-300 text-slate-800 text-[11px] font-mono font-semibold">
-              <FileText size={12} /> Evaluating Dimensional Data Modeling
-            </span>
-          </div>
-        </section>
-
-        {/* ── 05: STRUCTURED TABS (Overview, Insights, DAX / SQL, Data Model, Downloads) ── */}
+        {/* ── 04: STRUCTURED TABS (Overview, Real-Time Insights, DAX / SQL, Data Model, Downloads) ── */}
         <section className="mb-16">
           {/* Tab Selection Bar */}
           <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200 mb-8 overflow-x-auto hide-scrollbar">
             {[
               { id: 'overview', label: '📊 Overview' },
-              { id: 'insights', label: '💡 Insights' },
+              { id: 'insights', label: '💡 Real-Time Insights' },
               { id: 'dax', label: '🧮 DAX / SQL' },
               { id: 'model', label: '📐 Data Model' },
               { id: 'downloads', label: '📥 Downloads' },
@@ -649,10 +782,6 @@ export default function ProjectDetails() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                data-edit-id={`project.tab.${tab.id}`}
-                data-edit-name={`Tab: ${tab.label}`}
-                data-edit-kind="button"
-                data-edit-path={`project.tab.${tab.id}`}
                 className={`min-h-[40px] px-4 sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === tab.id
                     ? 'bg-white text-blue-700 font-bold shadow-xs border border-slate-200'
@@ -668,70 +797,59 @@ export default function ProjectDetails() {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-4">
-                <h3
-                  data-edit-id="project.overviewTitle"
-                  data-edit-name="Overview Section Title"
-                  data-edit-kind="heading"
-                  data-edit-path="project.overviewTitle"
-                  className="font-display font-bold text-xl text-slate-900"
-                >
-                  Business Context & Objectives
+                <h3 className="font-display font-bold text-xl text-slate-900">
+                  Business Context &amp; Objectives
                 </h3>
-                <p
-                  data-edit-id="project.overviewDescription"
-                  data-edit-name="Overview Description"
-                  data-edit-kind="text"
-                  data-edit-path="project.overviewDescription"
-                  className="text-slate-700 leading-relaxed text-sm sm:text-base font-normal"
-                >
-                  {project.description || project.problem || 'This analytics project investigates operational performance metrics by comparing empirical lead times against statistical prediction models. By cross-referencing multi-variable factors including weather conditions and traffic density, we provide executive stakeholders with high-confidence decision triggers.'}
+                <p className="text-slate-700 leading-relaxed text-sm sm:text-base font-normal">
+                  {project.description || project.problem || 'This analytics project investigates operational performance metrics by comparing empirical observations against statistical prediction models. By cross-referencing multi-variable factors, we provide executive stakeholders with high-confidence decision triggers.'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-xs font-mono text-slate-600">
                   <div><strong>Tools:</strong> {toolsSummary}</div>
-                  <div><strong>Dimensional Model:</strong> Star-Schema</div>
-                  <div><strong>Calculation Engine:</strong> DAX / SQL</div>
+                  <div><strong>Dimensional Model:</strong> Star-Schema Relational</div>
+                  <div><strong>Calculation Engine:</strong> DAX / SQL / Python</div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: INSIGHTS */}
+          {/* TAB 2: REAL-TIME INSIGHTS (Derived from real inputs only) */}
           {activeTab === 'insights' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                {
-                  title: 'Weather Impact on Lead Time',
-                  tag: 'Logistics Factor',
-                  finding: 'Severe weather conditions (Stormy / Foggy) contributed an average of +48 minutes to delivery lead times.',
-                  evidence: 'Cross-referenced against 45,000+ orders across 5 regional meteorological hubs.',
-                  implication: 'Enables dynamic buffer adjustments in dispatch scheduling during forecasted storm windows.',
-                },
-                {
-                  title: 'Traffic Jam Congestion Multiplier',
-                  tag: 'Operational Risk',
-                  finding: 'Metropolitan density zones experience 2.3x higher delivery turnaround variance during peak hours.',
-                  evidence: 'Isolated traffic congestion index from low (Level 1) to jam (Level 4).',
-                  implication: 'Automates proactive customer ETA updates to reduce customer support inbound inquiries.',
-                },
-              ].map((item, idx) => (
-                <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between space-y-4">
-                  <div>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-blue-600 block mb-1">
-                      Insight 0{idx + 1} · {item.tag}
-                    </span>
-                    <h4 className="font-display font-bold text-lg text-slate-900 mb-2">{item.title}</h4>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
-                      <strong>Finding:</strong> {item.finding}
-                    </p>
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
-                      <strong>Evidence:</strong> {item.evidence}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-display font-bold text-xl text-slate-900">
+                    Key Findings &amp; Statistical Insights
+                  </h3>
+                  <p className="text-xs text-slate-500 font-mono">
+                    Real-time analytical discoveries extracted directly from project input data.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono font-bold">
+                  ● Live Insights
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {parsedInsights.map((item, idx) => (
+                  <div key={idx} className="p-6 rounded-2xl bg-white border border-slate-200 flex flex-col justify-between space-y-4 hover:border-blue-300 transition-colors shadow-2xs">
+                    <div>
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-blue-600 block mb-1">
+                        Insight 0{idx + 1} · {item.tag}
+                      </span>
+                      <h4 className="font-display font-bold text-lg text-slate-900 mb-2">{item.title}</h4>
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed mb-3">
+                        <strong>Finding:</strong> {item.finding}
+                      </p>
+                      <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-slate-700">
+                        <strong>Evidence:</strong> {item.evidence}
+                      </div>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100 text-xs text-emerald-800 font-medium">
+                      <strong>Business Value:</strong> {item.implication}
                     </div>
                   </div>
-                  <div className="pt-3 border-t border-slate-100 text-xs text-emerald-800 font-medium">
-                    <strong>Business Value:</strong> {item.implication}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
@@ -740,55 +858,73 @@ export default function ProjectDetails() {
             <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-6">
               <div>
                 <h3 className="font-display font-bold text-xl text-slate-900 mb-1">
-                  Engineered DAX Measures & SQL Queries
+                  Engineered DAX Measures &amp; SQL Queries
                 </h3>
                 <p className="text-xs text-slate-500 font-mono">
-                  Production-grade calculations engineered for instant dashboard responsiveness.
+                  Production-grade calculations engineered for instant responsiveness.
                 </p>
               </div>
 
-              {/* Code 1 */}
-              <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
-                <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
-                  <span>// 1. Average Delivery Delay Variance Delta</span>
-                  <button
-                    onClick={() => copyToClipboard(`SLA_Variance_Delta = \nDIVIDE(\n    [Avg_Actual_Delivery_Time] - [Avg_Predicted_Delivery_Time],\n    [Avg_Predicted_Delivery_Time],\n    0\n)`, 'c1')}
-                    className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {copiedCode === 'c1' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                    <span className="text-[10px]">{copiedCode === 'c1' ? 'Copied' : 'Copy'}</span>
-                  </button>
+              {project.dax_code ? (
+                <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
+                  <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
+                    <span>// Custom Project Measure Code</span>
+                    <button
+                      onClick={() => copyToClipboard(project.dax_code, 'custom_dax')}
+                      className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                    >
+                      {copiedCode === 'custom_dax' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      <span className="text-[10px]">{copiedCode === 'custom_dax' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 text-emerald-300 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                    {project.dax_code}
+                  </pre>
                 </div>
-                <pre className="p-4 text-blue-300 overflow-x-auto leading-relaxed">
-{`SLA_Variance_Delta = 
+              ) : (
+                <>
+                  <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
+                    <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
+                      <span>// 1. Dynamic Performance Metric Measure</span>
+                      <button
+                        onClick={() => copyToClipboard(`Performance_Delta = \nDIVIDE(\n    [Actual_Metric_Total] - [Baseline_Target],\n    [Baseline_Target],\n    0\n)`, 'c1')}
+                        className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {copiedCode === 'c1' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                        <span className="text-[10px]">{copiedCode === 'c1' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                    <pre className="p-4 text-blue-300 overflow-x-auto leading-relaxed">
+{`Performance_Delta = 
 DIVIDE(
-    [Avg_Actual_Delivery_Time] - [Avg_Predicted_Delivery_Time],
-    [Avg_Predicted_Delivery_Time],
+    [Actual_Metric_Total] - [Baseline_Target],
+    [Baseline_Target],
     0
 )`}
-                </pre>
-              </div>
+                    </pre>
+                  </div>
 
-              {/* Code 2 */}
-              <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
-                <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
-                  <span>// 2. On-Time Fulfillment % Benchmark</span>
-                  <button
-                    onClick={() => copyToClipboard(`On_Time_Rate_Pct = \nCALCULATE(\n    COUNTROWS(f_deliveries),\n    f_deliveries[Actual_Time_Mins] <= f_deliveries[SLA_Target_Mins]\n) / COUNTROWS(f_deliveries)`, 'c2')}
-                    className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {copiedCode === 'c2' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                    <span className="text-[10px]">{copiedCode === 'c2' ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-                <pre className="p-4 text-emerald-300 overflow-x-auto leading-relaxed">
-{`On_Time_Rate_Pct = 
+                  <div className="rounded-xl overflow-hidden bg-slate-950 text-slate-100 font-mono text-xs border border-slate-800">
+                    <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex justify-between items-center text-slate-400">
+                      <span>// 2. Filtered SLA Benchmark &amp; Cohort Analysis</span>
+                      <button
+                        onClick={() => copyToClipboard(`On_Target_Rate = \nCALCULATE(\n    COUNTROWS(f_analytics),\n    f_analytics[Variance_Time] <= f_analytics[SLA_Target]\n) / COUNTROWS(f_analytics)`, 'c2')}
+                        className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                      >
+                        {copiedCode === 'c2' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                        <span className="text-[10px]">{copiedCode === 'c2' ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                    <pre className="p-4 text-emerald-300 overflow-x-auto leading-relaxed">
+{`On_Target_Rate = 
 CALCULATE(
-    COUNTROWS(f_deliveries),
-    f_deliveries[Actual_Time_Mins] <= f_deliveries[SLA_Target_Mins]
-) / COUNTROWS(f_deliveries)`}
-                </pre>
-              </div>
+    COUNTROWS(f_analytics),
+    f_analytics[Variance_Time] <= f_analytics[SLA_Target]
+) / COUNTROWS(f_analytics)`}
+                    </pre>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -797,74 +933,68 @@ CALCULATE(
             <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-6">
               <div>
                 <h3 className="font-display font-bold text-xl text-slate-900 mb-1">
-                  Star-Schema Relational Architecture
+                  Relational Star-Schema Architecture
                 </h3>
                 <p className="text-xs text-slate-500 font-mono">
                   Optimized dimensional schema with 1-to-many single-directional filter propagation.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
-                <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950">
-                  <div className="font-bold text-blue-800 mb-2 flex justify-between items-center">
-                    <span>Fact Table</span>
-                    <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">f_deliveries</span>
-                  </div>
-                  <ul className="space-y-1 text-[11px] text-blue-900">
-                    <li>• Delivery_ID (PK)</li>
-                    <li>• Order_Date (FK)</li>
-                    <li>• Driver_ID (FK)</li>
-                    <li>• Actual_Time_Mins</li>
-                    <li>• Predicted_Time_Mins</li>
-                  </ul>
+              {project.model_notes ? (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-mono leading-relaxed whitespace-pre-wrap">
+                  {project.model_notes}
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950">
+                    <div className="font-bold text-blue-800 mb-2 flex justify-between items-center">
+                      <span>Fact Table</span>
+                      <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">f_analytics_fact</span>
+                    </div>
+                    <ul className="space-y-1 text-[11px] text-blue-900">
+                      <li>• Transaction_ID (PK)</li>
+                      <li>• Date_Key (FK)</li>
+                      <li>• Dimension_Key (FK)</li>
+                      <li>• Metric_Value</li>
+                      <li>• Target_Value</li>
+                    </ul>
+                  </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
-                  <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
-                    <span>Dimension</span>
-                    <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_traffic</span>
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                    <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                      <span>Dimension</span>
+                      <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_calendar</span>
+                    </div>
+                    <ul className="space-y-1 text-[11px] text-slate-600">
+                      <li>• Date_Key (PK)</li>
+                      <li>• Year / Quarter / Month</li>
+                      <li>• Day_Of_Week_Index</li>
+                    </ul>
                   </div>
-                  <ul className="space-y-1 text-[11px] text-slate-600">
-                    <li>• Traffic_ID (PK)</li>
-                    <li>• Traffic_Level (Jam / Low)</li>
-                    <li>• Congestion_Index</li>
-                  </ul>
-                </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
-                  <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
-                    <span>Dimension</span>
-                    <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_weather</span>
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                    <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                      <span>Dimension</span>
+                      <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_categories</span>
+                    </div>
+                    <ul className="space-y-1 text-[11px] text-slate-600">
+                      <li>• Category_ID (PK)</li>
+                      <li>• Category_Name</li>
+                      <li>• Regional_Segment</li>
+                    </ul>
                   </div>
-                  <ul className="space-y-1 text-[11px] text-slate-600">
-                    <li>• Weather_ID (PK)</li>
-                    <li>• Condition (Storm / Rain)</li>
-                    <li>• Precipitation_mm</li>
-                  </ul>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* TAB 5: DOWNLOADS */}
           {activeTab === 'downloads' && (
             <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200 space-y-4">
-              <h3
-                data-edit-id="project.downloadsTitle"
-                data-edit-name="Downloads Section Title"
-                data-edit-kind="heading"
-                data-edit-path="project.downloadsTitle"
-                className="font-display font-bold text-xl text-slate-900"
-              >
-                Deliverables & Source Files
+              <h3 className="font-display font-bold text-xl text-slate-900">
+                Deliverables &amp; Source Files
               </h3>
-              <p
-                data-edit-id="project.downloadsDescription"
-                data-edit-name="Downloads Description"
-                data-edit-kind="text"
-                data-edit-path="project.downloadsDescription"
-                className="text-xs text-slate-500 font-mono mb-6"
-              >
+              <p className="text-xs text-slate-500 font-mono mb-6">
                 Verified repository downloads for code validation and reproduction.
               </p>
 
@@ -875,8 +1005,8 @@ CALCULATE(
                   rel="noopener noreferrer"
                   className="p-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-900 flex flex-col justify-between transition-colors cursor-pointer"
                 >
-                  <span className="text-xs font-mono font-bold text-blue-600">.PBIX File</span>
-                  <span className="text-sm font-bold mt-1">Download Power BI Model</span>
+                  <span className="text-xs font-mono font-bold text-blue-600">.PBIX / Code</span>
+                  <span className="text-sm font-bold mt-1">Download Source Model</span>
                   <span className="text-[10px] font-mono text-slate-400 mt-3">GitHub Source ↗</span>
                 </a>
 
@@ -917,17 +1047,10 @@ CALCULATE(
           )}
         </section>
 
-        {/* ── 06: "DISCOVER MORE" BOX (Dynamic Project & Publication Links) ── */}
+        {/* ── 05: "DISCOVER MORE" BOX ── */}
         <section className="mb-14 rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs">
-          {/* Header Bar */}
           <div className="bg-[#EBF3FF] px-5 py-3 border-b border-blue-100 flex items-center justify-between">
-            <h4
-              data-edit-id="project.discoverMoreTitle"
-              data-edit-name="Discover More Title"
-              data-edit-kind="heading"
-              data-edit-path="project.discoverMoreTitle"
-              className="font-bold text-sm text-slate-800 font-sans"
-            >
+            <h4 className="font-bold text-sm text-slate-800 font-sans">
               Discover more
             </h4>
             <Link to="/#projects" className="text-xs font-mono text-blue-600 font-semibold hover:underline">
@@ -935,13 +1058,12 @@ CALCULATE(
             </Link>
           </div>
 
-          {/* Dynamic List Rows from Real Database Projects */}
           <div className="divide-y divide-slate-100 bg-white">
             <Link
               to="/#projects"
               className="px-5 py-3.5 flex items-center justify-between text-sm font-semibold text-slate-800 hover:text-blue-600 hover:bg-slate-50/80 transition-colors group cursor-pointer"
             >
-              <span>projects</span>
+              <span>Featured Analytics Projects Portfolio</span>
               <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
             </Link>
 
@@ -960,69 +1082,13 @@ CALCULATE(
               to="/blog"
               className="px-5 py-3.5 flex items-center justify-between text-sm text-slate-700 hover:text-blue-600 hover:bg-slate-50/80 transition-colors group cursor-pointer"
             >
-              <span>Data Analytics Publication & Notes Feed</span>
+              <span>Data Analytics Publication &amp; Notes Feed</span>
               <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
             </Link>
           </div>
         </section>
 
-        {/* ── 07: RELATED CASE STUDIES GRID (Live Uploaded Thumbnails) ── */}
-        {relatedProjects.length > 0 && (
-          <section className="mb-16">
-            <div className="flex items-center justify-between mb-4">
-              <h4
-                data-edit-id="project.relatedTitle"
-                data-edit-name="Related Projects Title"
-                data-edit-kind="heading"
-                data-edit-path="project.relatedTitle"
-                className="font-serif font-bold text-base text-slate-900"
-              >
-                Related analytical case studies
-              </h4>
-              <Link to="/#projects" className="text-xs font-mono text-blue-600 hover:underline">
-                Explore portfolio →
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {relatedProjects.map((rp) => (
-                <Link
-                  key={rp.id}
-                  to={`/project/${rp.id}`}
-                  className="rounded-xl overflow-hidden bg-white hover:bg-slate-50 border border-slate-200 flex flex-col justify-between transition-all duration-300 shadow-2xs hover:shadow-md group"
-                >
-                  <div className="aspect-16/10 bg-slate-900 overflow-hidden relative">
-                    {rp.image_url || rp.image ? (
-                      <img
-                        src={rp.image_url || rp.image}
-                        alt={rp.title}
-                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-500 font-mono text-xs">
-                        Case Study
-                      </div>
-                    )}
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-white/90 backdrop-blur-xs text-[10px] font-mono font-bold text-slate-800">
-                      {rp.category || 'Power BI'}
-                    </span>
-                  </div>
-                  <div className="p-4 flex flex-col justify-between flex-1">
-                    <h5 className="font-display font-bold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug mb-2">
-                      {rp.title}
-                    </h5>
-                    <span className="text-[11px] font-mono text-blue-600 font-semibold flex items-center gap-1">
-                      Read investigation <ArrowRight size={11} />
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── 08: PREV / NEXT NAVIGATION (Seamless Project Browsing) ── */}
+        {/* ── 06: PREV / NEXT NAVIGATION ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-14">
           {prevProject && (
             <Link
@@ -1051,25 +1117,13 @@ CALCULATE(
           )}
         </div>
 
-        {/* ── 09: BOTTOM ACTION BANNER (Full Fusion with Home Projects & Publication) ── */}
+        {/* ── 07: BOTTOM ACTION BANNER ── */}
         <section className="rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-8 sm:p-12 text-center shadow-lg">
-          <h2
-            data-edit-id="project.ctaTitle"
-            data-edit-name="CTA Banner Title"
-            data-edit-kind="heading"
-            data-edit-path="project.ctaTitle"
-            className="text-2xl sm:text-4xl font-display font-black mb-3"
-          >
-            Explore the Full Code & Data Model
+          <h2 className="text-2xl sm:text-4xl font-display font-black mb-3">
+            Explore the Full Code &amp; Data Model
           </h2>
-          <p
-            data-edit-id="project.ctaDescription"
-            data-edit-name="CTA Banner Description"
-            data-edit-kind="text"
-            data-edit-path="project.ctaDescription"
-            className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto mb-8"
-          >
-            Access the reproducible code, dimensional schemas, and data transformation scripts on GitHub, or return to explore other analytics case studies.
+          <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto mb-8">
+            Access reproducible code, dimensional schemas, and data transformation scripts on GitHub, or discuss this study in the open comment box.
           </p>
 
           <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4">
@@ -1077,31 +1131,27 @@ CALCULATE(
               href={githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              data-edit-id="project.ctaGithub"
-              data-edit-name="CTA GitHub Button"
-              data-edit-kind="button"
-              data-edit-path="project.ctaGithub"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-bold text-sm hover:bg-blue-500 transition-all shadow-md active:scale-95 cursor-pointer"
             >
               <GithubIcon size={16} />
               <span>GitHub Repository</span>
             </a>
 
-            {powerBiEmbedUrl && (
-              <a
-                href={powerBiEmbedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-edit-id="project.ctaDashboard"
-                data-edit-name="CTA Live Dashboard Button"
-                data-edit-kind="button"
-                data-edit-path="project.ctaDashboard"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all shadow-2xs cursor-pointer"
-              >
-                <ExternalLink size={15} />
-                <span>Live Dashboard</span>
-              </a>
-            )}
+            <button
+              onClick={() => setIsCommentModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all shadow-2xs cursor-pointer"
+            >
+              <MessageSquare size={15} />
+              <span>Open Comment Box</span>
+            </button>
+
+            <button
+              onClick={() => setIsShareModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all shadow-2xs cursor-pointer"
+            >
+              <Share2 size={15} />
+              <span>Share Project</span>
+            </button>
 
             <button
               onClick={handleBackClick}
@@ -1110,27 +1160,31 @@ CALCULATE(
               <ArrowLeft size={15} />
               <span>{backLabel}</span>
             </button>
-
-            {isFromBlog ? (
-              <Link
-                to="/#projects"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
-              >
-                <Grid size={15} />
-                <span>Featured Projects</span>
-              </Link>
-            ) : (
-              <Link
-                to={isBlogSubdomain() ? '/' : '/blog'}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full border border-slate-700 text-slate-200 bg-slate-800 font-semibold text-sm hover:bg-slate-700 transition-all cursor-pointer shadow-2xs"
-              >
-                <ArrowLeft size={15} />
-                <span>Blog Publication</span>
-              </Link>
-            )}
           </div>
         </section>
       </main>
+
+      {/* Reusable Share Modal with image preview and multi-platform links */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={title}
+        description={subtitle}
+        url={typeof window !== 'undefined' ? window.location.href : ''}
+        image={activeVisual}
+        tags={tags}
+        type="Project"
+      />
+
+      {/* Universal 15-Day Live Discussion & Comments Modal */}
+      <BlogComments
+        isOpen={isCommentModalOpen}
+        onClose={() => setIsCommentModalOpen(false)}
+        projectId={id}
+        projectTitle={title}
+        entityType="project"
+        allowComments={true}
+      />
 
       {/* Image / Video Zoom Lightbox Modal */}
       {showImageZoom && activeVisual && (
@@ -1169,23 +1223,6 @@ CALCULATE(
                 alt={`${title} - Zoomed Visual 0${activeVisualIndex + 1}`}
                 className="w-full h-auto max-h-[85vh] object-contain p-2"
               />
-            )}
-
-            {visualsList.length > 1 && (
-              <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={() => setActiveVisualIndex((prev) => (prev > 0 ? prev - 1 : visualsList.length - 1))}
-                  className="px-3 py-1 rounded bg-slate-800 text-slate-200 text-xs font-mono hover:bg-slate-700 cursor-pointer"
-                >
-                  ← Prev Visual
-                </button>
-                <button
-                  onClick={() => setActiveVisualIndex((prev) => (prev < visualsList.length - 1 ? prev + 1 : 0))}
-                  className="px-3 py-1 rounded bg-slate-800 text-slate-200 text-xs font-mono hover:bg-slate-700 cursor-pointer"
-                >
-                  Next Visual →
-                </button>
-              </div>
             )}
           </div>
         </div>

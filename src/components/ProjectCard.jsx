@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ExternalLink, FileText, ArrowUpRight } from 'lucide-react';
+import { ExternalLink, FileText, ArrowUpRight, Share2 } from 'lucide-react';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
+import ShareModal from './ShareModal';
 
 const GithubIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,6 +24,7 @@ const ProjectCard = ({ project, index = 0 }) => {
   const { title, tags, githubLink, caseStudyLink, demoLink, insight } = project;
   const { settings } = useContent();
   const { theme } = useThemeStore();
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const animationStyle = theme?.layout?.animationStyle || settings?.theme?.layout?.animationStyle || 'default';
   const cardStyle = theme?.layout?.cardStyle || settings?.theme?.layout?.cardStyle || 'default';
 
@@ -564,10 +566,17 @@ const ProjectCard = ({ project, index = 0 }) => {
           <span className="text-xs font-mono font-bold text-ink-soft bg-muted px-2.5 py-1 rounded-md">
             {new Date(project.created_at || Date.now()).getFullYear()}
           </span>
-          <div className="flex items-center gap-2.5 text-ink-soft shrink-0">
-            {githubLink && <a href={githubLink} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="hover:text-ink transition-colors"><GithubIcon /></a>}
-            {project.id && <Link to={`/project/${project.id}`} target="_blank" rel="noopener noreferrer" aria-label="Case study" className="hover:text-ink transition-colors"><FileText size={18} /></Link>}
-            {demoLink && <a href={demoLink} target="_blank" rel="noopener noreferrer" aria-label="Live demo" className="hover:text-accent transition-colors"><ExternalLink size={18} /></a>}
+          <div className="flex items-center gap-2 text-ink-soft shrink-0">
+            <button
+              onClick={() => setIsShareOpen(true)}
+              className="hover:text-accent transition-colors p-1 rounded-md hover:bg-muted cursor-pointer"
+              title="Share Project"
+            >
+              <Share2 size={16} />
+            </button>
+            {githubLink && <a href={githubLink} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="hover:text-ink transition-colors p-1"><GithubIcon /></a>}
+            {project.id && <Link to={`/project/${project.id}`} target="_blank" rel="noopener noreferrer" aria-label="Case study" className="hover:text-ink transition-colors p-1"><FileText size={18} /></Link>}
+            {demoLink && <a href={demoLink} target="_blank" rel="noopener noreferrer" aria-label="Live demo" className="hover:text-accent transition-colors p-1"><ExternalLink size={18} /></a>}
           </div>
         </div>
 
@@ -614,6 +623,17 @@ const ProjectCard = ({ project, index = 0 }) => {
           </a>
         )}
       </div>
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        title={title}
+        description={project.problem || project.insight}
+        url={project.id ? `${typeof window !== 'undefined' ? window.location.origin : ''}/project/${project.id}` : ''}
+        image={project.image_url || project.image}
+        tags={tags}
+        type="Project"
+      />
     </motion.article>
   );
 };

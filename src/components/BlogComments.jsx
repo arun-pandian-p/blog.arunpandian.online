@@ -7,6 +7,9 @@ export default function BlogComments({
   blogId,
   blogSlug,
   blogTitle,
+  projectId,
+  projectTitle,
+  entityType = 'blog', // 'blog' | 'project'
   allowComments = true,
   isOpen,
   onClose,
@@ -14,6 +17,11 @@ export default function BlogComments({
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Effective IDs and titles
+  const targetId = projectId || blogId || blogSlug || '';
+  const targetSlug = blogSlug || (projectId ? `project_${projectId}` : targetId);
+  const targetTitle = projectTitle || blogTitle || (entityType === 'project' ? 'Data Analytics Project' : 'Data Publication');
 
   // Form state (takes Name & Domain / Website)
   const [authorName, setAuthorName] = useState('');
@@ -27,7 +35,7 @@ export default function BlogComments({
 
   // Fetch verified active comments within 15 days
   const fetchComments = async () => {
-    if (!blogSlug && !blogId) return;
+    if (!targetSlug && !targetId) return;
     setLoading(true);
     const fifteenDaysAgo = getFifteenDaysAgoISO();
 
@@ -37,28 +45,22 @@ export default function BlogComments({
         const { data, error } = await supabase
           .from('blog_comments')
           .select('*')
-          .or(`blog_slug.eq.${blogSlug},blog_id.eq.${blogId}`)
+          .or(`blog_slug.eq.${targetSlug},blog_id.eq.${targetId},blog_slug.eq.${targetId}`)
           .gte('created_at', fifteenDaysAgo)
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
+        if (!error && data && data.length > 0) {
           setComments(data);
-          // Optional automated cleanup for comments older than 15 days
-          supabase
-            .from('blog_comments')
-            .delete()
-            .lt('created_at', fifteenDaysAgo)
-            .then(() => {})
-            .catch(() => {});
           setLoading(false);
           return;
         }
 
         // Fallback fetch from contact_messages
+        const prefix = entityType === 'project' ? '[Project Comment' : '[Blog Comment';
         const { data: msgData, error: msgError } = await supabase
           .from('contact_messages')
           .select('*')
-          .ilike('subject', `[Blog Comment%${blogSlug || blogId}%]`)
+          .or(`subject.ilike.%${prefix}%${targetSlug}%,subject.ilike.%${prefix}%${targetId}%`)
           .gte('created_at', fifteenDaysAgo)
           .order('created_at', { ascending: false });
 
@@ -80,6 +82,8 @@ export default function BlogComments({
             };
           });
           setComments(parsed);
+        } else if (data) {
+          setComments(data);
         }
       }
     } catch (err) {
@@ -90,8 +94,10 @@ export default function BlogComments({
   };
 
   useEffect(() => {
-    fetchComments();
-  }, [blogSlug, blogId]);
+    if (isOpen) {
+      fetchComments();
+    }
+  }, [targetSlug, targetId, isOpen]);
 
   // Submit comment
   const handleSubmit = async (e) => {
@@ -112,9 +118,9 @@ export default function BlogComments({
     setSubmitting(true);
 
     const newComment = {
-      blog_slug: blogSlug,
-      blog_id: blogId,
-      blog_title: blogTitle,
+      blog_slug: targetSlug,
+      blog_id: String(targetId),
+      blog_title: targetTitle,
       author_name: cleanName,
       author_domain: cleanDomain,
       content: cleanText,
@@ -128,12 +134,12 @@ export default function BlogComments({
           .from('blog_comments')
           .insert([newComment]);
 
-        // 2. If table not yet created, gracefully insert into contact_messages
+        // 2. If table doesn't accept or throws error, gracefully insert into contact_messages
         if (insertError) {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
             email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
-            subject: `[Blog Comment - ${blogSlug}]`,
+            subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
             message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`
           }]);
         }
@@ -143,10 +149,10 @@ export default function BlogComments({
       setCommentText('');
       setAuthorName('');
       setAuthorDomain('');
-      toast.success('Comment posted! (Saved to Supabase · 15-day active feed)', { icon: '💬' });
+      toast.success('Comment posted! (Live in discussion feed)', { icon: '💬' });
     } catch (err) {
       console.warn('Comment post error:', err);
-      toast.success('Comment received!', { icon: '✨' });
+      toast.success('Comment posted!', { icon: '✨' });
     } finally {
       setSubmitting(false);
     }
@@ -165,17 +171,17 @@ export default function BlogComments({
               <MessageSquare size={18} />
             </div>
             <div>
-              <h3 className="font-serif font-bold text-slate-900 text-base">
-                Responses &amp; Comments
+              <h3 className="font-serif font-bold text-slate-900 text-base line-clamp-1">
+                {entityType === 'project' ? 'Project Discussion & Responses' : 'Responses & Comments'}
               </h3>
               <p className="text-[11px] text-slate-500 font-mono">
-                {comments.length} active responses (Auto-cleared every 15 days)
+                {comments.length} active {comments.length === 1 ? 'response' : 'responses'} (15-day live thread)
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -186,8 +192,8 @@ export default function BlogComments({
           {!allowComments ? (
             <div className="py-12 text-center text-slate-500 space-y-2">
               <ShieldAlert size={28} className="mx-auto text-amber-500" />
-              <p className="text-sm font-semibold text-slate-700">Comments are turned off for this article</p>
-              <p className="text-xs text-slate-400">The author has disabled responses for this publication.</p>
+              <p className="text-sm font-semibold text-slate-700">Comments are turned off for this {entityType}</p>
+              <p className="text-xs text-slate-400">Responses are currently disabled for this item.</p>
             </div>
           ) : (
             <>

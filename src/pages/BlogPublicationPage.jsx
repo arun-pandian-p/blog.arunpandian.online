@@ -60,6 +60,7 @@ import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { isBlogSubdomain, getMainDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
+import ShareModal from '../components/ShareModal';
 import { sendWelcomeEmail } from '../services/newsletterService';
 
 const VERIFIED_FALLBACK_IMAGES = [
@@ -79,6 +80,7 @@ export default function BlogPublicationPage() {
   const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
   const [subscribeEmail, setSubscribeEmail] = useState('');
   const [subscribeSuccess, setSubscribeSuccess] = useState(false);
+  const [shareItem, setShareItem] = useState(null);
   
   // Real-time live data states
   const [liveDbProjects, setLiveDbProjects] = useState([]);
@@ -741,7 +743,17 @@ export default function BlogPublicationPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShareItem(item);
+                              }}
+                              className="p-1 rounded-full text-[#8C8479] hover:text-[#1C1A17] transition-colors cursor-pointer"
+                              title="Share this publication"
+                            >
+                              <Share2 size={13} />
+                            </button>
                             <button
                               onClick={(e) => handleBookmarkToggle(e, item.id)}
                               className={`p-1 rounded-full transition-colors cursor-pointer ${
@@ -966,6 +978,20 @@ export default function BlogPublicationPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Share Modal */}
+      {shareItem && (
+        <ShareModal
+          isOpen={Boolean(shareItem)}
+          onClose={() => setShareItem(null)}
+          title={shareItem?.title}
+          description={shareItem?.subtitle || shareItem?.description}
+          url={shareItem?.href ? `${window.location.origin}${shareItem.href}` : ''}
+          image={shareItem?.image}
+          tags={shareItem?.tags || [shareItem?.category || 'Analytics']}
+          type="Publication"
+        />
       )}
     </div>
   );

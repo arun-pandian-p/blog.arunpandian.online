@@ -10,6 +10,7 @@ import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import BlogComments from '../components/BlogComments';
+import ShareModal from '../components/ShareModal';
 import {
   ArrowLeft,
   ArrowRight,
@@ -995,7 +996,40 @@ const BlogDetails = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Direct Social Share Buttons */}
+            <button
+              onClick={() => handleShare('linkedin')}
+              className="p-1.5 rounded-lg bg-[#FFFDFB] hover:bg-[#0077B5]/10 border border-[#DDD5C7] text-[#0077B5] transition-all cursor-pointer"
+              title="Share on LinkedIn"
+            >
+              <FaLinkedin size={14} />
+            </button>
+
+            <button
+              onClick={() => handleShare('twitter')}
+              className="p-1.5 rounded-lg bg-[#FFFDFB] hover:bg-[#F4EFE6] border border-[#DDD5C7] text-[#1C1A17] transition-all cursor-pointer"
+              title="Share on X (Twitter)"
+            >
+              <FaXTwitter size={13} />
+            </button>
+
+            <button
+              onClick={() => handleShare('reddit')}
+              className="p-1.5 rounded-lg bg-[#FFFDFB] hover:bg-[#FF4500]/10 border border-[#DDD5C7] text-[#FF4500] transition-all cursor-pointer"
+              title="Share on Reddit"
+            >
+              <FaRedditAlien size={14} />
+            </button>
+
+            <button
+              onClick={() => handleShare('whatsapp')}
+              className="p-1.5 rounded-lg bg-[#FFFDFB] hover:bg-[#25D366]/10 border border-[#DDD5C7] text-[#25D366] transition-all cursor-pointer"
+              title="Share on WhatsApp"
+            >
+              <FaWhatsapp size={14} />
+            </button>
+
             {/* Listen Audio Button */}
             <button
               onClick={toggleSpeechAudio}
@@ -1010,10 +1044,11 @@ const BlogDetails = () => {
 
             <button
               onClick={() => setIsShareModalOpen(true)}
-              className="p-2 rounded-full hover:bg-[#F4EFE6] text-[#4A453E] cursor-pointer"
-              title="Share"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-[#FFFDFB] hover:bg-[#F4EFE6] border border-[#DDD5C7] text-[#4A453E] cursor-pointer font-medium text-xs"
+              title="Open Complete Share Menu"
             >
-              <Share2 size={16} />
+              <Share2 size={14} />
+              <span>Share</span>
             </button>
           </div>
         </div>
@@ -1218,90 +1253,17 @@ const BlogDetails = () => {
 
       </main>
 
-      {/* ── PROFESSIONAL SHARE MODAL ── */}
-      {isShareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-4 relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
-                <Share2 size={16} className="text-blue-600" />
-                <span>Share Story</span>
-              </h3>
-              <button
-                onClick={() => setIsShareModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Share <strong className="text-slate-900">"{title}"</strong>:
-            </p>
-
-            <div className="grid grid-cols-3 gap-2.5 pt-1">
-              <button
-                onClick={() => handleShare('linkedin')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#0077B5]/10 border border-slate-200 text-slate-700 hover:text-[#0077B5] text-xs font-semibold gap-1.5"
-              >
-                <FaLinkedin size={22} className="text-[#0077B5]" />
-                <span>LinkedIn</span>
-              </button>
-              <button
-                onClick={() => handleShare('twitter')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-950 text-xs font-semibold gap-1.5"
-              >
-                <FaXTwitter size={20} />
-                <span>Twitter / X</span>
-              </button>
-              <button
-                onClick={() => handleShare('whatsapp')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#25D366]/10 border border-slate-200 text-slate-700 hover:text-[#25D366] text-xs font-semibold gap-1.5"
-              >
-                <FaWhatsapp size={22} className="text-[#25D366]" />
-                <span>WhatsApp</span>
-              </button>
-              <button
-                onClick={() => handleShare('reddit')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#FF4500]/10 border border-slate-200 text-slate-700 hover:text-[#FF4500] text-xs font-semibold gap-1.5"
-              >
-                <FaRedditAlien size={22} className="text-[#FF4500]" />
-                <span>Reddit</span>
-              </button>
-              <button
-                onClick={() => handleShare('facebook')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-[#1877F2]/10 border border-slate-200 text-slate-700 hover:text-[#1877F2] text-xs font-semibold gap-1.5"
-              >
-                <FaFacebookF size={20} className="text-[#1877F2]" />
-                <span>Facebook</span>
-              </button>
-              <button
-                onClick={() => handleShare('email')}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold gap-1.5"
-              >
-                <FaEnvelope size={20} className="text-slate-600" />
-                <span>Email</span>
-              </button>
-            </div>
-
-            <div className="pt-2 flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={currentCanonicalUrl}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-600 truncate outline-none select-all"
-              />
-              <button
-                onClick={() => handleShare('copy')}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold font-mono transition-colors shrink-0 cursor-pointer"
-              >
-                {copiedLink ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* ── REUSABLE RICH SHARE MODAL WITH PREVIEW & PLATFORM LINKS ── */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={title}
+        description={excerpt}
+        url={currentCanonicalUrl}
+        image={coverImage}
+        tags={tags}
+        type="Article"
+      />
 
       {/* ── 15-DAY VERIFIED BLOG COMMENTS & RESPONSES MODAL ── */}
       <BlogComments
