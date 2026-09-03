@@ -10,8 +10,11 @@ import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import BlogComments from '../components/BlogComments';
+import InPageComments from '../components/InPageComments';
 import ShareModal from '../components/ShareModal';
 import {
+  ThumbsUp,
+  ThumbsDown,
   ArrowLeft,
   ArrowRight,
   ExternalLink,
@@ -99,9 +102,10 @@ const BlogDetails = () => {
   const [editableCodeSnippets, setEditableCodeSnippets] = useState({});
   const [activeSnippetTab, setActiveSnippetTab] = useState({}); // { [codeId]: 'code' | 'output' }
 
-  // Medium-style Likes / Claps & Bookmark state
+  // Medium/YouTube-style Likes & Bookmark state
   const [likesCount, setLikesCount] = useState(484);
   const [hasLiked, setHasLiked] = useState(false);
+  const [hasDisliked, setHasDisliked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
@@ -1176,47 +1180,82 @@ const BlogDetails = () => {
           {renderFormattedArticle(cleanContent)}
         </div>
 
-        {/* ── MEDIUM-STYLE IN-FLOW ARTICLE FOOTER (No intrusive bottom bar) ── */}
-        <div className="mt-12 pt-6 border-t border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        {/* ── YOUTUBE / MEDIUM STYLE IN-FLOW ACTION BAR ── */}
+        <div className="mt-12 pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Connected Like / Dislike Pill */}
+            <div className="inline-flex items-center rounded-full bg-[#F4EFE6] border border-[#DDD5C7] p-0.5 shadow-2xs">
+              <button
+                onClick={handleLike}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-l-full text-xs font-bold transition-all cursor-pointer ${
+                  hasLiked 
+                    ? 'bg-[#B83A26] text-white shadow-xs' 
+                    : 'text-[#1C1A17] hover:bg-[#EAE2D5]'
+                }`}
+                title="Like story"
+              >
+                <ThumbsUp size={14} className={hasLiked ? 'fill-white' : ''} />
+                <span>{likesCount}</span>
+              </button>
+              <div className="w-px h-3.5 bg-[#DDD5C7] mx-0.5" />
+              <button
+                onClick={() => {
+                  setHasDisliked(!hasDisliked);
+                  if (!hasDisliked && hasLiked) setHasLiked(false);
+                  toast(hasDisliked ? 'Dislike removed' : 'Feedback recorded', { icon: '👍' });
+                }}
+                className={`p-1.5 px-2.5 rounded-r-full text-xs transition-all cursor-pointer ${
+                  hasDisliked ? 'bg-[#1C1A17] text-white' : 'text-[#6E665C] hover:bg-[#EAE2D5]'
+                }`}
+                title="Dislike"
+              >
+                <ThumbsDown size={13} className={hasDisliked ? 'fill-white' : ''} />
+              </button>
+            </div>
+
+            {/* Jump to Comments Button */}
             <button
-              onClick={handleLike}
-              className="flex items-center gap-1.5 text-slate-700 hover:text-slate-950 cursor-pointer"
+              onClick={() => {
+                const el = document.getElementById('comments-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F4EFE6] hover:bg-[#EAE2D5] border border-[#DDD5C7] text-[#1C1A17] text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Jump to Comments"
             >
-              <span className="text-xl">👏</span>
-              <span className="font-mono text-xs font-bold">{likesCount}</span>
+              <MessageSquare size={13} className="text-[#B83A26]" />
+              <span>Comments</span>
             </button>
 
+            {/* Share Button */}
             <button
-              onClick={() => setIsCommentModalOpen(true)}
-              className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors text-xs cursor-pointer px-2 py-1 rounded-md hover:bg-slate-100"
-              title="Discussions & Responses (15-day verified feed)"
+              onClick={() => setIsShareModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F4EFE6] hover:bg-[#EAE2D5] border border-[#DDD5C7] text-[#1C1A17] text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Share (𝕏 post, Instagram, LinkedIn, Reddit)"
             >
-              <MessageSquare size={16} />
-              <span className="font-mono text-xs font-semibold">
-                {blog?.allow_comments === false ? 'Closed' : 'Responses'}
-              </span>
+              <Share2 size={13} className="text-[#B83A26]" />
+              <span>Share</span>
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleBookmarkToggle}
-              className="text-slate-500 hover:text-slate-900 cursor-pointer"
+              className="p-2 rounded-full bg-[#F4EFE6] hover:bg-[#EAE2D5] border border-[#DDD5C7] text-slate-700 cursor-pointer transition-colors"
               title="Bookmark"
             >
-              <Bookmark size={18} className={isBookmarked ? "fill-amber-500 text-amber-500" : ""} />
-            </button>
-
-            <button
-              onClick={() => handleShare('native')}
-              className="text-slate-500 hover:text-slate-900 cursor-pointer"
-              title="Share"
-            >
-              <Share2 size={18} />
+              <Bookmark size={15} className={isBookmarked ? "fill-[#B83A26] text-[#B83A26]" : ""} />
             </button>
           </div>
         </div>
+
+        {/* ── YOUTUBE-STYLE IN-PAGE COMMENTS SECTION ── */}
+        <InPageComments
+          itemId={blog?.id}
+          itemSlug={slug}
+          itemTitle={title}
+          entityType="blog"
+          allowComments={blog?.allow_comments !== false}
+        />
 
         {/* ── EMAIL NEWSLETTER SUBSCRIPTION (From blogupdates.arunpandian.online) ── */}
         <div className="my-10">

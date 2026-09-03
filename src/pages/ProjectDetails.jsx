@@ -9,6 +9,7 @@ import arunProfile from '../assets/arun-profile.jpg';
 import { isBlogSubdomain } from '../utils/domain';
 import ShareModal from '../components/ShareModal';
 import BlogComments from '../components/BlogComments';
+import InPageComments from '../components/InPageComments';
 import toast from 'react-hot-toast';
 import { 
   FaLinkedin, 
@@ -21,6 +22,8 @@ import {
 } from 'react-icons/fa6';
 import {
   Loader2,
+  ThumbsUp,
+  ThumbsDown,
   ArrowLeft,
   ArrowRight,
   ExternalLink,
@@ -92,6 +95,7 @@ export default function ProjectDetails() {
   // Social Sharing, Comments & Live Likes State
   const [likesCount, setLikesCount] = useState(142);
   const [hasLiked, setHasLiked] = useState(false);
+  const [hasDisliked, setHasDisliked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
@@ -515,85 +519,103 @@ export default function ProjectDetails() {
               </div>
             </div>
 
-            {/* Direct Social Share & Interactive Action Buttons */}
+            {/* YouTube-Style Action Buttons Bar */}
             <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-              {/* Direct LinkedIn Share */}
-              <button
-                onClick={() => handleDirectShare('linkedin')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-[#0077B5]/10 border border-slate-200 text-[#0077B5] transition-all cursor-pointer"
-                title="Share on LinkedIn"
-              >
-                <FaLinkedin size={15} />
-              </button>
+              {/* YouTube Style Connected Like / Dislike Pill */}
+              <div className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 p-0.5 shadow-2xs">
+                <button
+                  onClick={handleLike}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-l-full text-xs font-bold transition-all cursor-pointer ${
+                    hasLiked 
+                      ? 'bg-blue-600 text-white shadow-xs' 
+                      : 'text-slate-800 hover:bg-slate-200'
+                  }`}
+                  title="Like this project"
+                >
+                  <ThumbsUp size={14} className={hasLiked ? 'fill-white' : ''} />
+                  <span>{likesCount}</span>
+                </button>
+                <div className="w-px h-3.5 bg-slate-300 mx-0.5" />
+                <button
+                  onClick={() => {
+                    setHasDisliked(!hasDisliked);
+                    if (!hasDisliked && hasLiked) setHasLiked(false);
+                    toast(hasDisliked ? 'Dislike removed' : 'Feedback recorded', { icon: '👍' });
+                  }}
+                  className={`p-1.5 px-2.5 rounded-r-full text-xs transition-all cursor-pointer ${
+                    hasDisliked ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-200'
+                  }`}
+                  title="Dislike"
+                >
+                  <ThumbsDown size={13} className={hasDisliked ? 'fill-white' : ''} />
+                </button>
+              </div>
 
-              {/* Direct X / Twitter Share */}
-              <button
-                onClick={() => handleDirectShare('twitter')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 hover:text-slate-950 transition-all cursor-pointer"
-                title="Share on X (Twitter)"
-              >
-                <FaXTwitter size={14} />
-              </button>
-
-              {/* Direct Reddit Share */}
-              <button
-                onClick={() => handleDirectShare('reddit')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-[#FF4500]/10 border border-slate-200 text-[#FF4500] transition-all cursor-pointer"
-                title="Share on Reddit"
-              >
-                <FaRedditAlien size={15} />
-              </button>
-
-              {/* Direct WhatsApp Share */}
-              <button
-                onClick={() => handleDirectShare('whatsapp')}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-[#25D366]/10 border border-slate-200 text-[#25D366] transition-all cursor-pointer"
-                title="Share on WhatsApp"
-              >
-                <FaWhatsapp size={15} />
-              </button>
-
-              {/* Open Full Share Modal with Preview */}
+              {/* YouTube Style Share Pill Button */}
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 font-bold transition-all cursor-pointer"
-                title="Open Complete Share Menu"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                title="Share (𝕏 post, Instagram, LinkedIn, Reddit)"
               >
-                <Share2 size={13} />
+                <Share2 size={13} className="text-blue-600" />
                 <span>Share</span>
               </button>
 
-              {/* Live Like / Clap Button */}
+              {/* YouTube Style Comments Scroll Button */}
               <button
-                onClick={handleLike}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                  hasLiked 
-                    ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold' 
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                }`}
-                title="Clap / Like this project"
-              >
-                <span>👏</span>
-                <span>{likesCount}</span>
-              </button>
-
-              {/* Open Comment Box Button */}
-              <button
-                onClick={() => setIsCommentModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition-all cursor-pointer"
-                title="Open Project Discussion & Comments"
+                onClick={() => {
+                  const el = document.getElementById('comments-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                title="Jump to Comments"
               >
                 <MessageSquare size={13} className="text-blue-600" />
-                <span>Discussion</span>
+                <span>Comments</span>
               </button>
 
-              {/* Bookmark Toggle */}
+              {/* YouTube Style Bookmark Pill */}
               <button
                 onClick={handleBookmarkToggle}
-                className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition-all cursor-pointer"
-                title="Save to bookmarks"
+                className="p-1.5 px-2.5 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-all cursor-pointer"
+                title="Save Project"
               >
                 <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+              </button>
+
+              <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+              {/* Direct Quick Share Platforms */}
+              <button
+                onClick={() => handleDirectShare('linkedin')}
+                className="p-2 rounded-full bg-slate-50 hover:bg-[#0077B5]/10 border border-slate-200 text-[#0077B5] transition-all cursor-pointer"
+                title="Share on LinkedIn"
+              >
+                <FaLinkedin size={14} />
+              </button>
+
+              <button
+                onClick={() => handleDirectShare('twitter')}
+                className="p-2 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 hover:text-slate-950 transition-all cursor-pointer"
+                title="Share on 𝕏 (Twitter)"
+              >
+                <FaXTwitter size={13} />
+              </button>
+
+              <button
+                onClick={() => handleDirectShare('whatsapp')}
+                className="p-2 rounded-full bg-slate-50 hover:bg-[#25D366]/10 border border-slate-200 text-[#25D366] transition-all cursor-pointer"
+                title="Share on WhatsApp"
+              >
+                <FaWhatsapp size={14} />
+              </button>
+
+              <button
+                onClick={() => handleDirectShare('reddit')}
+                className="p-2 rounded-full bg-slate-50 hover:bg-[#FF4500]/10 border border-slate-200 text-[#FF4500] transition-all cursor-pointer"
+                title="Share on Reddit"
+              >
+                <FaRedditAlien size={14} />
               </button>
             </div>
           </div>
@@ -1047,7 +1069,16 @@ CALCULATE(
           )}
         </section>
 
-        {/* ── 05: "DISCOVER MORE" BOX ── */}
+        {/* ── 05: YOUTUBE-STYLE IN-PAGE COMMENTS & COMMUNITY DISCUSSION ── */}
+        <InPageComments
+          itemId={id}
+          itemSlug={id}
+          itemTitle={title}
+          entityType="project"
+          allowComments={true}
+        />
+
+        {/* ── 06: "DISCOVER MORE" BOX ── */}
         <section className="mb-14 rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs">
           <div className="bg-[#EBF3FF] px-5 py-3 border-b border-blue-100 flex items-center justify-between">
             <h4 className="font-bold text-sm text-slate-800 font-sans">
