@@ -10,6 +10,7 @@ import { isBlogSubdomain } from '../utils/domain';
 import ShareModal from '../components/ShareModal';
 import BlogComments from '../components/BlogComments';
 import InPageComments from '../components/InPageComments';
+import MobileBottomNav from '../components/MobileBottomNav';
 import toast from 'react-hot-toast';
 import { 
   FaLinkedin, 
@@ -1273,6 +1274,16 @@ CALCULATE(
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Navigation (3 Icons: Articles/Feed, Share, Comments) */}
+      <MobileBottomNav
+        mode="project"
+        onShareClick={() => setIsShareModalOpen(true)}
+        onCommentsClick={() => {
+          const el = document.getElementById('comments-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 }

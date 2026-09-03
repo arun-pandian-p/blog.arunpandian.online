@@ -12,6 +12,7 @@ import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import BlogComments from '../components/BlogComments';
 import InPageComments from '../components/InPageComments';
 import ShareModal from '../components/ShareModal';
+import MobileBottomNav from '../components/MobileBottomNav';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -914,17 +915,25 @@ const BlogDetails = () => {
       }
 
       // Image
+      // Image / Animated GIF
       if (block.type === 'image') {
         return (
-          <figure key={idx} className="my-6">
-            <img
-              src={block.url}
-              alt={block.caption || 'Article Diagram'}
-              className="w-full h-auto rounded-xl border border-slate-200 shadow-sm object-cover"
-              loading="lazy"
-            />
+          <figure key={idx} className="my-6 space-y-2">
+            <div className="w-full rounded-2xl overflow-hidden border border-[#E8E1D5] bg-[#161513] shadow-xs">
+              <img
+                src={block.url}
+                alt={block.caption || 'Article Visual'}
+                className="w-full h-auto max-h-[540px] object-contain mx-auto transition-all"
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = arunProfile;
+                }}
+              />
+            </div>
             {block.caption && (
-              <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2">
+              <figcaption className="text-center text-xs font-serif italic text-slate-500">
                 {block.caption}
               </figcaption>
             )}
@@ -1325,6 +1334,16 @@ const BlogDetails = () => {
         blogSlug={slug}
         blogTitle={title}
         allowComments={blog?.allow_comments !== false}
+      />
+
+      {/* Mobile Bottom Navigation (3 Icons: Articles, Share, Comments) */}
+      <MobileBottomNav
+        mode="article"
+        onShareClick={() => setIsShareModalOpen(true)}
+        onCommentsClick={() => {
+          const el = document.getElementById('comments-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
     </div>
   );

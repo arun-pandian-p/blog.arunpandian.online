@@ -61,6 +61,7 @@ import toast from 'react-hot-toast';
 import { isBlogSubdomain, getMainDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import ShareModal from '../components/ShareModal';
+import MobileBottomNav from '../components/MobileBottomNav';
 import { sendWelcomeEmail } from '../services/newsletterService';
 
 const VERIFIED_FALLBACK_IMAGES = [
@@ -626,7 +627,7 @@ export default function BlogPublicationPage() {
             <div className="lg:col-span-6 space-y-6 order-1 lg:order-2">
               
               {/* Category Filter Tabs & Search Bar */}
-              <div className="space-y-3">
+              <div id="topics-section" className="space-y-3 scroll-mt-28">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="font-serif font-black text-xl sm:text-2xl text-[#1C1A17] tracking-tight">
                     All Publications by Date
@@ -993,6 +994,15 @@ export default function BlogPublicationPage() {
           type="Publication"
         />
       )}
+
+      {/* Mobile Bottom Navigation (3 Icons) */}
+      <MobileBottomNav
+        mode="publication"
+        onExploreClick={() => {
+          const el = document.getElementById('topics-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 }
