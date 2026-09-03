@@ -420,9 +420,24 @@ export default function ProjectDetails() {
       <Helmet>
         <title>{title} | Arun Pandian - Analytics Case Study</title>
         <meta name="description" content={subtitle} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Arun Pandian Data Analytics" />
         <meta property="og:title" content={`${title} | Arun Pandian`} />
         <meta property="og:description" content={subtitle} />
-        {activeVisual && <meta property="og:image" content={activeVisual} />}
+        <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : `https://arunpandian.online/project/${id}`} />
+        {activeVisual && (
+          <>
+            <meta property="og:image" content={activeVisual.startsWith('http') ? activeVisual : `https://arunpandian.online${activeVisual.startsWith('/') ? '' : '/'}${activeVisual}`} />
+            <meta property="og:image:secure_url" content={activeVisual.startsWith('http') ? activeVisual : `https://arunpandian.online${activeVisual.startsWith('/') ? '' : '/'}${activeVisual}`} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta name="twitter:image" content={activeVisual.startsWith('http') ? activeVisual : `https://arunpandian.online${activeVisual.startsWith('/') ? '' : '/'}${activeVisual}`} />
+          </>
+        )}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@arunpandian" />
+        <meta name="twitter:title" content={`${title} | Arun Pandian`} />
+        <meta name="twitter:description" content={subtitle} />
       </Helmet>
 
       <StyleOverrides />
