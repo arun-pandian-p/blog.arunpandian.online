@@ -265,7 +265,7 @@ export default function BlogComments({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 animate-in fade-in duration-150">
                     <div>
                       <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
-                        Your Name (Cookie Saved) *
+                        Your Name *
                       </label>
                       <input
                         type="text"
@@ -304,7 +304,7 @@ export default function BlogComments({
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-slate-400 font-mono">
-                    ✦ Details saved to cookie for next time
+                    ✦ Stored in Supabase · 15-day lifespan
                   </span>
                   <button
                     type="submit"

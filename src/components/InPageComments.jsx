@@ -351,7 +351,7 @@ export default function InPageComments({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-blue-50/60 border border-blue-200/70 animate-in fade-in duration-150">
                     <div>
                       <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
-                        Your Name (Remembered via Cookie) *
+                        Your Name *
                       </label>
                       <input
                         type="text"
@@ -381,7 +381,7 @@ export default function InPageComments({
               {isInputFocused && (
                 <div className="flex items-center justify-between pt-1 animate-in fade-in duration-150">
                   <span className="text-[11px] font-mono text-slate-400">
-                    ✦ Details saved to cookie for next time
+                    ✦ Stored in Supabase · Markdown supported
                   </span>
 
                   <div className="flex items-center gap-2">
