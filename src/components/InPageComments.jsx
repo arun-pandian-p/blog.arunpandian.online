@@ -2,10 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, ThumbsUp, ThumbsDown, Send, User, 
   Clock, Globe, Sparkles, CheckCircle2, ShieldAlert, 
-  CornerDownRight, MoreVertical, Flame
+  CornerDownRight, MoreVertical, Flame, Edit2, Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
+
+// Cookie helpers
+function getCookie(name) {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : '';
+}
+
+function setCookie(name, value, days = 365) {
+  if (typeof document === 'undefined') return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
 
 export default function InPageComments({
   itemId,
@@ -19,10 +32,14 @@ export default function InPageComments({
   const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'top'
 
-  // Input states
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  // User details state (persisted via cookies & localStorage)
   const [authorName, setAuthorName] = useState('');
   const [authorDomain, setAuthorDomain] = useState('');
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const [showEditDetails, setShowEditDetails] = useState(false);
+
+  // Input states
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [commentText, setCommentText] = useState('');
 
   // Comment like states
@@ -35,6 +52,21 @@ export default function InPageComments({
   const targetId = String(itemId || itemSlug || '');
   const targetSlug = itemSlug || (itemId ? `${entityType}_${itemId}` : targetId);
   const targetTitle = itemTitle || `${entityType === 'project' ? 'Project' : 'Blog'} Discussion`;
+
+  // Load saved identity from Cookies / localStorage on mount
+  useEffect(() => {
+    const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
+    const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
+
+    if (savedName) {
+      setAuthorName(savedName);
+      setReplyAuthor(savedName);
+      setIsProfileSaved(true);
+    }
+    if (savedDomain) {
+      setAuthorDomain(savedDomain);
+    }
+  }, []);
 
   // 15-day expiration ISO
   const getFifteenDaysAgoISO = () => {
@@ -114,12 +146,23 @@ export default function InPageComments({
 
     if (!cleanName) {
       toast.error('Please enter your name');
+      setShowEditDetails(true);
       return;
     }
     if (!cleanText) {
       toast.error('Please type a comment');
       return;
     }
+
+    // Save identity in Cookie & LocalStorage (Never ask next time!)
+    localStorage.setItem('commenter_name', cleanName);
+    setCookie('commenter_name', cleanName, 365);
+    if (cleanDomain) {
+      localStorage.setItem('commenter_domain', cleanDomain);
+      setCookie('commenter_domain', cleanDomain, 365);
+    }
+    setIsProfileSaved(true);
+    setShowEditDetails(false);
 
     setSubmitting(true);
 
@@ -152,10 +195,8 @@ export default function InPageComments({
 
       setComments((prev) => [newComment, ...prev]);
       setCommentText('');
-      setAuthorName('');
-      setAuthorDomain('');
       setIsInputFocused(false);
-      toast.success('Comment posted! Live on this page.', { icon: '💬' });
+      toast.success(`Comment posted as ${cleanName}! Saved for next time.`, { icon: '💬' });
     } catch (err) {
       console.warn('Comment post error:', err);
       toast.success('Comment posted!', { icon: '✨' });
@@ -171,7 +212,6 @@ export default function InPageComments({
       const isLiked = current > 0;
       const updated = { ...prev, [commentId]: isLiked ? 0 : current + 1 };
       
-      // If was disliked, clear dislike
       if (!isLiked && commentDislikes[commentId]) {
         setCommentDislikes((dPrev) => ({ ...dPrev, [commentId]: false }));
       }
@@ -190,7 +230,7 @@ export default function InPageComments({
     });
   };
 
-  // Relative timestamp helper (YouTube style: "2 hours ago", "Just now")
+  // Relative timestamp helper (YouTube style)
   const formatTimeAgo = (dateStr) => {
     if (!dateStr) return 'Just now';
     const now = new Date();
@@ -271,6 +311,26 @@ export default function InPageComments({
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 space-y-3">
+              {/* Remembered Cookie Identity Badge */}
+              {isProfileSaved && authorName && (
+                <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
+                    {authorDomain && (
+                      <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDetails(!showEditDetails)}
+                    className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
+                  >
+                    {showEditDetails ? 'Done' : 'Change Name'}
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <textarea
                   required
@@ -278,29 +338,40 @@ export default function InPageComments({
                   onFocus={() => setIsInputFocused(true)}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment or analytical thought..."
+                  placeholder={
+                    authorName 
+                      ? `Add a comment as ${authorName}...` 
+                      : "Add a comment or analytical thought..."
+                  }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 outline-none leading-relaxed transition-all resize-y shadow-2xs"
                 />
 
-                {isInputFocused && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 animate-in fade-in duration-150">
+                {/* Name & Details Inputs (Shown on 1st visit or when clicking "Change Name") */}
+                {(showEditDetails || (!isProfileSaved && isInputFocused)) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-blue-50/60 border border-blue-200/70 animate-in fade-in duration-150">
                     <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
+                        Your Name (Remembered via Cookie) *
+                      </label>
                       <input
                         type="text"
                         required
-                        placeholder="Your Name *"
+                        placeholder="e.g. Alex Rivera"
                         value={authorName}
                         onChange={(e) => setAuthorName(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-600 outline-none"
+                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-600 outline-none font-medium"
                       />
                     </div>
                     <div>
+                      <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
+                        Website / LinkedIn / GitHub (Optional)
+                      </label>
                       <input
                         type="text"
-                        placeholder="Website / LinkedIn / GitHub (Optional)"
+                        placeholder="e.g. linkedin.com/in/alex"
                         value={authorDomain}
                         onChange={(e) => setAuthorDomain(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-600 outline-none font-mono"
+                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-600 outline-none font-mono"
                       />
                     </div>
                   </div>
@@ -310,7 +381,7 @@ export default function InPageComments({
               {isInputFocused && (
                 <div className="flex items-center justify-between pt-1 animate-in fade-in duration-150">
                   <span className="text-[11px] font-mono text-slate-400">
-                    ✦ Stored in Supabase · Markdown supported
+                    ✦ Details saved to cookie for next time
                   </span>
 
                   <div className="flex items-center gap-2">
@@ -437,7 +508,7 @@ export default function InPageComments({
                           <input
                             type="text"
                             placeholder="Your Name *"
-                            value={replyAuthor}
+                            value={replyAuthor || authorName}
                             onChange={(e) => setReplyAuthor(e.target.value)}
                             className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none"
                           />
@@ -452,13 +523,13 @@ export default function InPageComments({
                             <button
                               type="button"
                               onClick={() => {
-                                if (!replyText.trim() || !replyAuthor.trim()) {
+                                const sender = (replyAuthor || authorName).trim();
+                                if (!replyText.trim() || !sender) {
                                   toast.error('Please enter your name and reply');
                                   return;
                                 }
                                 toast.success(`Reply posted to @${comment.author_name}!`, { icon: '💬' });
                                 setReplyText('');
-                                setReplyAuthor('');
                                 setReplyingToId(null);
                               }}
                               className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold font-mono hover:bg-blue-500 transition-colors cursor-pointer"

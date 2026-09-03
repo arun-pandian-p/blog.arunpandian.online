@@ -1,11 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Send, X, Globe, User, Clock, CheckCircle2, ShieldAlert, Trash2 } from 'lucide-react';
+import { 
+  MessageSquare, Send, X, Globe, User, Clock, 
+  Sparkles, CheckCircle2, ShieldAlert, Edit2 
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
 
+// Cookie helpers
+function getCookie(name) {
+  if (typeof document === 'undefined') return '';
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : '';
+}
+
+function setCookie(name, value, days = 365) {
+  if (typeof document === 'undefined') return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
 export default function BlogComments({
-  blogId,
   blogSlug,
+  blogId,
   blogTitle,
   projectId,
   projectTitle,
@@ -23,10 +39,26 @@ export default function BlogComments({
   const targetSlug = blogSlug || (projectId ? `project_${projectId}` : targetId);
   const targetTitle = projectTitle || blogTitle || (entityType === 'project' ? 'Data Analytics Project' : 'Data Publication');
 
-  // Form state (takes Name & Domain / Website)
+  // Form state (persisted via cookie & localStorage)
   const [authorName, setAuthorName] = useState('');
   const [authorDomain, setAuthorDomain] = useState('');
   const [commentText, setCommentText] = useState('');
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const [showEditDetails, setShowEditDetails] = useState(false);
+
+  // Load saved identity from Cookies / localStorage on mount
+  useEffect(() => {
+    const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
+    const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
+
+    if (savedName) {
+      setAuthorName(savedName);
+      setIsProfileSaved(true);
+    }
+    if (savedDomain) {
+      setAuthorDomain(savedDomain);
+    }
+  }, []);
 
   // 15-day expiration threshold
   const getFifteenDaysAgoISO = () => {
@@ -108,12 +140,23 @@ export default function BlogComments({
 
     if (!cleanName) {
       toast.error('Please enter your name');
+      setShowEditDetails(true);
       return;
     }
     if (!cleanText) {
       toast.error('Please enter a comment');
       return;
     }
+
+    // Save in Cookie & localStorage for subsequent visits
+    localStorage.setItem('commenter_name', cleanName);
+    setCookie('commenter_name', cleanName, 365);
+    if (cleanDomain) {
+      localStorage.setItem('commenter_domain', cleanDomain);
+      setCookie('commenter_domain', cleanDomain, 365);
+    }
+    setIsProfileSaved(true);
+    setShowEditDetails(false);
 
     setSubmitting(true);
 
@@ -147,9 +190,7 @@ export default function BlogComments({
 
       setComments((prev) => [newComment, ...prev]);
       setCommentText('');
-      setAuthorName('');
-      setAuthorDomain('');
-      toast.success('Comment posted! (Live in discussion feed)', { icon: '💬' });
+      toast.success(`Comment posted as ${cleanName}! Saved for next time.`, { icon: '💬' });
     } catch (err) {
       console.warn('Comment post error:', err);
       toast.success('Comment posted!', { icon: '✨' });
@@ -181,60 +222,80 @@ export default function BlogComments({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Modal Body: Comments Feed */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+        {/* Modal Body */}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
           {!allowComments ? (
-            <div className="py-12 text-center text-slate-500 space-y-2">
+            <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-2">
               <ShieldAlert size={28} className="mx-auto text-amber-500" />
-              <p className="text-sm font-semibold text-slate-700">Comments are turned off for this {entityType}</p>
-              <p className="text-xs text-slate-400">Responses are currently disabled for this item.</p>
+              <h4 className="font-bold text-sm text-slate-800">Discussion Paused</h4>
+              <p className="text-xs text-slate-500">Comments have been turned off for this item.</p>
             </div>
           ) : (
             <>
               {/* Comment Input Form */}
               <form onSubmit={handleSubmit} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
-                      Your Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Alex Rivera"
-                      value={authorName}
-                      onChange={(e) => setAuthorName(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none"
-                    />
+                {/* Remembered Cookie Identity Badge */}
+                {isProfileSaved && authorName && (
+                  <div className="flex items-center justify-between text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
+                      {authorDomain && (
+                        <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowEditDetails(!showEditDetails)}
+                      className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
+                    >
+                      {showEditDetails ? 'Done' : 'Change Name'}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
-                      Domain / Website / LinkedIn (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. arunpandian.online"
-                      value={authorDomain}
-                      onChange={(e) => setAuthorDomain(e.target.value)}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none font-mono"
-                    />
+                )}
+
+                {/* Show name fields on first visit or when user clicks Change Name */}
+                {(showEditDetails || (!isProfileSaved)) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 animate-in fade-in duration-150">
+                    <div>
+                      <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
+                        Your Name (Cookie Saved) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Alex Rivera"
+                        value={authorName}
+                        onChange={(e) => setAuthorName(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
+                        Website / LinkedIn (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. linkedin.com/in/alex"
+                        value={authorDomain}
+                        onChange={(e) => setAuthorDomain(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none font-mono"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div>
-                  <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
-                    Your Thoughts / Feedback *
-                  </label>
                   <textarea
                     required
                     rows={3}
-                    placeholder="Share your analysis, question, or feedback..."
+                    placeholder={authorName ? `Share your thoughts as ${authorName}...` : "Share your analysis, question, or feedback..."}
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none leading-relaxed"
@@ -243,7 +304,7 @@ export default function BlogComments({
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-slate-400 font-mono">
-                    ✦ Stored in Supabase · 15-day lifespan
+                    ✦ Details saved to cookie for next time
                   </span>
                   <button
                     type="submit"
@@ -278,31 +339,27 @@ export default function BlogComments({
                     >
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center font-mono">
-                            {c.author_name?.charAt(0)?.toUpperCase() || 'U'}
+                          <div className="w-5 h-5 rounded-full bg-slate-900 text-white font-mono text-[10px] font-bold flex items-center justify-center">
+                            {c.author_name ? c.author_name.charAt(0).toUpperCase() : 'U'}
                           </div>
                           <span className="font-bold text-slate-900">{c.author_name}</span>
                           {c.author_domain && (
                             <a
-                              href={`https://${c.author_domain}`}
+                              href={c.author_domain.startsWith('http') ? c.author_domain : `https://${c.author_domain}`}
                               target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px] hover:underline"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-blue-600 font-mono hover:underline flex items-center gap-0.5"
                             >
-                              <Globe size={9} />
-                              <span>{c.author_domain}</span>
+                              <Globe size={10} />
+                              <span>{c.author_domain.slice(0, 20)}</span>
                             </a>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                          <Clock size={10} />
-                          {new Date(c.created_at || Date.now()).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                          })}
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {c.created_at ? new Date(c.created_at).toLocaleDateString() : 'Active'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-700 leading-relaxed pl-8">
+                      <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line pl-7">
                         {c.content}
                       </p>
                     </div>
