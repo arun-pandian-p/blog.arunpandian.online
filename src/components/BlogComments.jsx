@@ -39,14 +39,14 @@ export default function BlogComments({
   const targetSlug = blogSlug || (projectId ? `project_${projectId}` : targetId);
   const targetTitle = projectTitle || blogTitle || (entityType === 'project' ? 'Data Analytics Project' : 'Data Publication');
 
-  // Form state (persisted via cookie & localStorage)
+  // Form state
   const [authorName, setAuthorName] = useState('');
   const [authorDomain, setAuthorDomain] = useState('');
   const [commentText, setCommentText] = useState('');
   const [isProfileSaved, setIsProfileSaved] = useState(false);
   const [showEditDetails, setShowEditDetails] = useState(false);
 
-  // Load saved identity from Cookies / localStorage on mount
+  // Load saved identity on mount
   useEffect(() => {
     const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
     const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
@@ -60,43 +60,37 @@ export default function BlogComments({
     }
   }, []);
 
-  // 15-day expiration threshold
-  const getFifteenDaysAgoISO = () => {
-    return new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
-  };
-
-  // Fetch verified active comments within 15 days
-  const fetchComments = async () => {
+  // Fetch all comments
+  const fetchComments = async (silent = false) => {
     if (!targetSlug && !targetId) return;
-    setLoading(true);
-    const fifteenDaysAgo = getFifteenDaysAgoISO();
+    if (!silent) setLoading(true);
 
     try {
-      if (supabase) {
-        // Attempt fetch from blog_comments table
-        const { data, error } = await supabase
-          .from('blog_comments')
-          .select('*')
-          .or(`blog_slug.eq.${targetSlug},blog_id.eq.${targetId},blog_slug.eq.${targetId}`)
-          .gte('created_at', fifteenDaysAgo)
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          setComments(data);
-          setLoading(false);
+      // 1. Fetch from /api/comments
+      const res = await fetch(`/api/comments?targetSlug=${encodeURIComponent(targetSlug)}&targetId=${encodeURIComponent(targetId)}&entityType=${entityType}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.comments)) {
+          setComments(json.comments);
+          if (!silent) setLoading(false);
           return;
         }
+      }
+    } catch (apiErr) {
+      console.warn('API comments fetch notice, trying direct DB fallback:', apiErr);
+    }
 
-        // Fallback fetch from contact_messages
+    // 2. Direct DB fallback
+    try {
+      if (supabase) {
         const prefix = entityType === 'project' ? '[Project Comment' : '[Blog Comment';
-        const { data: msgData, error: msgError } = await supabase
+        const { data: msgData } = await supabase
           .from('contact_messages')
           .select('*')
           .or(`subject.ilike.%${prefix}%${targetSlug}%,subject.ilike.%${prefix}%${targetId}%`)
-          .gte('created_at', fifteenDaysAgo)
           .order('created_at', { ascending: false });
 
-        if (!msgError && msgData) {
+        if (msgData) {
           const parsed = msgData.map((m) => {
             let domain = '';
             let body = m.message;
@@ -114,20 +108,20 @@ export default function BlogComments({
             };
           });
           setComments(parsed);
-        } else if (data) {
-          setComments(data);
         }
       }
     } catch (err) {
       console.warn('Comments fetch notice:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
       fetchComments();
+      const interval = setInterval(() => fetchComments(true), 8000);
+      return () => clearInterval(interval);
     }
   }, [targetSlug, targetId, isOpen]);
 
@@ -148,7 +142,7 @@ export default function BlogComments({
       return;
     }
 
-    // Save in Cookie & localStorage for subsequent visits
+    // Save in Cookie & localStorage
     localStorage.setItem('commenter_name', cleanName);
     setCookie('commenter_name', cleanName, 365);
     if (cleanDomain) {
@@ -160,7 +154,8 @@ export default function BlogComments({
 
     setSubmitting(true);
 
-    const newComment = {
+    const tempComment = {
+      id: `temp-${Date.now()}`,
       blog_slug: targetSlug,
       blog_id: String(targetId),
       blog_title: targetTitle,
@@ -170,32 +165,62 @@ export default function BlogComments({
       created_at: new Date().toISOString()
     };
 
-    try {
-      if (supabase) {
-        // 1. Try insert into blog_comments
-        const { error: insertError } = await supabase
-          .from('blog_comments')
-          .insert([newComment]);
+    setComments((prev) => [tempComment, ...prev]);
+    setCommentText('');
 
-        // 2. If table doesn't accept or throws error, gracefully insert into contact_messages
-        if (insertError) {
+    try {
+      // 1. Try POST to /api/comments
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blog_slug: targetSlug,
+          blog_id: targetId,
+          blog_title: targetTitle,
+          author_name: cleanName,
+          author_domain: cleanDomain,
+          content: cleanText,
+          entityType: entityType
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result?.comment) {
+          setComments((prev) => 
+            prev.map(c => c.id === tempComment.id ? result.comment : c)
+          );
+        }
+        toast.success(`Comment posted live!`, { icon: '💬' });
+      } else {
+        if (supabase) {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
             email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
-            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`
+            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
+            read: false
           }]);
         }
+        toast.success(`Comment posted live!`, { icon: '💬' });
       }
-
-      setComments((prev) => [newComment, ...prev]);
-      setCommentText('');
-      toast.success(`Comment posted as ${cleanName}! Saved for next time.`, { icon: '💬' });
     } catch (err) {
       console.warn('Comment post error:', err);
+      if (supabase) {
+        try {
+          await supabase.from('contact_messages').insert([{
+            name: cleanName,
+            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
+            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
+            read: false
+          }]);
+        } catch (_) {}
+      }
       toast.success('Comment posted!', { icon: '✨' });
     } finally {
       setSubmitting(false);
+      setTimeout(() => fetchComments(true), 1200);
     }
   };
 
@@ -215,8 +240,9 @@ export default function BlogComments({
               <h3 className="font-serif font-bold text-slate-900 text-base line-clamp-1">
                 {entityType === 'project' ? 'Project Discussion & Responses' : 'Responses & Comments'}
               </h3>
-              <p className="text-[11px] text-slate-500 font-mono">
-                {comments.length} active {comments.length === 1 ? 'response' : 'responses'} (15-day live thread)
+              <p className="text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{comments.length} active {comments.length === 1 ? 'response' : 'responses'} · Live Feed</span>
               </p>
             </div>
           </div>
@@ -240,7 +266,7 @@ export default function BlogComments({
             <>
               {/* Comment Input Form */}
               <form onSubmit={handleSubmit} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                {/* Remembered Cookie Identity Badge */}
+                {/* Remembered Identity Badge */}
                 {isProfileSaved && authorName && (
                   <div className="flex items-center justify-between text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg">
                     <div className="flex items-center gap-1.5 truncate">
@@ -304,7 +330,7 @@ export default function BlogComments({
 
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-slate-400 font-mono">
-                    ✦ Stored in Supabase · 15-day lifespan
+                    ✦ Stored in Supabase · Markdown supported
                   </span>
                   <button
                     type="submit"
@@ -325,7 +351,7 @@ export default function BlogComments({
 
                 {loading ? (
                   <div className="py-8 text-center text-xs text-slate-400 font-mono">
-                    Loading discussion thread...
+                    Loading real-time discussion thread...
                   </div>
                 ) : comments.length === 0 ? (
                   <div className="py-8 text-center text-xs text-slate-400 font-mono bg-slate-50 rounded-xl border border-dashed border-slate-200">

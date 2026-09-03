@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, ThumbsUp, ThumbsDown, Send, User, 
   Clock, Globe, Sparkles, CheckCircle2, ShieldAlert, 
-  CornerDownRight, MoreVertical, Flame, Edit2, Check
+  CornerDownRight, MoreVertical, Flame, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
@@ -53,7 +53,7 @@ export default function InPageComments({
   const targetSlug = itemSlug || (itemId ? `${entityType}_${itemId}` : targetId);
   const targetTitle = itemTitle || `${entityType === 'project' ? 'Project' : 'Blog'} Discussion`;
 
-  // Load saved identity from Cookies / localStorage on mount
+  // Load saved identity on mount
   useEffect(() => {
     const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
     const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
@@ -68,42 +68,37 @@ export default function InPageComments({
     }
   }, []);
 
-  // 15-day expiration ISO
-  const getFifteenDaysAgoISO = () => {
-    return new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
-  };
-
-  const fetchComments = async () => {
+  // Fetch all comments (both from API endpoint and Supabase fallback)
+  const fetchComments = async (silent = false) => {
     if (!targetSlug && !targetId) return;
-    setLoading(true);
-    const fifteenDaysAgo = getFifteenDaysAgoISO();
+    if (!silent) setLoading(true);
 
     try {
-      if (supabase) {
-        // 1. Fetch from blog_comments table
-        const { data, error } = await supabase
-          .from('blog_comments')
-          .select('*')
-          .or(`blog_slug.eq.${targetSlug},blog_id.eq.${targetId},blog_slug.eq.${targetId}`)
-          .gte('created_at', fifteenDaysAgo)
-          .order('created_at', { ascending: false });
-
-        if (!error && data && data.length > 0) {
-          setComments(data);
-          setLoading(false);
+      // 1. Fetch from /api/comments endpoint (has server-side access to all community comments)
+      const res = await fetch(`/api/comments?targetSlug=${encodeURIComponent(targetSlug)}&targetId=${encodeURIComponent(targetId)}&entityType=${entityType}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json && Array.isArray(json.comments)) {
+          setComments(json.comments);
+          if (!silent) setLoading(false);
           return;
         }
+      }
+    } catch (apiErr) {
+      console.warn('API comments fetch notice, trying direct DB fallback:', apiErr);
+    }
 
-        // 2. Fallback fetch from contact_messages
+    // 2. Direct Supabase fallback
+    try {
+      if (supabase) {
         const prefix = entityType === 'project' ? '[Project Comment' : '[Blog Comment';
-        const { data: msgData, error: msgError } = await supabase
+        const { data: msgData } = await supabase
           .from('contact_messages')
           .select('*')
           .or(`subject.ilike.%${prefix}%${targetSlug}%,subject.ilike.%${prefix}%${targetId}%`)
-          .gte('created_at', fifteenDaysAgo)
           .order('created_at', { ascending: false });
 
-        if (!msgError && msgData) {
+        if (msgData && msgData.length > 0) {
           const parsed = msgData.map((m) => {
             let domain = '';
             let body = m.message || '';
@@ -118,23 +113,53 @@ export default function InPageComments({
               author_domain: domain,
               content: body,
               created_at: m.created_at,
-              likes: Math.floor(Math.random() * 5) + 1
+              likes: 0
             };
           });
           setComments(parsed);
-        } else if (data) {
-          setComments(data);
         }
       }
     } catch (err) {
-      console.warn('Comments fetch notice:', err);
+      console.warn('Direct DB fetch notice:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
+  // Initial fetch and Realtime updates
   useEffect(() => {
     fetchComments();
+
+    // Set up Real-time channel via Supabase if available
+    let channel = null;
+    if (supabase) {
+      try {
+        channel = supabase
+          .channel(`realtime-comments-${targetId}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'contact_messages' },
+            () => {
+              fetchComments(true);
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime channel error:', e);
+      }
+    }
+
+    // Polling fallback every 8 seconds for live updates
+    const pollInterval = setInterval(() => {
+      fetchComments(true);
+    }, 8000);
+
+    return () => {
+      clearInterval(pollInterval);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [targetSlug, targetId]);
 
   // Handle Comment Submission
@@ -154,7 +179,7 @@ export default function InPageComments({
       return;
     }
 
-    // Save identity in Cookie & LocalStorage (Never ask next time!)
+    // Save identity in Cookie & LocalStorage
     localStorage.setItem('commenter_name', cleanName);
     setCookie('commenter_name', cleanName, 365);
     if (cleanDomain) {
@@ -166,7 +191,8 @@ export default function InPageComments({
 
     setSubmitting(true);
 
-    const newComment = {
+    const tempComment = {
+      id: `temp-${Date.now()}`,
       blog_slug: targetSlug,
       blog_id: targetId,
       blog_title: targetTitle,
@@ -177,31 +203,66 @@ export default function InPageComments({
       likes: 0
     };
 
-    try {
-      if (supabase) {
-        const { error: insertError } = await supabase
-          .from('blog_comments')
-          .insert([newComment]);
+    // Optimistically add to list
+    setComments((prev) => [tempComment, ...prev]);
+    setCommentText('');
+    setIsInputFocused(false);
 
-        if (insertError) {
+    try {
+      // 1. Try POST to /api/comments
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blog_slug: targetSlug,
+          blog_id: targetId,
+          blog_title: targetTitle,
+          author_name: cleanName,
+          author_domain: cleanDomain,
+          content: cleanText,
+          entityType: entityType
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result?.comment) {
+          setComments((prev) => 
+            prev.map(c => c.id === tempComment.id ? result.comment : c)
+          );
+        }
+        toast.success(`Comment posted live!`, { icon: '💬' });
+      } else {
+        // Fallback insert directly via Supabase client
+        if (supabase) {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
             email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
-            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`
+            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
+            read: false
           }]);
         }
+        toast.success(`Comment posted live!`, { icon: '💬' });
       }
-
-      setComments((prev) => [newComment, ...prev]);
-      setCommentText('');
-      setIsInputFocused(false);
-      toast.success(`Comment posted as ${cleanName}! Saved for next time.`, { icon: '💬' });
     } catch (err) {
-      console.warn('Comment post error:', err);
+      console.warn('Comment post fallback:', err);
+      if (supabase) {
+        try {
+          await supabase.from('contact_messages').insert([{
+            name: cleanName,
+            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
+            message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
+            read: false
+          }]);
+        } catch (_) {}
+      }
       toast.success('Comment posted!', { icon: '✨' });
     } finally {
       setSubmitting(false);
+      // Refresh to ensure synced with DB
+      setTimeout(() => fetchComments(true), 1200);
     }
   };
 
@@ -244,7 +305,7 @@ export default function InPageComments({
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 15) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${diffDays} days ago`;
     return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -265,8 +326,9 @@ export default function InPageComments({
           <h3 className="font-display font-black text-xl sm:text-2xl text-slate-900 tracking-tight flex items-center gap-2">
             <span>{comments.length} Comments</span>
           </h3>
-          <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-mono font-medium">
-            Live Feed
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-mono font-medium flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live Real-Time
           </span>
         </div>
 
@@ -311,7 +373,7 @@ export default function InPageComments({
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 space-y-3">
-              {/* Remembered Cookie Identity Badge */}
+              {/* Remembered Identity Badge */}
               {isProfileSaved && authorName && (
                 <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
                   <div className="flex items-center gap-1.5 truncate">
@@ -414,7 +476,7 @@ export default function InPageComments({
             {loading ? (
               <div className="py-12 text-center text-xs font-mono text-slate-400 space-y-2">
                 <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p>Loading community discussion...</p>
+                <p>Loading real-time community discussion...</p>
               </div>
             ) : sortedComments.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 space-y-2">
@@ -522,15 +584,34 @@ export default function InPageComments({
                             />
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 const sender = (replyAuthor || authorName).trim();
                                 if (!replyText.trim() || !sender) {
                                   toast.error('Please enter your name and reply');
                                   return;
                                 }
+                                
+                                const replyContent = `@${comment.author_name} ${replyText.trim()}`;
+                                
+                                try {
+                                  await fetch('/api/comments', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      blog_slug: targetSlug,
+                                      blog_id: targetId,
+                                      blog_title: targetTitle,
+                                      author_name: sender,
+                                      content: replyContent,
+                                      entityType: entityType
+                                    })
+                                  });
+                                } catch (_) {}
+                                
                                 toast.success(`Reply posted to @${comment.author_name}!`, { icon: '💬' });
                                 setReplyText('');
                                 setReplyingToId(null);
+                                setTimeout(() => fetchComments(true), 800);
                               }}
                               className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold font-mono hover:bg-blue-500 transition-colors cursor-pointer"
                             >
