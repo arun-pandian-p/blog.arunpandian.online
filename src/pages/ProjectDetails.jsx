@@ -1021,43 +1021,60 @@ CALCULATE(
                   {project.model_notes}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950">
-                    <div className="font-bold text-blue-800 mb-2 flex justify-between items-center">
-                      <span>Fact Table</span>
-                      <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded">f_analytics_fact</span>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950">
+                      <div className="font-bold text-blue-800 mb-2 flex justify-between items-center">
+                        <span>Fact Table</span>
+                        <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded font-bold">Bank_Customers (10k rows)</span>
+                      </div>
+                      <ul className="space-y-1 text-[11px] text-blue-900">
+                        <li>• CustomerId (PK)</li>
+                        <li>• GeographyKey (FK)</li>
+                        <li>• DateKey (FK)</li>
+                        <li>• CreditScore</li>
+                        <li>• Balance (€)</li>
+                        <li>• NumOfProducts</li>
+                        <li>• IsActiveMember</li>
+                        <li>• Exited (0/1)</li>
+                      </ul>
                     </div>
-                    <ul className="space-y-1 text-[11px] text-blue-900">
-                      <li>• Transaction_ID (PK)</li>
-                      <li>• Date_Key (FK)</li>
-                      <li>• Dimension_Key (FK)</li>
-                      <li>• Metric_Value</li>
-                      <li>• Target_Value</li>
-                    </ul>
+
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                      <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                        <span>Dimension</span>
+                        <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded font-bold">Geography_Dimension</span>
+                      </div>
+                      <ul className="space-y-1 text-[11px] text-slate-600">
+                        <li>• GeographyKey (PK)</li>
+                        <li>• CountryName (France/Germany/Spain)</li>
+                        <li>• RegionCode (EU-West)</li>
+                        <li>• Currency (EUR)</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
+                      <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
+                        <span>Dimension</span>
+                        <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded font-bold">Date_Dimension</span>
+                      </div>
+                      <ul className="space-y-1 text-[11px] text-slate-600">
+                        <li>• DateKey (PK)</li>
+                        <li>• Year / Quarter / Month</li>
+                        <li>• Fiscal_Period</li>
+                      </ul>
+                    </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
-                    <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
-                      <span>Dimension</span>
-                      <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_calendar</span>
+                  {/* DAX Measures Quick Summary */}
+                  <div className="p-4 rounded-xl bg-slate-900 text-slate-200 font-mono text-xs space-y-2 border border-slate-800">
+                    <span className="text-amber-400 font-bold block">Key DAX Measures in Model:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <code className="p-2 bg-slate-950 rounded text-blue-300">Total Customers = COUNTROWS(Bank_Customers)</code>
+                      <code className="p-2 bg-slate-950 rounded text-emerald-300">Churn Rate % = DIVIDE([Exited Customers], [Total Customers], 0)</code>
+                      <code className="p-2 bg-slate-950 rounded text-purple-300">Retention Rate = 1 - [Churn Rate %]</code>
+                      <code className="p-2 bg-slate-950 rounded text-rose-300">Balance at Risk % = DIVIDE(SUMX(FILTER(..., Exited=1), Balance), SUM(Balance))</code>
                     </div>
-                    <ul className="space-y-1 text-[11px] text-slate-600">
-                      <li>• Date_Key (PK)</li>
-                      <li>• Year / Quarter / Month</li>
-                      <li>• Day_Of_Week_Index</li>
-                    </ul>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800">
-                    <div className="font-bold text-slate-900 mb-2 flex justify-between items-center">
-                      <span>Dimension</span>
-                      <span className="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">d_categories</span>
-                    </div>
-                    <ul className="space-y-1 text-[11px] text-slate-600">
-                      <li>• Category_ID (PK)</li>
-                      <li>• Category_Name</li>
-                      <li>• Regional_Segment</li>
-                    </ul>
                   </div>
                 </div>
               )}

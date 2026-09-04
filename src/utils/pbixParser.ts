@@ -565,12 +565,166 @@ export function getSampleAmazonDeliveryReport(): PbixReport {
   };
 }
 
+// ── Built-in Data Science Salary & Job Market Model ──
+export function getSampleDataJobsReport(): PbixReport {
+  return {
+    id: 'data-jobs-03',
+    title: 'Data Science Job Market & Salary Intelligence',
+    subtitle: 'Comprehensive benchmarking across 12,000+ data postings comparing skill premiums, role demand, and salary variance.',
+    version: '2026.1',
+    author: 'Arun Pandian',
+    pages: [
+      {
+        id: 'overview',
+        name: 'Salary Overview',
+        title: 'Executive Compensation & Skill Demand Benchmark',
+        iconName: 'DollarSign',
+        kpis: [
+          { id: 'kpi-dj-1', label: 'Median Base Compensation', value: '$128.5K', formattedValue: '$128.5K', delta: '+14.2% YoY', deltaType: 'positive', subtext: 'SQL + Python benchmark' },
+          { id: 'kpi-dj-2', label: 'Active Job Postings', value: '12,450', formattedValue: '12.5K', delta: '3.4x volume for dual skills', deltaType: 'positive', subtext: 'Across US, EU & Remote' },
+          { id: 'kpi-dj-3', label: 'Top Skill Premium Index', value: '2.4x', formattedValue: '2.4x', delta: 'vs single tool stack', deltaType: 'positive', subtext: 'Power BI + SQL + Python' },
+          { id: 'kpi-dj-4', label: 'Remote Role Share', value: '44.8%', formattedValue: '44.8%', delta: 'High flexibility', deltaType: 'neutral', subtext: 'Global hiring pool' }
+        ],
+        visuals: [
+          {
+            id: 'viz-salary-role',
+            title: 'Median Salary by Primary Tech Stack ($k)',
+            type: 'horizontalBar',
+            format: 'number',
+            xAxisLabel: 'Median Salary ($k)',
+            yAxisLabel: 'Skill Pair',
+            data: [
+              { name: 'Python + SQL + Power BI', value: 142.5, color: '#0080FF' },
+              { name: 'Python + Spark / ML', value: 138.0, color: '#0080FF' },
+              { name: 'SQL + Tableau / BI', value: 115.0, color: '#0080FF' },
+              { name: 'Excel / Power Query', value: 88.0, color: '#0080FF' }
+            ],
+            description: 'Combining relational SQL with Python and Power BI commands a $142.5k median compensation benchmark.'
+          },
+          {
+            id: 'viz-role-donut',
+            title: 'Job Demand by Specialization',
+            type: 'donut',
+            format: 'number',
+            data: [
+              { name: 'Data Analyst', value: 5200, color: '#0080FF' },
+              { name: 'Data Engineer', value: 4100, color: '#10B981' },
+              { name: 'Data Scientist', value: 3150, color: '#F59E0B' }
+            ],
+            description: 'Analytics roles represent the highest gross volume across enterprise hiring pipelines.'
+          },
+          {
+            id: 'viz-salary-gauge',
+            title: 'Compensation Benchmark Fulfillment',
+            type: 'gauge',
+            gaugeCurrent: 128.5,
+            gaugeTarget: 120.0,
+            gaugeMax: 160.0,
+            format: 'number',
+            data: [{ name: 'Median Salary', value: 128.5, color: '#0080FF' }],
+            description: 'Tracking 7% above initial market compensation baseline.'
+          }
+        ]
+      }
+    ],
+    tables: [
+      { name: 'Data_Jobs_Master', columns: ['Job_ID', 'Job_Title', 'Salary_Yearly', 'Skill_List', 'Work_Setting', 'Company_Location'], rowCount: 12450 }
+    ],
+    measures: [
+      { name: 'Median Salary', dax: 'Median Salary = MEDIAN(Data_Jobs_Master[Salary_Yearly])', table: 'Data_Jobs_Master' }
+    ]
+  };
+}
+
+// ── Built-in Carrier Flight Turnaround Model ──
+export function getSampleFlightTurnaroundReport(): PbixReport {
+  return {
+    id: 'flight-turnaround-05',
+    title: 'Carrier Flight Turnaround & Gate Hold Distribution',
+    subtitle: 'Deconstructed 450,000 airline flight records into granular turnaround stages: taxi-in, servicing, and baggage logistics.',
+    version: '2026.1',
+    author: 'Arun Pandian',
+    pages: [
+      {
+        id: 'overview',
+        name: 'Turnaround Overview',
+        title: 'Gate Turnaround Bottlenecks & Delay Distribution',
+        iconName: 'Plane',
+        kpis: [
+          { id: 'kpi-fl-1', label: 'Flights Analyzed', value: '450,200', formattedValue: '450K', delta: 'Full operational dataset', deltaType: 'neutral', subtext: 'Connecting and hub routes' },
+          { id: 'kpi-fl-2', label: 'Avg Turnaround Time', value: '38.4 min', formattedValue: '38.4m', delta: 'Delta +14% vs SLA', deltaType: 'negative', subtext: 'Target: 32.0 min' },
+          { id: 'kpi-fl-3', label: 'Baggage Transfer Penalty', value: '18.2 min', formattedValue: '18.2m', delta: '61% of delay variance', deltaType: 'negative', subtext: 'Key operational bottleneck' },
+          { id: 'kpi-fl-4', label: 'On-Time Pushback Rate', value: '78.6%', formattedValue: '78.6%', delta: 'Target: 88.0%', deltaType: 'negative', subtext: 'Departure gate queue' }
+        ],
+        visuals: [
+          {
+            id: 'viz-carrier-delays',
+            title: 'Average Gate Hold Time by Carrier (min)',
+            type: 'horizontalBar',
+            format: 'number',
+            xAxisLabel: 'Gate Hold Time (min)',
+            yAxisLabel: 'Carrier',
+            data: [
+              { name: 'Carrier A', value: 38.4, color: '#EF4444' },
+              { name: 'Carrier B', value: 31.2, color: '#0080FF' },
+              { name: 'Carrier C', value: 28.5, color: '#0080FF' },
+              { name: 'Carrier D', value: 24.1, color: '#10B981' }
+            ],
+            description: 'Carrier A exhibits 38.4 min average gate hold time due to baggage transfer synchronization delays.'
+          },
+          {
+            id: 'viz-delay-stage-donut',
+            title: 'Turnaround Delay Component Split',
+            type: 'donut',
+            format: 'percentage',
+            data: [
+              { name: 'Baggage Transfer', value: 61, color: '#EF4444' },
+              { name: 'Gate Servicing', value: 23, color: '#0080FF' },
+              { name: 'Taxi-In Queue', value: 16, color: '#10B981' }
+            ],
+            description: 'Baggage logistics causes 61% of departure delays exceeding 30 minutes in connecting hubs.'
+          },
+          {
+            id: 'viz-flight-gauge',
+            title: 'Departure On-Time SLA Index',
+            type: 'gauge',
+            gaugeCurrent: 78.6,
+            gaugeTarget: 88.0,
+            gaugeMax: 100.0,
+            format: 'percentage',
+            data: [{ name: 'On-Time Pushback', value: 78.6, color: '#0080FF' }],
+            description: 'Current pushback efficiency across connecting hubs.'
+          }
+        ]
+      }
+    ],
+    tables: [
+      { name: 'Flight_Turnaround_Log', columns: ['Flight_ID', 'Carrier', 'Gate_Hold_Min', 'Taxi_In_Min', 'Baggage_Delay_Min', 'Pushback_On_Time'], rowCount: 450200 }
+    ],
+    measures: [
+      { name: 'Avg Gate Hold Time', dax: 'Avg Gate Hold Time = AVERAGE(Flight_Turnaround_Log[Gate_Hold_Min])', table: 'Flight_Turnaround_Log' }
+    ]
+  };
+}
+
 // ── Generic Fallback Report for Any Project / Blog ──
 export function getPbixReportForProject(idOrTitle: string): PbixReport {
   const normalized = String(idOrTitle || '').toLowerCase();
-  if (normalized.includes('delivery') || normalized === '1') {
+  
+  if (normalized === '1' || normalized.includes('bank') || normalized.includes('churn') || normalized.includes('retention')) {
+    return getSampleBankChurnReport();
+  }
+  if (normalized === '7' || normalized.includes('delivery') || normalized.includes('amazon')) {
     return getSampleAmazonDeliveryReport();
   }
+  if (normalized === '2' || normalized === '4' || normalized.includes('job') || normalized.includes('salary') || normalized.includes('excel')) {
+    return getSampleDataJobsReport();
+  }
+  if (normalized === '5' || normalized.includes('flight') || normalized.includes('carrier') || normalized.includes('turnaround')) {
+    return getSampleFlightTurnaroundReport();
+  }
+  
+  // Default to European Bank Customer Churn
   return getSampleBankChurnReport();
 }
 

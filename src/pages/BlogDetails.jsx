@@ -1186,21 +1186,24 @@ const BlogDetails = () => {
           </div>
         )}
 
-        {/* Embedded Interactive Power BI Desktop Viewer */}
-        {(powerbiUrl || category === 'Power BI' || (Array.isArray(tags) && tags.some(t => String(t).toLowerCase().includes('power bi')))) && (
-          <div className="my-8">
-            <div className="flex items-center gap-2 mb-3">
+        {/* Embedded Interactive Power BI Desktop Live Dashboard */}
+        <div className="my-8">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
-                Interactive Power BI Desktop Model &amp; Live Slicer
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
+                Live Interactive Power BI Desktop Model &amp; Slicer
               </span>
             </div>
-            <PowerBIViewer
-              projectTitle={title}
-              pbixUrl={powerbiUrl}
-            />
+            <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
+              ✨ Apache ECharts · Chart.js · D3.js · Real-time Cross-Filtering
+            </span>
           </div>
-        )}
+          <PowerBIViewer
+            projectTitle={title}
+            pbixUrl={powerbiUrl}
+          />
+        </div>
 
         {/* Main Formatted Article Content */}
         <div className="article-body">
