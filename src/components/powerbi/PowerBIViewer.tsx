@@ -259,6 +259,134 @@ export default function PowerBIViewer({
 
     // ── Option A: Apache ECharts ──
     if (engine === 'echarts') {
+      // ── Stacked Horizontal Bar (RiskBand vs Exited) ──
+      if ((visual.type as any) === 'stackedHorizontalBar') {
+        const categories = visual.data.map(d => d.name).reverse();
+        const retainedVals = visual.data.map(d => d.value).reverse();
+        const exitedVals = visual.data.map(d => d.secondaryValue || 0).reverse();
+
+        const option = {
+          backgroundColor: 'transparent',
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: (params: any) => {
+              const name = params[0]?.name;
+              const r = params[0]?.value;
+              const e = params[1]?.value;
+              return `<b>${name} RiskBand</b><br/>Retained: ${r}%<br/>Exited: ${e}%`;
+            }
+          },
+          legend: {
+            data: ['Retained (0)', 'Exited (1)'],
+            top: 0,
+            textStyle: { color: '#475569', fontSize: 11 }
+          },
+          grid: { top: '15%', left: '15%', right: '8%', bottom: '10%', containLabel: true },
+          xAxis: {
+            type: 'value',
+            max: 100,
+            axisLabel: { formatter: '{value}%', color: '#64748b', fontSize: 11 },
+            splitLine: { lineStyle: { color: '#f1f5f9' } }
+          },
+          yAxis: {
+            type: 'category',
+            data: categories,
+            axisLabel: { color: '#334155', fontWeight: 600, fontSize: 12 },
+            axisLine: { lineStyle: { color: '#cbd5e1' } }
+          },
+          series: [
+            {
+              name: 'Retained (0)',
+              type: 'bar',
+              stack: 'total',
+              data: retainedVals,
+              itemStyle: { color: '#0080FF' },
+              barWidth: 32
+            },
+            {
+              name: 'Exited (1)',
+              type: 'bar',
+              stack: 'total',
+              data: exitedVals,
+              itemStyle: { color: '#1B2A4A' },
+              barWidth: 32
+            }
+          ]
+        };
+
+        return (
+          <div className="w-full h-72 sm:h-80">
+            <ReactECharts
+              option={option}
+              style={{ width: '100%', height: '100%' }}
+              onEvents={{
+                click: (params: any) => {
+                  const clickedCat = params.name;
+                  setActiveFilter(prev => ({
+                    category: 'RiskBand',
+                    value: prev.value === clickedCat ? null : clickedCat
+                  }));
+                }
+              }}
+            />
+          </div>
+        );
+      }
+
+      // ── Scatter / Bubble Chart (Sum of Balance vs Score) ──
+      if (visual.type === 'scatter') {
+        const option = {
+          backgroundColor: 'transparent',
+          tooltip: {
+            formatter: (params: any) => {
+              return `<b>${params.data.name}</b><br/>Balance: €${params.data.value[1]}M<br/>Volume: ${params.data.value[0]}k`;
+            }
+          },
+          legend: {
+            data: ['0 (Retained)', '1 (Exited)'],
+            right: 10,
+            top: 'center',
+            orient: 'vertical',
+            textStyle: { color: '#475569', fontSize: 11 }
+          },
+          grid: { top: '15%', left: '15%', right: '20%', bottom: '15%', containLabel: true },
+          xAxis: {
+            type: 'value',
+            name: 'Volume (k)',
+            splitLine: { lineStyle: { color: '#f1f5f9' } }
+          },
+          yAxis: {
+            type: 'value',
+            name: 'Sum of Balance',
+            axisLabel: { formatter: '{value}M' },
+            splitLine: { lineStyle: { color: '#f1f5f9' } }
+          },
+          series: [
+            {
+              name: '0 (Retained)',
+              type: 'scatter',
+              symbolSize: 42,
+              data: [{ name: 'Retained Capital', value: [100, 280] }],
+              itemStyle: { color: '#0080FF', opacity: 0.85 }
+            },
+            {
+              name: '1 (Exited)',
+              type: 'scatter',
+              symbolSize: 34,
+              data: [{ name: 'Exited Capital', value: [25, 65] }],
+              itemStyle: { color: '#1B2A4A', opacity: 0.85 }
+            }
+          ]
+        };
+
+        return (
+          <div className="w-full h-56 sm:h-64">
+            <ReactECharts option={option} style={{ width: '100%', height: '100%' }} />
+          </div>
+        );
+      }
+
       if (visual.type === 'horizontalBar') {
         const categories = visual.data.map(d => d.name).reverse();
         const values = visual.data.map(d => d.value).reverse();
@@ -861,12 +989,17 @@ export default function PowerBIViewer({
         <aside className="w-full lg:w-60 bg-[#0080FF] text-white p-3 lg:p-4 flex flex-col justify-between shrink-0 shadow-md">
           <div className="space-y-4">
             {/* Sidebar Avatar / Illustration Header (matching screenshot) */}
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 text-center border border-white/20">
-              <div className="w-12 h-12 mx-auto rounded-full bg-white flex items-center justify-center shadow-inner mb-2">
-                <BarChart3 className="w-6 h-6 text-[#0080FF]" />
+            <div className="bg-white/20 backdrop-blur-xs rounded-2xl p-3 text-center border border-white/30 shadow-sm relative overflow-hidden">
+              <div className="w-14 h-14 mx-auto rounded-full bg-white flex items-center justify-center shadow-md mb-2 p-1">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <rect x="20" y="45" width="60" height="35" rx="6" fill="#0080FF" />
+                  <circle cx="50" cy="30" r="14" fill="#F59E0B" />
+                  <path d="M35 70 Q50 55 65 70" stroke="#FFFFFF" strokeWidth="4" fill="none" />
+                  <rect x="30" y="15" width="40" height="8" rx="2" fill="#10B981" />
+                </svg>
               </div>
-              <h3 className="font-bold text-xs text-white leading-tight">Interactive Power BI</h3>
-              <p className="text-[10px] text-blue-100 font-mono">Real PBIX Model Explorer</p>
+              <h3 className="font-black text-xs text-white leading-tight">European Retention</h3>
+              <p className="text-[10px] text-blue-100 font-mono">10,000 Customer Base</p>
             </div>
 
             {/* Navigation Page Tabs (Styled rounded buttons from screenshot) */}
@@ -877,33 +1010,46 @@ export default function PowerBIViewer({
               {report.pages.map((page, pIdx) => {
                 const isActive = activePageIndex === pIdx;
                 return (
-                  <button
-                    key={page.id}
-                    onClick={() => {
-                      setActivePageIndex(pIdx);
-                      setActiveFilter({ category: null, value: null });
-                    }}
-                    className={`w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
-                      isActive
-                        ? 'bg-white text-[#0080FF] font-bold shadow-md scale-[1.02]'
-                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
-                    }`}
-                  >
-                    <span className="truncate">{page.name}</span>
-                    {isActive && <ChevronRight size={14} className="text-[#0080FF]" />}
-                  </button>
+                  <div key={page.id} className="relative group">
+                    <button
+                      onClick={() => {
+                        setActivePageIndex(pIdx);
+                        setActiveFilter({ category: null, value: null });
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
+                        isActive
+                          ? 'bg-white text-[#0080FF] font-bold shadow-md scale-[1.02]'
+                          : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
+                      }`}
+                    >
+                      <span className="truncate">{page.name}</span>
+                      {isActive && <ChevronRight size={14} className="text-[#0080FF]" />}
+                    </button>
+                    
+                    {/* Hover Tooltip: CTRL+click here to follow (like in screenshot) */}
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+                      CTRL+click here to follow
+                    </div>
+                  </div>
                 );
               })}
             </nav>
           </div>
 
-          {/* Bottom Sidebar Info & Live Data Badge */}
-          <div className="pt-4 border-t border-white/20 text-[10px] font-mono text-blue-100 space-y-1">
-            <div className="flex items-center gap-1 text-white">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-bold">Cross-Filtering Active</span>
+          {/* Bottom Sidebar Info & Customer Churn Graphic (From screenshot) */}
+          <div className="pt-4 border-t border-white/20 text-[10px] font-mono text-blue-100 space-y-2 text-center">
+            {/* Little people retention graphic */}
+            <div className="flex items-center justify-center gap-1.5 py-1">
+              <span className="text-base text-white">🚶‍♂️</span>
+              <span className="text-base text-white">🚶‍♀️</span>
+              <span className="text-base text-white">🚶‍♂️</span>
+              <span className="text-base text-amber-300 animate-pulse">🚶‍♀️</span>
+              <span className="text-base text-rose-300 animate-bounce">🏃‍♂️</span>
             </div>
-            <p className="text-blue-100/80">Click any chart bar or slice to slice report metrics dynamically.</p>
+            <div className="flex items-center justify-center gap-1 text-white">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="font-bold">Interactive DAX Model</span>
+            </div>
           </div>
         </aside>
 
@@ -947,10 +1093,10 @@ export default function PowerBIViewer({
             ))}
           </div>
 
-          {/* Visuals Grid: Horizontal Bar, Donut, and Gauge (Layout from screenshot) */}
+          {/* Visuals Grid: Multi-Page Dynamic Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             
-            {/* Main Visual: Churn Rate by Geography (Span 7 cols) */}
+            {/* Main Visual (Span 7 cols) */}
             {activePage.visuals[0] && (
               <div className="lg:col-span-7 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
@@ -973,26 +1119,67 @@ export default function PowerBIViewer({
               </div>
             )}
 
-            {/* Right Column: Donut & Gauge Visuals (Span 5 cols) */}
+            {/* Right Column: Slicers / Gauges / Secondary Visuals (Span 5 cols) */}
             <div className="lg:col-span-5 space-y-5">
               
-              {/* Donut Chart */}
+              {/* Visual 1 (e.g. Slicer or Donut) */}
               {activePage.visuals[1] && (
                 <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                     <h4 className="font-bold text-sm text-slate-800">{activePage.visuals[1].title}</h4>
-                    <span className="text-[10px] font-mono text-slate-400">Interactive</span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {activePage.visuals[1].title === 'Filter' ? 'Active Slicer' : 'Interactive'}
+                    </span>
                   </div>
-                  {renderVisual(activePage.visuals[1])}
+
+                  {activePage.visuals[1].title === 'Filter' ? (
+                    <div className="flex items-center justify-between p-2">
+                      <div className="space-y-2 text-xs font-mono">
+                        {['18-29', '30-39', '40-49', '50-59', '60+'].map((ageBracket) => {
+                          const isChecked = !activeFilter.value || activeFilter.value === ageBracket;
+                          return (
+                            <label
+                              key={ageBracket}
+                              onClick={() => {
+                                setActiveFilter(prev => ({
+                                  category: 'Age Bracket',
+                                  value: prev.value === ageBracket ? null : ageBracket
+                                }));
+                              }}
+                              className="flex items-center gap-2.5 cursor-pointer text-slate-700 hover:text-blue-600 select-none"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}}
+                                className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                              />
+                              <span className="font-medium text-[11px]">{ageBracket}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center p-2 border border-blue-100">
+                        <div className="text-center">
+                          <Layers className="w-8 h-8 text-blue-500 mx-auto mb-1 animate-pulse" />
+                          <span className="text-[9px] font-bold text-blue-700">Demographics</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    renderVisual(activePage.visuals[1])
+                  )}
                 </div>
               )}
 
-              {/* Gauge or Secondary Visual */}
+              {/* Visual 2 (e.g. Scatter or Gauge) */}
               {activePage.visuals[2] && (
                 <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
                     <h4 className="font-bold text-sm text-slate-800">{activePage.visuals[2].title}</h4>
-                    <span className="text-[10px] font-mono text-slate-400">KPI Gauge</span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {activePage.visuals[2].type === 'scatter' ? 'Bubble Matrix' : 'KPI Gauge'}
+                    </span>
                   </div>
                   {renderVisual(activePage.visuals[2])}
                 </div>

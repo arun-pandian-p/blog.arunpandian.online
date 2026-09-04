@@ -214,35 +214,44 @@ export function getSampleBankChurnReport(): PbixReport {
         ],
         visuals: [
           {
-            id: 'viz-age-risk',
-            title: 'Churn Rate by Age Demographics',
-            type: 'bar',
+            id: 'viz-riskband-stacked',
+            title: 'Total Customers by RiskBand and Exited',
+            type: 'stackedHorizontalBar' as any,
             format: 'percentage',
-            xAxisLabel: 'Age Group',
-            yAxisLabel: 'Churn Rate (%)',
+            xAxisLabel: '% of Customers',
+            yAxisLabel: 'RiskBand',
             data: [
-              { name: '18-30', value: 7.5, color: '#38BDF8' },
-              { name: '31-40', value: 11.2, color: '#0080FF' },
-              { name: '41-50', value: 34.0, color: '#F59E0B' },
-              { name: '51-60', value: 56.2, color: '#EF4444' },
-              { name: '61-70', value: 48.1, color: '#EF4444' },
-              { name: '70+', value: 21.0, color: '#38BDF8' }
+              { name: 'Low', value: 95.2, secondaryValue: 4.8, category: 'Low Risk', color: '#0080FF' },
+              { name: 'Medium', value: 82.4, secondaryValue: 17.6, category: 'Medium Risk', color: '#0080FF' },
+              { name: 'High', value: 62.1, secondaryValue: 37.9, category: 'High Risk', color: '#0080FF' },
+              { name: 'Critical', value: 8.2, secondaryValue: 91.8, category: 'Critical Risk', color: '#0080FF' }
             ],
-            description: 'Significant spike in churn between ages 45-60 requiring proactive wealth advisor outreach.'
+            description: 'Critical risk cohort exhibits a 91.8% churn rate, while Low risk customers remain 95.2% retained.'
           },
           {
-            id: 'viz-balance-cohort',
-            title: 'Balance Cohort vs Exit Volume',
-            type: 'donut',
-            format: 'number',
+            id: 'viz-age-filter-slicer',
+            title: 'Filter',
+            type: 'slicer' as any,
             data: [
-              { name: 'Zero Balance', value: 500, color: '#94A3B8' },
-              { name: '€1 - €50k', value: 240, color: '#38BDF8' },
-              { name: '€50k - €100k', value: 580, color: '#0080FF' },
-              { name: '€100k - €150k', value: 617, color: '#F59E0B' },
-              { name: '€150k+', value: 100, color: '#EF4444' }
+              { name: '18-29', value: 1650, color: '#0080FF' },
+              { name: '30-39', value: 4210, color: '#0080FF' },
+              { name: '40-49', value: 2630, color: '#0080FF' },
+              { name: '50-59', value: 1020, color: '#0080FF' },
+              { name: '60+', value: 490, color: '#0080FF' }
             ],
-            description: 'High-wealth tiers account for over €110M in churned capital.'
+            description: 'Multi-select age bracket slicer context.'
+          },
+          {
+            id: 'viz-balance-scatter',
+            title: 'Total Customers',
+            type: 'scatter',
+            xAxisLabel: 'Age / Score',
+            yAxisLabel: 'Sum of Balance',
+            data: [
+              { name: 'Retained Balance (0)', value: 280, secondaryValue: 120, category: '0 (Retained)', color: '#0080FF' },
+              { name: 'Exited Balance (1)', value: 65, secondaryValue: 45, category: '1 (Exited)', color: '#1B2A4A' }
+            ],
+            description: 'Customer count and capital concentration across retained vs exited tiers.'
           }
         ]
       },
