@@ -11,6 +11,7 @@ import ShareModal from '../components/ShareModal';
 import BlogComments from '../components/BlogComments';
 import InPageComments from '../components/InPageComments';
 import MobileBottomNav from '../components/MobileBottomNav';
+import PowerBIViewer from '../components/powerbi/PowerBIViewer';
 import toast from 'react-hot-toast';
 import { 
   FaLinkedin, 
@@ -92,6 +93,7 @@ export default function ProjectDetails() {
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedCode, setCopiedCode] = useState(null);
   const [activeVisualIndex, setActiveVisualIndex] = useState(0);
+  const [dashboardMode, setDashboardMode] = useState('powerbi'); // 'powerbi' | 'snapshot' | 'embed'
 
   // Social Sharing, Comments & Live Likes State
   const [likesCount, setLikesCount] = useState(142);
@@ -707,48 +709,88 @@ export default function ProjectDetails() {
           </div>
         </section>
 
-        {/* ── 03: LIVE ANALYTICS SHOWCASE & REAL UPLOADED VISUAL ── */}
-        <section className="mb-12">
-          <div className="w-full rounded-2xl bg-slate-900 border border-slate-200 shadow-xl overflow-hidden">
-            {/* Top Bar */}
-            <div className="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5">
+        {/* ── 03: LIVE ANALYTICS SHOWCASE & REAL POWER BI VIEWER ── */}
+        <section className="mb-12 space-y-3">
+          {/* Mode Switcher Tabs */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-mono">
+              <button
+                onClick={() => setDashboardMode('powerbi')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+                  dashboardMode === 'powerbi'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <BarChart3 size={13} />
+                <span>Interactive Power BI Desktop</span>
+              </button>
+
+              {activeVisual && (
+                <button
+                  onClick={() => setDashboardMode('snapshot')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                    dashboardMode === 'snapshot'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Sparkles size={13} />
+                  <span>Static Snapshot ({visualsList.length})</span>
+                </button>
+              )}
+
+              {powerBiEmbedUrl && (
+                <button
+                  onClick={() => setDashboardMode('embed')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                    dashboardMode === 'embed'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <ExternalLink size={13} />
+                  <span>Power BI Web Embed</span>
+                </button>
+              )}
+            </div>
+
+            <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
+              ✨ Dynamic cross-filtering & multi-engine (Apache ECharts / Chart.js / D3)
+            </span>
+          </div>
+
+          {/* Mode 1: Interactive Power BI Desktop Viewer */}
+          {dashboardMode === 'powerbi' && (
+            <PowerBIViewer
+              projectId={id}
+              projectTitle={title}
+              pbixUrl={project.pbix_url}
+              onZoomToggle={() => setShowImageZoom(true)}
+            />
+          )}
+
+          {/* Mode 2: Static Image / Video Snapshot Display */}
+          {dashboardMode === 'snapshot' && activeVisual && (
+            <div className="w-full rounded-2xl bg-slate-900 border border-slate-200 shadow-xl overflow-hidden">
+              <div className="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between text-xs text-slate-300">
+                <div className="flex items-center gap-2">
                   <span className="h-3 w-3 rounded-full bg-rose-500 inline-block" />
                   <span className="h-3 w-3 rounded-full bg-amber-500 inline-block" />
                   <span className="h-3 w-3 rounded-full bg-emerald-500 inline-block" />
+                  <span className="font-mono text-slate-300 ml-2">{title} · High-Res Snapshot</span>
                 </div>
-                <span className="font-mono text-slate-300 ml-2 hidden sm:inline">{title}</span>
+                <button
+                  onClick={() => setShowImageZoom(true)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-mono cursor-pointer"
+                >
+                  <Maximize2 size={12} />
+                  <span className="text-[11px]">Zoom</span>
+                </button>
               </div>
-              <div className="flex items-center gap-2">
-                {activeVisual && (
-                  <button
-                    onClick={() => setShowImageZoom(true)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors font-mono cursor-pointer"
-                    title="Zoom in high resolution"
-                  >
-                    <Maximize2 size={12} />
-                    <span className="text-[11px]">Zoom</span>
-                  </button>
-                )}
-                {powerBiEmbedUrl && (
-                  <a
-                    href={powerBiEmbedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors font-mono cursor-pointer"
-                  >
-                    <ExternalLink size={12} />
-                    <span className="text-[11px]">Live App</span>
-                  </a>
-                )}
-              </div>
-            </div>
 
-            {/* Visual Display */}
-            <div className="relative aspect-16/10 bg-slate-950 flex items-center justify-center overflow-hidden">
-              {activeVisual ? (
-                isVideoVisual ? (
+              <div className="relative aspect-16/10 bg-slate-950 flex items-center justify-center overflow-hidden">
+                {isVideoVisual ? (
                   <video
                     src={activeVisual}
                     controls
@@ -764,46 +806,42 @@ export default function ProjectDetails() {
                     className="w-full h-full object-contain cursor-pointer"
                     onClick={() => setShowImageZoom(true)}
                   />
-                )
-              ) : powerBiEmbedUrl ? (
-                <iframe
-                  src={powerBiEmbedUrl}
-                  title={title}
-                  className="w-full h-full border-0"
-                  allowFullScreen
-                />
-              ) : (
-                <div className="p-8 text-center text-slate-400 font-mono text-xs space-y-2">
-                  <BarChart3 className="mx-auto w-10 h-10 text-slate-600 animate-pulse" />
-                  <p>Interactive Analytics Model Ready</p>
-                  <p className="text-[11px] text-slate-500">
-                    Upload dashboard screenshots or link live Power BI report in admin panel.
-                  </p>
+                )}
+              </div>
+
+              {visualsList.length > 1 && (
+                <div className="px-4 py-2.5 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between text-xs">
+                  <span className="font-mono text-slate-400 text-[11px]">
+                    Visual {activeVisualIndex + 1} of {visualsList.length}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {visualsList.map((_, vIdx) => (
+                      <button
+                        key={vIdx}
+                        onClick={() => setActiveVisualIndex(vIdx)}
+                        className={`h-2 rounded-full transition-all cursor-pointer ${
+                          activeVisualIndex === vIdx ? 'w-6 bg-blue-500' : 'w-2 bg-slate-600 hover:bg-slate-400'
+                        }`}
+                        title={`Visual 0${vIdx + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Multi-Visual Selector Bar if multiple visuals uploaded */}
-            {visualsList.length > 1 && (
-              <div className="px-4 py-2.5 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between text-xs">
-                <span className="font-mono text-slate-400 text-[11px]">
-                  Visual {activeVisualIndex + 1} of {visualsList.length}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {visualsList.map((_, vIdx) => (
-                    <button
-                      key={vIdx}
-                      onClick={() => setActiveVisualIndex(vIdx)}
-                      className={`h-2 rounded-full transition-all cursor-pointer ${
-                        activeVisualIndex === vIdx ? 'w-6 bg-blue-500' : 'w-2 bg-slate-600 hover:bg-slate-400'
-                      }`}
-                      title={`Visual 0${vIdx + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Mode 3: Power BI Web Embed */}
+          {dashboardMode === 'embed' && powerBiEmbedUrl && (
+            <div className="w-full rounded-2xl bg-slate-900 border border-slate-200 shadow-xl overflow-hidden aspect-16/10">
+              <iframe
+                src={powerBiEmbedUrl}
+                title={title}
+                className="w-full h-full border-0"
+                allowFullScreen
+              />
+            </div>
+          )}
         </section>
 
         {/* ── 04: STRUCTURED TABS (Overview, Real-Time Insights, DAX / SQL, Data Model, Downloads) ── */}

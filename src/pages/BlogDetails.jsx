@@ -13,6 +13,7 @@ import BlogComments from '../components/BlogComments';
 import InPageComments from '../components/InPageComments';
 import ShareModal from '../components/ShareModal';
 import MobileBottomNav from '../components/MobileBottomNav';
+import PowerBIViewer from '../components/powerbi/PowerBIViewer';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -1185,14 +1186,18 @@ const BlogDetails = () => {
           </div>
         )}
 
-        {/* Embedded Power BI / Interactive App */}
-        {powerbiUrl && (
-          <div className="my-6 rounded-xl overflow-hidden border border-slate-200 shadow-md bg-slate-900 aspect-16/10">
-            <iframe
-              src={powerbiUrl}
-              title="Interactive Report Embed"
-              className="w-full h-full"
-              allowFullScreen
+        {/* Embedded Interactive Power BI Desktop Viewer */}
+        {(powerbiUrl || category === 'Power BI' || (Array.isArray(tags) && tags.some(t => String(t).toLowerCase().includes('power bi')))) && (
+          <div className="my-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700">
+                Interactive Power BI Desktop Model &amp; Live Slicer
+              </span>
+            </div>
+            <PowerBIViewer
+              projectTitle={title}
+              pbixUrl={powerbiUrl}
             />
           </div>
         )}
