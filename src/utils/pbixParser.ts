@@ -372,15 +372,39 @@ export function getSampleBankChurnReport(): PbixReport {
         ],
         visuals: [
           {
-            id: 'viz-geo-detailed-matrix',
-            title: 'Country vs Key Metrics Matrix',
-            type: 'matrix',
+            id: 'viz-geo-map',
+            title: 'Geographic Regional Churn & Balance Map',
+            type: 'map',
+            format: 'percentage',
+            xAxisLabel: 'Longitude',
+            yAxisLabel: 'Latitude',
             data: [
-              { name: 'France', value: 5014, secondaryValue: 16.2, category: '€62.1M Lost', color: '#0080FF' },
-              { name: 'Germany', value: 2509, secondaryValue: 32.4, category: '€101.8M Lost', color: '#EF4444' },
-              { name: 'Spain', value: 2477, secondaryValue: 16.7, category: '€20.3M Lost', color: '#10B981' }
+              {
+                name: 'Germany',
+                value: 32.4,
+                secondaryValue: 2509,
+                category: 'Critical Risk',
+                color: '#EF4444',
+                extra: { accounts: 2509, churnRate: 32.4, capitalAtRisk: '€101.8M', flag: '🇩🇪', status: 'High Alert', tier: 'Top Churn Penalty' }
+              },
+              {
+                name: 'France',
+                value: 16.2,
+                secondaryValue: 5014,
+                category: 'Stable Baseline',
+                color: '#0080FF',
+                extra: { accounts: 5014, churnRate: 16.2, capitalAtRisk: '€62.1M', flag: '🇫🇷', status: 'Healthy', tier: 'Highest Account Volume' }
+              },
+              {
+                name: 'Spain',
+                value: 16.7,
+                secondaryValue: 2477,
+                category: 'Moderate',
+                color: '#10B981',
+                extra: { accounts: 2477, churnRate: 16.7, capitalAtRisk: '€20.3M', flag: '🇪🇸', status: 'Controlled', tier: 'Lowest Capital Loss' }
+              }
             ],
-            description: 'Granular comparison showing Germany contributing over half of total lost balance despite having half the accounts of France.'
+            description: 'Interactive European territory map showing critical churn concentration in Germany (€101.8M lost) despite having fewer accounts than France.'
           },
           {
             id: 'viz-country-trend',

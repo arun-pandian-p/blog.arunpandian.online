@@ -98,6 +98,8 @@ export default function PowerBIViewer({
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showModelSchema, setShowModelSchema] = useState(false);
+  const [mapMetric, setMapMetric] = useState<'churn' | 'accounts' | 'balance'>('churn');
+  const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   
   // Cross-filtering active state (e.g. clicking 'Germany' or 'Exited')
   const [activeFilter, setActiveFilter] = useState<{
@@ -253,9 +255,276 @@ export default function PowerBIViewer({
     toast.success('Report dataset exported as CSV!');
   };
 
+  // ── Power BI Geographic Map Renderer ──
+  const renderMapVisual = (_visual: PbixVisual) => {
+    const isFiltered = Boolean(activeFilter.value);
+    const countryData = [
+      {
+        id: 'Germany',
+        name: 'Germany',
+        flag: '🇩🇪',
+        x: 270,
+        y: 110,
+        churn: 32.4,
+        accounts: 2509,
+        balance: '€101.8M',
+        risk: 'Critical Loss Alert',
+        color: '#EF4444',
+        accentColor: '#B91C1C',
+        path: "M 225 65 L 275 55 L 315 95 L 310 155 L 260 170 L 235 140 L 215 105 Z"
+      },
+      {
+        id: 'France',
+        name: 'France',
+        flag: '🇫🇷',
+        x: 170,
+        y: 165,
+        churn: 16.2,
+        accounts: 5014,
+        balance: '€62.1M',
+        risk: 'Largest Customer Hub',
+        color: '#0080FF',
+        accentColor: '#1D4ED8',
+        path: "M 130 115 L 215 105 L 235 140 L 220 215 L 155 225 L 125 180 L 110 145 Z"
+      },
+      {
+        id: 'Spain',
+        name: 'Spain',
+        flag: '🇪🇸',
+        x: 105,
+        y: 270,
+        churn: 16.7,
+        accounts: 2477,
+        balance: '€20.3M',
+        risk: 'Stable Performance',
+        color: '#10B981',
+        accentColor: '#047857',
+        path: "M 55 220 L 155 210 L 170 260 L 120 325 L 50 300 L 40 250 Z"
+      }
+    ];
+
+    const activeHoverCountry = hoveredCountry ? countryData.find(c => c.id === hoveredCountry) : null;
+
+    return (
+      <div className="w-full flex flex-col space-y-3 p-1 select-none">
+        {/* Map Header Toolbar: Metric Selector & Territory Info */}
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs font-mono">
+          <div className="flex items-center gap-1.5">
+            <MapPin size={14} className="text-blue-600 animate-bounce" />
+            <span className="font-bold text-slate-800">Territory Map:</span>
+            <span className="text-slate-500">Western European Hubs</span>
+          </div>
+
+          <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px]">
+            <button
+              onClick={() => setMapMetric('churn')}
+              className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
+                mapMetric === 'churn' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Churn Rate %
+            </button>
+            <button
+              onClick={() => setMapMetric('accounts')}
+              className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
+                mapMetric === 'accounts' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Accounts
+            </button>
+            <button
+              onClick={() => setMapMetric('balance')}
+              className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
+                mapMetric === 'balance' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Lost Balance €
+            </button>
+          </div>
+        </div>
+
+        {/* Interactive SVG Map Canvas */}
+        <div className="relative w-full h-80 sm:h-96 bg-[#F8FAFC] rounded-2xl border border-slate-200 overflow-hidden flex items-center justify-center shadow-inner">
+          <svg viewBox="0 0 380 340" className="w-full h-full">
+            <defs>
+              <filter id="glow-map" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <linearGradient id="oceanGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#F1F5F9" />
+                <stop offset="100%" stopColor="#E2E8F0" />
+              </linearGradient>
+            </defs>
+
+            {/* Ocean background */}
+            <rect width="380" height="340" fill="url(#oceanGrad)" />
+
+            {/* Surrounding European Borders & Islands (Context) */}
+            {/* United Kingdom */}
+            <path d="M 120 40 L 160 30 L 180 60 L 150 90 L 120 80 Z" fill="#CBD5E1" opacity="0.6" stroke="#94A3B8" strokeWidth="1" />
+            {/* Ireland */}
+            <path d="M 80 45 L 110 40 L 110 70 L 80 75 Z" fill="#CBD5E1" opacity="0.5" stroke="#94A3B8" strokeWidth="1" />
+            {/* Italy */}
+            <path d="M 230 200 L 260 215 L 290 270 L 305 295 L 285 305 L 255 240 Z" fill="#CBD5E1" opacity="0.6" stroke="#94A3B8" strokeWidth="1" />
+            {/* Portugal */}
+            <path d="M 30 240 L 55 235 L 50 305 L 25 310 Z" fill="#CBD5E1" opacity="0.6" stroke="#94A3B8" strokeWidth="1" />
+            {/* Central / Eastern Europe Silhouettes */}
+            <path d="M 315 95 L 370 90 L 370 190 L 310 160 Z" fill="#CBD5E1" opacity="0.5" stroke="#94A3B8" strokeWidth="1" />
+            {/* Switzerland / Austria */}
+            <path d="M 220 185 L 265 175 L 260 205 L 220 210 Z" fill="#CBD5E1" opacity="0.7" stroke="#94A3B8" strokeWidth="1" />
+
+            {/* Target Countries: Spain, France, Germany */}
+            {countryData.map((c) => {
+              const isSelected = activeFilter.value === c.id;
+              const isHovered = hoveredCountry === c.id;
+              const fillOpacity = isFiltered && !isSelected ? 0.35 : isSelected ? 0.95 : 0.75;
+              const strokeColor = isSelected ? '#1E293B' : isHovered ? '#0080FF' : '#FFFFFF';
+              const strokeWidth = isSelected ? 3 : 1.5;
+
+              return (
+                <g
+                  key={c.id}
+                  className="cursor-pointer transition-all duration-300"
+                  onClick={() => {
+                    setActiveFilter(prev => ({
+                      category: 'Geography',
+                      value: prev.value === c.id ? null : c.id
+                    }));
+                  }}
+                  onMouseEnter={() => setHoveredCountry(c.id)}
+                  onMouseLeave={() => setHoveredCountry(null)}
+                >
+                  {/* Territorial Polygon */}
+                  <path
+                    d={c.path}
+                    fill={c.color}
+                    fillOpacity={fillOpacity}
+                    stroke={strokeColor}
+                    strokeWidth={strokeWidth}
+                    className="hover:brightness-110 transition-all"
+                  />
+
+                  {/* Pulsing Ripple Rings */}
+                  <circle
+                    cx={c.x}
+                    cy={c.y}
+                    r={mapMetric === 'churn' ? c.churn * 0.8 : mapMetric === 'accounts' ? c.accounts * 0.005 : 22}
+                    fill={c.color}
+                    opacity="0.3"
+                    className="animate-ping"
+                  />
+
+                  {/* Centroid Bubble Pin */}
+                  <circle
+                    cx={c.x}
+                    cy={c.y}
+                    r={mapMetric === 'churn' ? c.churn * 0.7 : mapMetric === 'accounts' ? c.accounts * 0.004 : 18}
+                    fill={c.color}
+                    stroke="#FFFFFF"
+                    strokeWidth="2.5"
+                    filter="url(#glow-map)"
+                  />
+
+                  {/* Country Label Pin */}
+                  <text
+                    x={c.x}
+                    y={c.y - 2}
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="10"
+                    fontWeight="bold"
+                    className="select-none pointer-events-none"
+                  >
+                    {c.flag}
+                  </text>
+                  <text
+                    x={c.x}
+                    y={c.y + 11}
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="8"
+                    fontWeight="black"
+                    fontFamily="monospace"
+                    className="select-none pointer-events-none"
+                  >
+                    {mapMetric === 'churn' ? `${c.churn}%` : mapMetric === 'accounts' ? `${c.accounts}` : c.balance}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Interactive Live Hover Card Overlay */}
+          {activeHoverCountry && (
+            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl text-xs font-mono pointer-events-none animate-in fade-in zoom-in-95 duration-150 space-y-1.5 z-10 max-w-[190px]">
+              <div className="flex items-center gap-1.5 border-b border-slate-100 pb-1">
+                <span className="text-base">{activeHoverCountry.flag}</span>
+                <span className="font-bold text-slate-900">{activeHoverCountry.name}</span>
+                <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded font-bold bg-rose-50 text-rose-700">
+                  {activeHoverCountry.churn}%
+                </span>
+              </div>
+              <div className="space-y-0.5 text-[11px] text-slate-600">
+                <div>Accounts: <b className="text-slate-900">{activeHoverCountry.accounts}</b></div>
+                <div>Balance at Risk: <b className="text-rose-600">{activeHoverCountry.balance}</b></div>
+                <div className="text-[10px] text-blue-600 font-sans italic">{activeHoverCountry.risk}</div>
+              </div>
+              <div className="text-[9px] text-slate-400 pt-1 border-t border-slate-100">
+                Click to filter dashboard
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Interactive Territory Cards (Matching Screenshot) */}
+        <div className="grid grid-cols-3 gap-2">
+          {countryData.map((c) => {
+            const isSelected = activeFilter.value === c.id;
+            return (
+              <div
+                key={c.id}
+                onClick={() => {
+                  setActiveFilter(prev => ({
+                    category: 'Geography',
+                    value: prev.value === c.id ? null : c.id
+                  }));
+                }}
+                className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? 'bg-blue-50 border-blue-500 shadow-xs'
+                    : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                  <span className="flex items-center gap-1">
+                    <span>{c.flag}</span>
+                    <span>{c.name}</span>
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${c.churn > 25 ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {c.churn}%
+                  </span>
+                </div>
+                <div className="mt-1.5 text-[11px] font-mono text-slate-500 flex justify-between">
+                  <span>{c.accounts} accs</span>
+                  <span className="font-bold text-slate-700">{c.balance}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // ── Render Chart with Chosen Engine ──
   const renderVisual = (visual: PbixVisual) => {
     const isFiltered = Boolean(activeFilter.value);
+
+    // ── Dedicated Map Visual Check ──
+    if (visual.type === 'map' || visual.title.toLowerCase().includes('map')) {
+      return renderMapVisual(visual);
+    }
 
     // ── Option A: Apache ECharts ──
     if (engine === 'echarts') {
