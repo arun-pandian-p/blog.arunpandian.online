@@ -23,12 +23,17 @@ export async function sendSubscriberBroadcast(params: BroadcastNotificationParam
   subscribersCount?: number;
 }> {
   try {
-    const res = await fetch('/api/send-newsletter', {
+    const token = localStorage.getItem('arun_admin_jwt');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch('/api/admin/newsletter/broadcast', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
+      headers,
+      body: JSON.stringify({
+        subject: params.subject || params.title,
+        content: params.customMessage || params.excerpt || params.title,
+      }),
     });
 
     if (!res.ok) {
@@ -36,7 +41,7 @@ export async function sendSubscriberBroadcast(params: BroadcastNotificationParam
     }
 
     const data = await res.json();
-    return data;
+    return { success: true, subscribersCount: data.recipientsCount };
   } catch (error: any) {
     console.warn('Newsletter broadcast notice:', error?.message || error);
     return { success: false, message: error?.message };

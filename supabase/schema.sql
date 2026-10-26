@@ -1,286 +1,505 @@
 -- ============================================================
--- Arun Pandian Portfolio — Supabase Schema + RLS
--- Run this in the Supabase SQL Editor to set up the database.
+-- 20261026_standalone_blog_architecture.sql
+-- Complete Standalone Blogging Platform Schema & Security Migration
+-- Target: Supabase PostgreSQL (Postgres 17+)
 -- ============================================================
 
--- 1. SITE SETTINGS (key-value store for all global content)
--- Stores hero text, about text, nav links, footer, theme, etc.
-CREATE TABLE IF NOT EXISTS site_settings (
-  key   TEXT PRIMARY KEY,
-  value JSONB NOT NULL DEFAULT '{}'::jsonb,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ─── 1. CLEAN UP OBSOLETE PORTFOLIO & SUPERADMIN TABLES ────────
+DROP TABLE IF EXISTS super_admin_profile CASCADE;
+DROP TABLE IF EXISTS projects CASCADE;
+DROP TABLE IF EXISTS experiences CASCADE;
+DROP TABLE IF EXISTS project_charts CASCADE;
+
+-- ─── 2. USERS TABLE SCHEMA ─────────────────────────────────────
+-- Drop any legacy policies on users so column types can be altered cleanly
+DROP POLICY IF EXISTS "Public read user profiles" ON public.users;
+DROP POLICY IF EXISTS "Public read users" ON public.users;
+DROP POLICY IF EXISTS "Users update own profile" ON public.users;
+DROP POLICY IF EXISTS "Admin manage all users" ON public.users;
+DROP POLICY IF EXISTS "Admin manage users" ON public.users;
+
+CREATE TABLE IF NOT EXISTS public.users (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  supabase_uid  UUID UNIQUE,
+  email         VARCHAR(255) NOT NULL UNIQUE,
+  username      VARCHAR(100) NOT NULL UNIQUE,
+  full_name     VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
+  bio           TEXT,
+  avatar_url    VARCHAR(1000),
+  website       VARCHAR(500),
+  github        VARCHAR(255),
+  twitter       VARCHAR(255),
+  role          VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER' CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN')),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
+-- Backfill existing auth.users into public.users if missing
+INSERT INTO public.users (id, supabase_uid, email, username, full_name, role, created_at, updated_at)
+SELECT 
+  au.id,
+  au.id,
+  lower(au.email),
+  CASE 
+    WHEN au.email = 'admin@arunpandian.online' THEN 'arunpandian'
+    ELSE lower(regexp_replace(split_part(au.email, '@', 1), '[^a-zA-Z0-9_-]', '', 'g'))
+  END,
+  COALESCE(au.raw_user_meta_data->>'full_name', split_part(au.email, '@', 1)),
+  CASE 
+    WHEN au.email = 'admin@arunpandian.online' THEN 'ROLE_ADMIN'
+    ELSE 'ROLE_USER'
+  END,
+  au.created_at,
+  now()
+FROM auth.users au
+ON CONFLICT (email) DO UPDATE
+  SET supabase_uid = EXCLUDED.supabase_uid,
+      id = EXCLUDED.id,
+      updated_at = now();
 
--- Remove policies if they already exist before creating
-DROP POLICY IF EXISTS "Public read settings" ON site_settings;
-DROP POLICY IF EXISTS "Admin write settings" ON site_settings;
+-- Ensure supabase_uid is of type UUID and matches auth.users(id)
+ALTER TABLE public.users 
+  ALTER COLUMN supabase_uid TYPE UUID USING (
+    CASE 
+      WHEN supabase_uid IS NOT NULL AND supabase_uid::text ~ '^[0-9a-fA-F-]{36}$' THEN supabase_uid::uuid 
+      ELSE NULL 
+    END
+  );
 
--- Anyone can read settings (public site needs them)
-CREATE POLICY "Public read settings"
-  ON site_settings FOR SELECT
-  USING (true);
+-- Ensure foreign key from public.users to auth.users exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_users_auth_users'
+  ) THEN
+    ALTER TABLE public.users 
+      ADD CONSTRAINT fk_users_auth_users 
+      FOREIGN KEY (supabase_uid) REFERENCES auth.users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
--- Only authenticated users (admin) can modify
-CREATE POLICY "Admin write settings"
-  ON site_settings FOR ALL
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-
--- 2. PROJECTS
-CREATE TABLE IF NOT EXISTS projects (
+-- ─── 3. USER ROLES TABLE ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.user_roles (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title       TEXT NOT NULL,
-  problem     TEXT,
-  data        TEXT,
-  process     TEXT,
-  insight     TEXT,
-  tags        TEXT[] DEFAULT '{}',
-  github_link TEXT,
-  live_link   TEXT,
-  image_url   TEXT,
-  sort_order  INT NOT NULL DEFAULT 0,
-  published   BOOLEAN NOT NULL DEFAULT true,
+  user_id     UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role        VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER' CHECK (role IN ('ROLE_USER', 'ROLE_ADMIN')),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uk_user_roles_user UNIQUE (user_id)
+);
+
+-- Sync user_roles from users table
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, role FROM public.users
+ON CONFLICT (user_id) DO UPDATE
+  SET role = EXCLUDED.role;
+
+-- ─── 4. BLOGS TABLE SCHEMA ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.blogs (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title           VARCHAR(255) NOT NULL,
+  slug            VARCHAR(255) NOT NULL UNIQUE,
+  excerpt         TEXT,
+  content         TEXT,
+  tags            VARCHAR(500),
+  read_time       VARCHAR(50) DEFAULT '3 min read',
+  cover_image     VARCHAR(1000),
+  cover_video_url VARCHAR(1000),
+  author_id       UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  author_username VARCHAR(100),
+  author_name     VARCHAR(255) DEFAULT 'Arun Pandian',
+  author_avatar   VARCHAR(1000),
+  author_bio      TEXT,
+  category        VARCHAR(100) NOT NULL DEFAULT 'Engineering',
+  status          VARCHAR(50) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED', 'SCHEDULED')),
+  published       BOOLEAN NOT NULL DEFAULT false,
+  featured        BOOLEAN NOT NULL DEFAULT false,
+  sort_order      INT NOT NULL DEFAULT 0,
+  views_count     BIGINT NOT NULL DEFAULT 0,
+  claps_count     BIGINT NOT NULL DEFAULT 0,
+  published_at    TIMESTAMPTZ,
+  scheduled_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ensure all required columns exist on blogs
+ALTER TABLE public.blogs ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES public.users(id) ON DELETE SET NULL;
+ALTER TABLE public.blogs ADD COLUMN IF NOT EXISTS author_username VARCHAR(100);
+ALTER TABLE public.blogs ADD COLUMN IF NOT EXISTS author_bio TEXT;
+ALTER TABLE public.blogs ADD COLUMN IF NOT EXISTS cover_video_url VARCHAR(1000);
+ALTER TABLE public.blogs ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
+
+-- Trigger to enforce published boolean consistency with status
+CREATE OR REPLACE FUNCTION sync_blog_published_status()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'PUBLISHED' THEN
+    NEW.published := true;
+    IF NEW.published_at IS NULL THEN
+      NEW.published_at := now();
+    END IF;
+  ELSE
+    NEW.published := false;
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_sync_blog_published_status ON public.blogs;
+CREATE TRIGGER trg_sync_blog_published_status
+  BEFORE INSERT OR UPDATE ON public.blogs
+  FOR EACH ROW EXECUTE FUNCTION sync_blog_published_status();
+
+-- ─── 5. COMMENTS TABLE SCHEMA ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.comments (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  blog_id       UUID NOT NULL REFERENCES public.blogs(id) ON DELETE CASCADE,
+  author_id     UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  target_slug   VARCHAR(255),
+  author_name   VARCHAR(255) NOT NULL,
+  author_email  VARCHAR(255),
+  author_avatar VARCHAR(1000),
+  content       TEXT NOT NULL,
+  status        VARCHAR(50) NOT NULL DEFAULT 'APPROVED' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'SPAM')),
+  likes         INT NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Ensure all required columns exist on comments
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES public.users(id) ON DELETE SET NULL;
+ALTER TABLE public.comments ADD COLUMN IF NOT EXISTS author_avatar VARCHAR(1000);
+
+-- ─── 6. BOOKMARKS TABLE SCHEMA ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.bookmarks (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  blog_id     UUID NOT NULL REFERENCES public.blogs(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uk_bookmarks_user_blog UNIQUE (user_id, blog_id)
+);
+
+-- ─── 7. SITE SETTINGS TABLE SCHEMA ─────────────────────────────
+CREATE TABLE IF NOT EXISTS public.site_settings (
+  setting_key   VARCHAR(255) PRIMARY KEY,
+  setting_value TEXT NOT NULL,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ─── 8. NEWSLETTER SUBSCRIBERS TABLE SCHEMA ────────────────────
+CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email       VARCHAR(255) NOT NULL UNIQUE,
+  source      VARCHAR(100) DEFAULT 'web',
+  status      VARCHAR(50) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'UNSUBSCRIBED', 'PENDING')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public read published projects" ON projects;
-DROP POLICY IF EXISTS "Admin all projects" ON projects;
-
-CREATE POLICY "Public read published projects"
-  ON projects FOR SELECT
-  USING (published = true);
-
-CREATE POLICY "Admin all projects"
-  ON projects FOR ALL
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-
--- 3. BLOGS
-CREATE TABLE IF NOT EXISTS blogs (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title        TEXT NOT NULL,
-  slug         TEXT UNIQUE NOT NULL,
-  excerpt      TEXT,
-  content      TEXT,
-  tags         TEXT[] DEFAULT '{}',
-  read_time    TEXT DEFAULT '3 min read',
-  cover_image  TEXT,
-  author_name  TEXT DEFAULT 'Arun Pandian',
-  author_avatar TEXT,
-  published    BOOLEAN NOT NULL DEFAULT false,
-  featured     BOOLEAN NOT NULL DEFAULT false,
-  sort_order   INT NOT NULL DEFAULT 0,
-  published_at TIMESTAMPTZ DEFAULT now(),
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+-- ─── 9. SYSTEM LOGS TABLE SCHEMA ───────────────────────────────
+CREATE TABLE IF NOT EXISTS public.system_logs (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  level       VARCHAR(20) NOT NULL DEFAULT 'INFO',
+  action      VARCHAR(100) NOT NULL,
+  details     JSONB,
+  user_id     UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  ip_address  VARCHAR(50),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
+-- ─── 10. HIGH PERFORMANCE INDEXES ──────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON public.users(username);
+CREATE INDEX IF NOT EXISTS idx_users_supabase_uid ON public.users(supabase_uid);
+CREATE INDEX IF NOT EXISTS idx_blogs_slug ON public.blogs(slug);
+CREATE INDEX IF NOT EXISTS idx_blogs_status ON public.blogs(status);
+CREATE INDEX IF NOT EXISTS idx_blogs_category ON public.blogs(category);
+CREATE INDEX IF NOT EXISTS idx_blogs_author_id ON public.blogs(author_id);
+CREATE INDEX IF NOT EXISTS idx_blogs_public_feed ON public.blogs(published, status, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_blog_id ON public.comments(blog_id);
+CREATE INDEX IF NOT EXISTS idx_comments_status ON public.comments(status);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON public.bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_blog ON public.bookmarks(blog_id);
+CREATE INDEX IF NOT EXISTS idx_newsletter_email ON public.newsletter_subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_system_logs_created ON public.system_logs(created_at DESC);
 
-DROP POLICY IF EXISTS "Public read published blogs" ON blogs;
-DROP POLICY IF EXISTS "Admin all blogs" ON blogs;
-
-CREATE POLICY "Public read published blogs"
-  ON blogs FOR SELECT
-  USING (published = true);
-
-CREATE POLICY "Admin all blogs"
-  ON blogs FOR ALL
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-
--- 4. EXPERIENCES (timeline)
-CREATE TABLE IF NOT EXISTS experiences (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  role       TEXT NOT NULL,
-  company    TEXT NOT NULL,
-  period     TEXT NOT NULL,
-  type       TEXT DEFAULT 'Internship',
-  impact     TEXT,
-  media_url  TEXT,
-  company_website TEXT,
-  sort_order INT NOT NULL DEFAULT 0,
-  published  BOOLEAN NOT NULL DEFAULT true,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE experiences ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public read published experiences" ON experiences;
-DROP POLICY IF EXISTS "Admin all experiences" ON experiences;
-
-CREATE POLICY "Public read published experiences"
-  ON experiences FOR SELECT
-  USING (published = true);
-
-CREATE POLICY "Admin all experiences"
-  ON experiences FOR ALL
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-
--- 5. CONTACT MESSAGES (form submissions)
-CREATE TABLE IF NOT EXISTS contact_messages (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name       TEXT NOT NULL,
-  email      TEXT NOT NULL,
-  subject    TEXT,
-  message    TEXT NOT NULL,
-  read       BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public insert contact" ON contact_messages;
-DROP POLICY IF EXISTS "Admin read contact" ON contact_messages;
-DROP POLICY IF EXISTS "Admin update contact" ON contact_messages;
-
--- Anyone can insert (public form), but only admin can read
-CREATE POLICY "Public insert contact"
-  ON contact_messages FOR INSERT
-  WITH CHECK (true);
-
-CREATE POLICY "Admin read contact"
-  ON contact_messages FOR SELECT
-  USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Admin update contact"
-  ON contact_messages FOR UPDATE
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
-
--- 6. Helper: auto-update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
+-- ─── 11. AUTOMATIC PROFILE SYNC ON AUTH SIGNUP ──────────────────
+CREATE OR REPLACE FUNCTION public.generate_unique_username(preferred text, email text)
+RETURNS text LANGUAGE plpgsql AS $$
+DECLARE
+  base_slug text;
+  candidate text;
+  suffix int := 1;
 BEGIN
-  NEW.updated_at = now();
+  base_slug := COALESCE(NULLIF(trim(preferred), ''), split_part(email, '@', 1), 'user');
+  base_slug := lower(regexp_replace(base_slug, '[^a-zA-Z0-9_-]', '', 'g'));
+  IF base_slug = '' THEN
+    base_slug := 'user';
+  END IF;
+  candidate := base_slug;
+  WHILE EXISTS (SELECT 1 FROM public.users WHERE username = candidate) LOOP
+    candidate := base_slug || '-' || suffix;
+    suffix := suffix + 1;
+  END LOOP;
+  RETURN candidate;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  new_username text;
+  new_name text;
+  new_role text;
+BEGIN
+  new_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1));
+  new_username := public.generate_unique_username(
+    NEW.raw_user_meta_data->>'username',
+    NEW.email
+  );
+  -- Role is database-enforced: only default admin gets ROLE_ADMIN; all signups get ROLE_USER
+  IF NEW.email = 'admin@arunpandian.online' THEN
+    new_role := 'ROLE_ADMIN';
+  ELSE
+    new_role := 'ROLE_USER';
+  END IF;
+
+  INSERT INTO public.users (
+    id,
+    supabase_uid,
+    email,
+    username,
+    full_name,
+    role,
+    avatar_url,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    NEW.id,
+    lower(NEW.email),
+    new_username,
+    new_name,
+    new_role,
+    NEW.raw_user_meta_data->>'avatar_url',
+    now(),
+    now()
+  )
+  ON CONFLICT (email) DO UPDATE
+    SET supabase_uid = EXCLUDED.supabase_uid,
+        updated_at = now();
+
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, new_role)
+  ON CONFLICT (user_id) DO UPDATE
+    SET role = EXCLUDED.role;
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
-DROP TRIGGER IF EXISTS set_updated_at_site_settings ON site_settings;
-CREATE TRIGGER set_updated_at_site_settings
-  BEFORE UPDATE ON site_settings
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
-DROP TRIGGER IF EXISTS set_updated_at_projects ON projects;
-CREATE TRIGGER set_updated_at_projects
-  BEFORE UPDATE ON projects
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- ─── 12. ROLE LEVEL SECURITY (RLS) HELPER & POLICIES ────────────
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.users
+    WHERE (supabase_uid = auth.uid() OR id = auth.uid())
+      AND role = 'ROLE_ADMIN'
+  );
+$$;
 
-DROP TRIGGER IF EXISTS set_updated_at_blogs ON blogs;
-CREATE TRIGGER set_updated_at_blogs
-  BEFORE UPDATE ON blogs
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- Enable RLS on all tables
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blogs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 
+-- ── USERS POLICIES ──
+DROP POLICY IF EXISTS "Public read users" ON public.users;
+DROP POLICY IF EXISTS "Users update own profile" ON public.users;
+DROP POLICY IF EXISTS "Admin manage users" ON public.users;
 
--- ============================================================
--- 7. STORAGE POLICIES
--- ============================================================
--- Enable RLS and setup policies for the 'assets' storage bucket.
-
--- Ensure the 'assets' bucket exists, is public, and accepts ANY file type.
--- allowed_mime_types = NULL means no MIME allowlist (images, PDF, DOC, PPT,
--- XLS, etc. are all permitted). file_size_limit is 50MB (52428800 bytes),
--- matching the upload widget's hint.
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('assets', 'assets', true, 52428800, NULL)
-ON CONFLICT (id) DO UPDATE
-  SET public = true,
-      file_size_limit = 52428800,
-      allowed_mime_types = NULL;
-
-DROP POLICY IF EXISTS "Public Read Access" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Insert Access" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Update Access" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated Delete Access" ON storage.objects;
-
-CREATE POLICY "Public Read Access"
-  ON storage.objects FOR SELECT
-  USING (bucket_id = 'assets');
-
-CREATE POLICY "Authenticated Insert Access"
-  ON storage.objects FOR INSERT
-  TO authenticated
-  WITH CHECK (bucket_id = 'assets');
-
-CREATE POLICY "Authenticated Update Access"
-  ON storage.objects FOR UPDATE
-  TO authenticated
-  USING (bucket_id = 'assets')
-  WITH CHECK (bucket_id = 'assets');
-
-CREATE POLICY "Authenticated Delete Access"
-  ON storage.objects FOR DELETE
-  TO authenticated
-  USING (bucket_id = 'assets');
-
-
--- ============================================================
--- 8. REALTIME ENABLEMENT
--- ============================================================
--- Recreate the publication to prevent duplicate errors and ensure
--- all tables are configured for realtime updates.
-
-DROP PUBLICATION IF EXISTS supabase_realtime;
-CREATE PUBLICATION supabase_realtime FOR TABLE site_settings, projects, blogs, experiences;
-
-
-
-
-
-
-CREATE TABLE IF NOT EXISTS design_scrapes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  url TEXT NOT NULL,
-  colors JSONB,
-  fonts JSONB,
-  metrics JSONB,
-  components JSONB,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ============================================================
--- 9. NEWSLETTER SUBSCRIBERS
--- ============================================================
-CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
-  source TEXT DEFAULT 'home_footer',
-  status TEXT DEFAULT 'active',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public insert newsletter_subscribers" ON newsletter_subscribers;
-DROP POLICY IF EXISTS "Admin all newsletter_subscribers" ON newsletter_subscribers;
-DROP POLICY IF EXISTS "Public read newsletter_subscribers" ON newsletter_subscribers;
-
--- Anyone can subscribe
-CREATE POLICY "Public insert newsletter_subscribers"
-  ON newsletter_subscribers FOR INSERT
-  WITH CHECK (true);
-
--- Authenticated admins can view, update, and manage all subscribers
-CREATE POLICY "Admin all newsletter_subscribers"
-  ON newsletter_subscribers FOR ALL
-  USING (auth.role() = 'authenticated')
-  WITH CHECK (auth.role() = 'authenticated');
-
--- Public can verify status if needed
-CREATE POLICY "Public read newsletter_subscribers"
-  ON newsletter_subscribers FOR SELECT
+CREATE POLICY "Public read users"
+  ON public.users FOR SELECT
   USING (true);
 
+-- Users can update safe fields on their own profile, but CANNOT self-promote role
+CREATE POLICY "Users update own profile"
+  ON public.users FOR UPDATE
+  USING (id = auth.uid() OR supabase_uid = auth.uid())
+  WITH CHECK (
+    (id = auth.uid() OR supabase_uid = auth.uid())
+    AND role = (SELECT u.role FROM public.users u WHERE u.id = auth.uid() OR u.supabase_uid = auth.uid())
+  );
+
+CREATE POLICY "Admin manage users"
+  ON public.users FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── USER ROLES POLICIES ──
+DROP POLICY IF EXISTS "Users view own role" ON public.user_roles;
+DROP POLICY IF EXISTS "Admin manage user roles" ON public.user_roles;
+
+CREATE POLICY "Users view own role"
+  ON public.user_roles FOR SELECT
+  USING (user_id = auth.uid() OR public.is_admin() OR auth.role() = 'service_role');
+
+CREATE POLICY "Admin manage user roles"
+  ON public.user_roles FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── BLOGS POLICIES ──
+DROP POLICY IF EXISTS "Public read published blogs" ON public.blogs;
+DROP POLICY IF EXISTS "Authors read own blogs" ON public.blogs;
+DROP POLICY IF EXISTS "Authors insert own blogs" ON public.blogs;
+DROP POLICY IF EXISTS "Authors update own blogs" ON public.blogs;
+DROP POLICY IF EXISTS "Authors delete own blogs" ON public.blogs;
+DROP POLICY IF EXISTS "Admin manage all blogs" ON public.blogs;
+
+-- Public can ONLY view published articles
+CREATE POLICY "Public read published blogs"
+  ON public.blogs FOR SELECT
+  USING (
+    published = true 
+    AND status = 'PUBLISHED' 
+    AND (published_at IS NULL OR published_at <= now())
+  );
+
+-- Authors can view all their own articles (drafts, scheduled, archived)
+CREATE POLICY "Authors read own blogs"
+  ON public.blogs FOR SELECT
+  USING (author_id = auth.uid());
+
+CREATE POLICY "Authors insert own blogs"
+  ON public.blogs FOR INSERT
+  WITH CHECK (
+    auth.role() = 'authenticated'
+    AND (author_id = auth.uid() OR public.is_admin())
+  );
+
+CREATE POLICY "Authors update own blogs"
+  ON public.blogs FOR UPDATE
+  USING (author_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Authors delete own blogs"
+  ON public.blogs FOR DELETE
+  USING (author_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Admin manage all blogs"
+  ON public.blogs FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── COMMENTS POLICIES ──
+DROP POLICY IF EXISTS "Public read approved comments" ON public.comments;
+DROP POLICY IF EXISTS "Public submit comment" ON public.comments;
+DROP POLICY IF EXISTS "Authors manage own comments" ON public.comments;
+DROP POLICY IF EXISTS "Admin manage all comments" ON public.comments;
+
+CREATE POLICY "Public read approved comments"
+  ON public.comments FOR SELECT
+  USING (status = 'APPROVED');
+
+CREATE POLICY "Public submit comment"
+  ON public.comments FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Authors manage own comments"
+  ON public.comments FOR UPDATE
+  USING (author_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Authors delete own comments"
+  ON public.comments FOR DELETE
+  USING (author_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Admin manage all comments"
+  ON public.comments FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── BOOKMARKS POLICIES ──
+DROP POLICY IF EXISTS "Users read own bookmarks" ON public.bookmarks;
+DROP POLICY IF EXISTS "Users insert own bookmarks" ON public.bookmarks;
+DROP POLICY IF EXISTS "Users delete own bookmarks" ON public.bookmarks;
+
+CREATE POLICY "Users read own bookmarks"
+  ON public.bookmarks FOR SELECT
+  USING (user_id = auth.uid() OR public.is_admin());
+
+CREATE POLICY "Users insert own bookmarks"
+  ON public.bookmarks FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users delete own bookmarks"
+  ON public.bookmarks FOR DELETE
+  USING (user_id = auth.uid() OR public.is_admin());
+
+-- ── SITE SETTINGS POLICIES ──
+DROP POLICY IF EXISTS "Public read settings" ON public.site_settings;
+DROP POLICY IF EXISTS "Admin manage settings" ON public.site_settings;
+
+CREATE POLICY "Public read settings"
+  ON public.site_settings FOR SELECT
+  USING (true);
+
+CREATE POLICY "Admin manage settings"
+  ON public.site_settings FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── NEWSLETTER POLICIES ──
+DROP POLICY IF EXISTS "Public subscribe newsletter" ON public.newsletter_subscribers;
+DROP POLICY IF EXISTS "Admin manage subscribers" ON public.newsletter_subscribers;
+
+CREATE POLICY "Public subscribe newsletter"
+  ON public.newsletter_subscribers FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Admin manage subscribers"
+  ON public.newsletter_subscribers FOR ALL
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+-- ── SYSTEM LOGS POLICIES ──
+DROP POLICY IF EXISTS "Admin view system logs" ON public.system_logs;
+DROP POLICY IF EXISTS "Service role insert system logs" ON public.system_logs;
+
+CREATE POLICY "Admin view system logs"
+  ON public.system_logs FOR SELECT
+  USING (public.is_admin() OR auth.role() = 'service_role');
+
+CREATE POLICY "Service role insert system logs"
+  ON public.system_logs FOR ALL
+  USING (auth.role() = 'service_role');
+
+-- ─── 13. SUPABASE REALTIME REPLICATION SETUP ───────────────────
+ALTER TABLE public.blogs REPLICA IDENTITY FULL;
+ALTER TABLE public.comments REPLICA IDENTITY FULL;
+ALTER TABLE public.bookmarks REPLICA IDENTITY FULL;
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.blogs;
+  EXCEPTION WHEN others THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
+  EXCEPTION WHEN others THEN NULL;
+  END;
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.bookmarks;
+  EXCEPTION WHEN others THEN NULL;
+  END;
+END $$;

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useContent } from '../context/ContentProvider';
 import BlogNavbar from '../components/BlogNavbar';
 import StyleOverrides from '../editor/StyleOverrides';
+import { api } from '../services/apiClient';
 import arunProfile from '../assets/arun-profile.jpg';
 import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
 import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
@@ -13,7 +14,8 @@ import BlogComments from '../components/BlogComments';
 import InPageComments from '../components/InPageComments';
 import ShareModal from '../components/ShareModal';
 import MobileBottomNav from '../components/MobileBottomNav';
-import PowerBIViewer from '../components/powerbi/PowerBIViewer';
+import TiptapRenderer from '../components/editor/TiptapRenderer';
+import ArticleImage from '../components/common/ArticleImage';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -128,10 +130,33 @@ const BlogDetails = () => {
     if (storedFollowing) setIsFollowing(true);
   }, [slug]);
 
-  // Fetch blog directly from Supabase
+  // Fetch blog from Spring Boot backend (with fallbacks)
   useEffect(() => {
     let isMounted = true;
     const fetchLiveBlog = async () => {
+      // 1. Try Spring Boot REST API
+      try {
+        const [blogData, relatedData] = await Promise.all([
+          api.blogs.getBlogBySlug(slug),
+          api.blogs.getRelatedBlogs(slug).catch(() => []),
+        ]);
+
+        if (blogData && isMounted) {
+          setBlog(blogData);
+          if (relatedData && relatedData.length > 0) {
+            setAllBlogsList(relatedData);
+          }
+          if (blogData.clapsCount !== undefined) {
+            setLikesCount(blogData.clapsCount);
+          }
+          setLoading(false);
+          return;
+        }
+      } catch (springErr) {
+        console.warn('Spring Boot getBlogBySlug fallback:', springErr);
+      }
+
+      // 2. Fallback to Supabase if configured
       if (supabase) {
         try {
           const [blogRes, allRes] = await Promise.all([
@@ -178,6 +203,49 @@ const BlogDetails = () => {
       isMounted = false;
     };
   }, [slug, contextBlogs]);
+
+  // Sync bookmark status from API
+  useEffect(() => {
+    if (blog?.id && api.auth.isAuthenticated()) {
+      api.bookmarks.isBookmarked(blog.id).then((res) => {
+        if (res?.bookmarked !== undefined) setIsBookmarked(res.bookmarked);
+      }).catch(() => {});
+    }
+  }, [blog?.id]);
+
+  // Realtime subscription for live claps and updates via Supabase Realtime
+  useEffect(() => {
+    if (!supabase || !blog?.id) return;
+
+    const channel = supabase
+      .channel(`realtime:blog:${blog.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'blogs',
+          filter: `id=eq.${blog.id}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            if (payload.new.claps_count !== undefined) {
+              setLikesCount(payload.new.claps_count);
+            }
+            setBlog((prev) => ({
+              ...prev,
+              clapsCount: payload.new.claps_count,
+              viewsCount: payload.new.views_count,
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [blog?.id]);
 
   // Track scroll reading progress bar
   useEffect(() => {
@@ -260,13 +328,22 @@ const BlogDetails = () => {
   };
 
   // Medium-style Clap / Like Handler
-  const handleLike = () => {
+  const handleLike = async () => {
     const newCount = likesCount + 1;
     setLikesCount(newCount);
     setHasLiked(true);
 
     localStorage.setItem(`blog_likes_${slug}`, newCount);
     localStorage.setItem(`blog_user_liked_${slug}`, 'true');
+
+    if (blog?.id) {
+      try {
+        const res = await api.blogs.clapBlog(blog.id);
+        if (res?.clapsCount) setLikesCount(res.clapsCount);
+      } catch (err) {
+        console.warn('Clap backend update warning:', err);
+      }
+    }
 
     toast.success(`👏 Clapped! (${newCount})`, {
       icon: '👏',
@@ -275,7 +352,7 @@ const BlogDetails = () => {
   };
 
   // Bookmark Toggle
-  const handleBookmarkToggle = () => {
+  const handleBookmarkToggle = async () => {
     const nextState = !isBookmarked;
     setIsBookmarked(nextState);
     if (nextState) {
@@ -284,6 +361,15 @@ const BlogDetails = () => {
     } else {
       localStorage.removeItem(`blog_bookmarked_${slug}`);
       toast('Removed from reading list.', { icon: '🗑️' });
+    }
+
+    if (blog?.id && api.auth.isAuthenticated()) {
+      try {
+        const res = await api.bookmarks.toggle(blog.id);
+        setIsBookmarked(res.bookmarked);
+      } catch (err) {
+        console.warn('Bookmark toggle backend warning:', err);
+      }
     }
   };
 
@@ -434,7 +520,7 @@ const BlogDetails = () => {
   const liveLink = meta.liveLink || '';
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
   const seoDescription = meta.seoDescription || excerpt || title;
-  const currentCanonicalUrl = typeof window !== 'undefined' ? window.location.href : `${getBlogDomainUrl()}/${blog.slug || blog.id}`;
+  const currentCanonicalUrl = `https://blog.arunpandian.online/posts/${blog.slug || blog.id}`;
 
   // ─── Inline Text Formatter (Inline Code, Bold, Italic, Strikethrough, Links) ───
   const renderInlineText = (text) => {
@@ -546,6 +632,24 @@ const BlogDetails = () => {
 
   // ─── Comprehensive Markdown Tokenizer & Interactive Renderer ───
   const renderFormattedArticle = (contentStr) => {
+    if (blog?.content_json || blog?.contentJson) {
+      return (
+        <TiptapRenderer
+          contentJson={blog.content_json || blog.contentJson}
+          content={contentStr}
+          className="my-6"
+        />
+      );
+    }
+    if (contentStr && typeof contentStr === 'string' && contentStr.trim().startsWith('{"type":"doc"')) {
+      return (
+        <TiptapRenderer
+          contentJson={contentStr}
+          content={contentStr}
+          className="my-6"
+        />
+      );
+    }
     if (!contentStr) return null;
 
     // 1. Normalize unicode smart quotes, smart backticks, and H-prefixes
@@ -964,11 +1068,11 @@ const BlogDetails = () => {
         <meta property="og:type" content="article" />
         {coverImage && (
           <>
-            <meta property="og:image" content={coverImage.startsWith('http') ? coverImage : `https://arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
-            <meta property="og:image:secure_url" content={coverImage.startsWith('http') ? coverImage : `https://arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
+            <meta property="og:image" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
+            <meta property="og:image:secure_url" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
-            <meta name="twitter:image" content={coverImage.startsWith('http') ? coverImage : `https://arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
+            <meta name="twitter:image" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
           </>
         )}
         <meta name="twitter:card" content="summary_large_image" />
@@ -1132,17 +1236,16 @@ const BlogDetails = () => {
           </button>
         </div>
 
-        {/* Primary Graphic / Banner Figure (Matching Image 1) */}
+        {/* Primary Graphic / Banner Figure */}
         {coverImage && (
           <figure className="my-6">
-            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-950">
-              <img
-                src={coverImage}
-                alt={title}
-                className="w-full h-auto object-cover"
-                fetchPriority="high"
-              />
-            </div>
+            <ArticleImage
+              src={coverImage}
+              alt={title}
+              aspectRatio="video"
+              category={category}
+              containerClassName="rounded-2xl shadow-xs"
+            />
             {imageCaption && (
               <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2">
                 {imageCaption}
@@ -1185,25 +1288,6 @@ const BlogDetails = () => {
             )}
           </div>
         )}
-
-        {/* Embedded Interactive Power BI Desktop Live Dashboard */}
-        <div className="my-8">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-blue-600 animate-pulse" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-800">
-                Live Interactive Power BI Desktop Model &amp; Slicer
-              </span>
-            </div>
-            <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
-              ✨ Apache ECharts · Chart.js · D3.js · Real-time Cross-Filtering
-            </span>
-          </div>
-          <PowerBIViewer
-            projectTitle={title}
-            pbixUrl={powerbiUrl}
-          />
-        </div>
 
         {/* Main Formatted Article Content */}
         <div className="article-body">

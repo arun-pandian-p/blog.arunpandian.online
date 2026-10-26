@@ -43,34 +43,20 @@ const navGroups = [
     label: 'Overview',
     items: [
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Mails & Followups', path: '/admin/inbox', icon: Mail },
+      { name: 'Inbox & Feedback', path: '/admin/inbox', icon: Mail },
     ],
   },
   {
-    label: 'Site content',
+    label: 'Publishing',
     items: [
-      { name: 'Hero', path: '/admin/settings/hero', icon: Sparkles },
-      { name: 'About', path: '/admin/settings/about', icon: UserRound },
-      { name: 'Skills', path: '/admin/settings/skills', icon: Wrench },
-      { name: 'Certifications', path: '/admin/settings/certifications', icon: Award },
-      { name: 'Contact', path: '/admin/settings/contact', icon: AtSign },
+      { name: 'Articles & Drafts', path: '/admin/blogs', icon: PenTool },
     ],
   },
   {
-    label: 'Collections',
+    label: 'Settings',
     items: [
-      { name: 'Projects', path: '/admin/projects', icon: FolderOpen },
-      { name: 'Experience', path: '/admin/experiences', icon: Briefcase },
-      { name: 'Blogs', path: '/admin/blogs', icon: PenTool },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { name: 'Visual Editor', path: '/admin/canvas', icon: MousePointerClick },
-      { name: 'Theme Studio', path: '/admin/studio', icon: Palette },
-      { name: 'SEO', path: '/admin/settings/seo', icon: Search },
-      { name: 'Settings', path: '/admin/settings', icon: Settings },
+      { name: 'SEO & Metadata', path: '/admin/settings/seo', icon: Search },
+      { name: 'Platform Settings', path: '/admin/settings', icon: Settings },
     ],
   },
 ];
@@ -80,8 +66,6 @@ const navItems = navGroups.flatMap((g) => g.items);
 // Routes that get the split editor + live preview experience.
 const PREVIEW_PREFIXES = [
   '/admin/settings',
-  '/admin/projects',
-  '/admin/experiences',
   '/admin/blogs',
 ];
 

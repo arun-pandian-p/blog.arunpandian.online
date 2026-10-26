@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { api } from '../services/apiClient';
 
 // ─── Fallback data (mirrors what was hardcoded in the components) ────
 
@@ -7,34 +8,34 @@ const GH = 'https://github.com/arun-pandian-p';
 
 const fallbackSettings = {
   hero: {
-    badge: 'Arun Pandian · Data Analyst',
-    headline: ['Turning complex', 'datasets into'],
-    headlineAccent: 'decisions.',
+    badge: 'Independent Publishing Platform',
+    headline: ['Thoughtful Writing,', 'Curated Stories &'],
+    headlineAccent: 'Ideas.',
     subtitle:
-      "Hi, I'm Arun Pandian — a Data Analyst specializing in SQL, Python, Excel & Power BI. I help businesses scale by extracting actionable intelligence from unstructured data.",
-    name: 'Arun Pandian',
-    role: 'Data Analyst',
-    primaryCta: { label: 'Explore Featured Projects', href: '#projects' },
-    secondaryCta: { label: 'Download résumé', href: '/resume.pdf' },
+      'A modern, distraction-free publishing platform for technology, engineering, architecture, lifestyle, business, education, and personal experiences.',
+    name: 'blog.arunpandian.online',
+    role: 'Publishing Platform',
+    primaryCta: { label: 'Explore All Stories', href: '/#articles' },
+    secondaryCta: { label: 'Start Writing', href: '/write' },
     videoSrc: '/hero-animation.mp4',
-    videoCaption: 'Data Analytics & Strategy',
-    videoSubCaption: 'SQL · Python · BI',
+    videoCaption: 'Technology · Architecture · Ideas',
+    videoSubCaption: 'Engineering & Insights',
     story: [
-      { k: 'S', label: 'Messy, scattered data' },
-      { k: 'T', label: 'A question worth answering' },
-      { k: 'A', label: 'SQL · Python · Power BI' },
-      { k: 'R', label: 'Decisions people trust' },
+      { k: 'T', label: 'Technology & Code' },
+      { k: 'A', label: 'Architecture & Systems' },
+      { k: 'E', label: 'Education & Tutorials' },
+      { k: 'L', label: 'Lifestyle & Perspectives' },
     ],
     credentials: [
-      { value: '2026', label: 'AI & DS graduate' },
-      { value: '3', label: 'Projects shipped' },
-      { value: '5', label: 'Certifications' },
+      { value: '100+', label: 'Articles published' },
+      { value: '10k+', label: 'Monthly readers' },
+      { value: '100%', label: 'Open platform' },
     ],
-    ticker: ['SQL', 'Python', 'Excel', 'Power BI', 'Power Query', 'Power Pivot', 'DAX', 'n8n', 'Pandas', 'Data Modelling', 'EDA', 'Automation'],
+    ticker: ['Technology', 'Engineering', 'Architecture', 'Design', 'Lifestyle', 'Business', 'Education', 'Tutorials', 'Personal'],
     socials: {
       github: 'https://github.com/arun-pandian-p',
-      linkedin: 'https://www.linkedin.com/in/arunpandianp-dataanalyst/',
-      email: 'arunpandi47777@gmail.com',
+      linkedin: 'https://www.linkedin.com/in/arunpandianp/',
+      email: 'contact@blog.arunpandian.online',
     },
   },
   about: {
@@ -129,21 +130,21 @@ const fallbackSettings = {
       'Clean models. Honest metrics. Real stories.',
       'Data only matters when it changes a decision.',
     ],
-    inviteTitle: 'Pleasure to have you here.',
-    inviteSubtitle: "Let's turn data into decisions — and connect.",
-    name: 'Arun Pandian · Data Analyst',
+    inviteTitle: 'Welcome to blog.arunpandian.online',
+    inviteSubtitle: 'A modern publishing space for stories, ideas, and code.',
+    name: 'blog.arunpandian.online',
   },
   theme: {
-    accentColor: '#2563EB',
-    inkColor: '#09090B',
-    bgColor: '#FAFAFA',
+    accentColor: '#B83A26',
+    inkColor: '#1C1A17',
+    bgColor: '#FBF9F5',
     surfaceColor: '#FFFFFF',
-    fontFamily: 'Space Grotesk',
+    fontFamily: 'Inter',
   },
   seo: {
-    metaTitle: 'Arun Pandian | Data Analyst - SQL, Python, Power BI',
-    metaDescription: 'Arun Pandian is a Data Analyst specializing in SQL, Python, Excel & Power BI. View my portfolio of data analysis projects and case studies.',
-    keywords: 'data analyst, SQL, Python, Power BI, portfolio, data science, Arun Pandian',
+    metaTitle: 'blog.arunpandian.online — Independent Publishing Platform',
+    metaDescription: 'A modern, distraction-free publishing platform covering technology, software engineering, architecture, lifestyle, business, education, and personal experiences.',
+    keywords: 'blog, publication, engineering, architecture, software development, technology, tutorials, writing, reading',
     ogImage: '',
     twitterHandle: '',
   },
@@ -453,7 +454,6 @@ export function ContentProvider({ children }) {
 
   useEffect(() => {
     if (!supabase) {
-      console.warn('Supabase client not available — using fallback data.');
       setLoading(false);
       return;
     }
@@ -554,10 +554,66 @@ export function ContentProvider({ children }) {
     };
 
     const fetchAll = async () => {
+      // 1. Try Spring Boot backend first
+      try {
+        const [settingsData, projectsData, blogsData, experiencesData] = await Promise.all([
+          api.settings.getAll().catch(() => null),
+          api.projects.getPublished().catch(() => null),
+          api.blogs.getPublicBlogs('', 0, 50).catch(() => null),
+          api.experiences.getPublished().catch(() => null),
+        ]);
+
+        let loaded = false;
+
+        if (settingsData && Object.keys(settingsData).length > 0) {
+          const merged = { ...fallbackSettings };
+          for (const [k, rawVal] of Object.entries(settingsData)) {
+            try {
+              merged[k] = JSON.parse(rawVal);
+            } catch {
+              merged[k] = rawVal;
+            }
+          }
+          latestSettings = merged;
+          setSettings(merged);
+          loaded = true;
+        }
+
+        if (projectsData && Array.isArray(projectsData) && projectsData.length > 0) {
+          const mapped = projectsData.map(mapProject);
+          latestProjects = mapped;
+          setProjects(mapped);
+          loaded = true;
+        }
+
+        if (blogsData && blogsData.content && blogsData.content.length > 0) {
+          const mapped = blogsData.content.map(mapBlog);
+          latestBlogs = mapped;
+          setBlogs(mapped);
+          loaded = true;
+        }
+
+        if (experiencesData && Array.isArray(experiencesData) && experiencesData.length > 0) {
+          const mapped = experiencesData.map(mapExperience);
+          latestExperiences = mapped;
+          setExperiences(mapped);
+          loaded = true;
+        }
+
+        if (loaded) {
+          syncCache();
+          setLoading(false);
+          return;
+        }
+      } catch (springErr) {
+        console.warn('Spring Boot fetch skipped/failed, trying secondary source:', springErr);
+      }
+
+      // 2. Fallback to Supabase / cached data
       try {
         await Promise.all([fetchSettings(), fetchProjects(), fetchBlogs(), fetchExperiences()]);
       } catch (err) {
-        console.warn('Supabase fetch failed, using fallback data:', err);
+        console.warn('Secondary fetch failed, using cached/fallback data:', err);
       } finally {
         setLoading(false);
       }
@@ -565,35 +621,41 @@ export function ContentProvider({ children }) {
 
     fetchAll();
 
-    // ── Realtime: any admin save instantly updates the public site ──
-    const channel = supabase
+    // ── Realtime listener (optional fallback) ──
+    const channel = supabase ? supabase
       .channel('content-updates')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, fetchSettings)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchProjects)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, fetchBlogs)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'experiences' }, fetchExperiences)
-      .subscribe();
+      .subscribe() : null;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
-  // Submit contact form to Supabase instead of the old Express endpoint
+  // Submit contact form via Spring Boot backend
   const submitContact = async (formData) => {
-    if (!supabase) {
-      throw new Error('Supabase not configured — email me directly instead.');
+    try {
+      await api.contact.submit(formData);
+      return { message: 'Message sent successfully!' };
+    } catch (err) {
+      if (supabase) {
+        const { error } = await supabase
+          .from('contact_messages')
+          .insert([{
+            name: formData.name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+          }]);
+        if (!error) return { message: 'Message sent successfully!' };
+      }
+      throw err;
     }
-    const { error } = await supabase
-      .from('contact_messages')
-      .insert([{
-        name: formData.name,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-      }]);
-    if (error) throw error;
-    return { message: 'Message sent successfully!' };
   };
 
   // Apply live draft overrides (if any) on top of the fetched/fallback content.

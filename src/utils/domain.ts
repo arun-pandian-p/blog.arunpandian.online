@@ -18,13 +18,13 @@ export const isBlogSubdomain = (): boolean => {
 };
 
 export const getMainDomainUrl = (): string => {
-  if (typeof window === 'undefined') return 'https://arunpandian.online';
+  if (typeof window === 'undefined') return 'https://blog.arunpandian.online';
   const { protocol, hostname, port } = window.location;
   
   if (hostname.includes('localhost') || hostname === '127.0.0.1') {
     return `${protocol}//localhost${port ? `:${port}` : ''}`;
   }
-  return 'https://arunpandian.online';
+  return `${protocol}//${hostname}${port ? `:${port}` : ''}`;
 };
 
 export const getBlogDomainUrl = (): string => {

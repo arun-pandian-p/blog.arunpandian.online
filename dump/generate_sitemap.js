@@ -10,7 +10,7 @@ async function run() {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://arunpandian.online/</loc>
+    <loc>https://blog.arunpandian.online/</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -19,7 +19,7 @@ async function run() {
 
   for (const p of projects || []) {
     sitemap += `  <url>
-    <loc>https://arunpandian.online/project/${p.id}</loc>
+    <loc>https://blog.arunpandian.online/project/${p.id}</loc>
     <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>\n`;

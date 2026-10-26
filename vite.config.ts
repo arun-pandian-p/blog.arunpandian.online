@@ -4,7 +4,29 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['VITE_', 'REACT_APP_'],
   plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: process.env.VITE_API_URL || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/feed.xml': {
+        target: process.env.VITE_API_URL || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/rss.xml': {
+        target: process.env.VITE_API_URL || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     target: 'esnext',
     cssCodeSplit: true,

@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import Logo from './Logo';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
-import { isBlogSubdomain, getMainDomainUrl, getBlogDomainUrl } from '../utils/domain';
+import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Shared helpers
@@ -50,9 +50,8 @@ const Navbar = () => {
   const isBlogPage   = onBlogSubdomain || location.pathname.startsWith('/blog');
   const navbarStyle  = theme?.layout?.navbarStyle || settings.theme?.layout?.navbarStyle || 'default';
 
-  const mainDomain = getMainDomainUrl();
   const blogDomain = getBlogDomainUrl();
-  const brandHref  = onBlogSubdomain ? `${mainDomain}/#hero` : '/#hero';
+  const brandHref  = '/#hero';
 
   useEffect(() => {
     const handleScroll = () => {

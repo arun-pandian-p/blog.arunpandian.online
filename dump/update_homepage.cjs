@@ -21,7 +21,7 @@ content = content.replace(
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": "Arun Pandian | Data Analyst Portfolio",
-              "url": "https://arunpandian.online/"
+              "url": "https://blog.arunpandian.online/"
             }
           \`}
         </script>
@@ -32,7 +32,7 @@ content = content.replace(
               "@type": "Person",
               "name": "Arun Pandian",
               "jobTitle": "Data Analyst",
-              "url": "https://arunpandian.online/",
+              "url": "https://blog.arunpandian.online/",
               "sameAs": [
                 "https://github.com/arun-pandian-p",
                 "https://linkedin.com/in/arunpandiansh2030"

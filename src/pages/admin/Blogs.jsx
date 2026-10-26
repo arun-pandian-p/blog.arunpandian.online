@@ -15,10 +15,14 @@ import ConfirmModal from '../../components/admin/ConfirmModal';
 import { parseArticleMetadata, serializeBlogContent } from '../../utils/blogParser';
 import { sendSubscriberBroadcast } from '../../services/newsletterService';
 import toast from 'react-hot-toast';
+import TiptapEditor from '../../components/editor/TiptapEditor';
+import ArticleImage from '../../components/common/ArticleImage';
+import { api } from '../../services/apiClient';
 
 export default function Blogs() {
   const [searchParams] = useSearchParams();
   const [blogs, setBlogs] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('Latest Published');
@@ -103,11 +107,15 @@ export default function Blogs() {
     const emailsMap = new Map();
 
     try {
-      // 1. Fetch from backend endpoint
-      const res = await fetch('/api/get-subscribers').catch(() => null);
+      // 1. Fetch from Spring Boot backend endpoint
+      const token = localStorage.getItem('arun_admin_jwt');
+      const res = await fetch('/api/admin/newsletter/subscribers', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }).catch(() => null);
       if (res && res.ok) {
         const json = await res.json();
-        (json.subscribers || []).forEach((s) => {
+        const subsList = json.content || json.subscribers || [];
+        subsList.forEach((s) => {
           if (s.email) emailsMap.set(s.email.toLowerCase(), s);
         });
       }
@@ -256,6 +264,21 @@ export default function Blogs() {
 
   useEffect(() => {
     fetchBlogs();
+    if (api.auth.isAuthenticated()) setCurrentUser(api.auth.getUser());
+    if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          setCurrentUser({
+            id: session.user.id,
+            email: session.user.email,
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            role: session.user.user_metadata?.role || (session.user.email === 'admin@arunpandian.online' ? 'ROLE_ADMIN' : 'ROLE_USER'),
+            avatarUrl: session.user.user_metadata?.avatar_url || ''
+          });
+        }
+      });
+    }
 
     const channel = supabase
       .channel('blogs-realtime')
@@ -703,6 +726,58 @@ export default function Blogs() {
       toast.error('Error saving blog: ' + err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveBlogFromTiptap = async (blogPayload, isPublish) => {
+    try {
+      const payload = {
+        title: blogPayload.title || 'Untitled Story',
+        slug: blogPayload.slug || (blogPayload.title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        excerpt: blogPayload.excerpt || '',
+        content: blogPayload.content || '',
+        content_json: blogPayload.content_json || null,
+        category: blogPayload.category || 'Technology',
+        tags: Array.isArray(blogPayload.tags) ? blogPayload.tags : [blogPayload.category || 'Technology'],
+        cover_image: blogPayload.cover_image || '',
+        cover_video_url: blogPayload.cover_video_url || '',
+        published: Boolean(blogPayload.published),
+        scheduled_at: blogPayload.scheduled_at || null,
+        read_time: blogPayload.read_time || '5 min read',
+        author_name: blogPayload.author_name || 'Admin',
+        author_avatar: blogPayload.author_avatar || '',
+        updated_at: new Date().toISOString()
+      };
+
+      if (editingBlog?.id) {
+        const { data, error } = await supabase
+          .from('blogs')
+          .update(payload)
+          .eq('id', editingBlog.id)
+          .select()
+          .single();
+        if (error) throw error;
+        toast.success(isPublish ? 'Story published!' : 'Draft saved!');
+        fetchBlogs();
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('blogs')
+          .insert([{
+            ...payload,
+            created_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+        if (error) throw error;
+        setEditingBlog(data);
+        toast.success(isPublish ? 'Story published!' : 'Draft saved!');
+        fetchBlogs();
+        return data;
+      }
+    } catch (err) {
+      toast.error('Failed to save story: ' + (err.message || 'Unknown error'));
+      throw err;
     }
   };
 
@@ -1184,11 +1259,16 @@ export default function Blogs() {
                     <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {b.cover_image && (
-                            <img src={b.cover_image} alt={b.title} className="h-10 w-10 rounded-lg object-cover shrink-0 border border-slate-200 bg-slate-900" />
-                          )}
+                          <div className="w-12 h-12 shrink-0">
+                            <ArticleImage
+                              src={b.cover_image}
+                              alt={b.title}
+                              aspectRatio="square"
+                              containerClassName="w-12 h-12 rounded-lg"
+                            />
+                          </div>
                           <div className="flex flex-col">
-                            <span className="font-bold text-slate-900">{b.title}</span>
+                            <span className="font-bold text-slate-900 line-clamp-1">{b.title}</span>
                             <span className="text-xs text-slate-400 font-mono mt-0.5">/{b.slug}</span>
                           </div>
                         </div>
@@ -1206,42 +1286,61 @@ export default function Blogs() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <button 
-                            onClick={() => handleTogglePublish(b)}
-                            title={b.published ? 'Hide Post' : 'Publish Post'}
-                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                              b.published
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700'
-                            }`}
-                          >
-                            {b.published ? <Eye size={15} /> : <EyeOff size={15} />}
-                          </button>
-                          <a 
-                            href={`/blog/${b.slug || b.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            title="View Live Blog"
-                            className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors inline-flex cursor-pointer" 
-                          >
-                            <ExternalLink size={15} />
-                          </a>
-                          <button 
-                            onClick={() => openModal(b)}
-                            title="Edit Blog"
-                            className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer" 
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteClick(b)} 
-                            title="Delete Blog"
-                            className="p-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer" 
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
+                        {(() => {
+                          const isOwner = currentUser && (
+                            String(b.author_id) === String(currentUser.id) ||
+                            String(b.authorId) === String(currentUser.id) ||
+                            (b.author_username && b.author_username === currentUser.username) ||
+                            (b.author_name && b.author_name === currentUser.name)
+                          );
+                          const isAdmin = currentUser && (currentUser.role === 'ROLE_ADMIN' || currentUser.role === 'ADMIN');
+                          const canManage = isOwner || isAdmin;
+
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              {canManage && (
+                                <button 
+                                  onClick={() => handleTogglePublish(b)}
+                                  title={b.published ? 'Hide Post' : 'Publish Post'}
+                                  className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                    b.published
+                                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                                      : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700'
+                                  }`}
+                                >
+                                  {b.published ? <Eye size={15} /> : <EyeOff size={15} />}
+                                </button>
+                              )}
+                              <a 
+                                href={`/posts/${b.slug || b.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="View Live Blog"
+                                className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors inline-flex cursor-pointer" 
+                              >
+                                <ExternalLink size={15} />
+                              </a>
+                              {canManage && (
+                                <>
+                                  <button 
+                                    onClick={() => openModal(b)}
+                                    title="Edit Blog"
+                                    className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer" 
+                                  >
+                                    <Edit2 size={15} />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleDeleteClick(b)} 
+                                    title="Delete Blog"
+                                    className="p-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer" 
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))
@@ -1259,19 +1358,29 @@ export default function Blogs() {
           ) : (
             filteredBlogs.map((b) => (
               <div key={b.id} className="bg-white p-6 rounded-[1.25rem] border border-slate-200 shadow-sm hover:shadow-md transition-all group flex flex-col">
-                <div className="flex justify-between items-start mb-5">
-                  <div className="flex flex-col w-full">
-                    {b.cover_image && (
-                      <img src={b.cover_image} alt={b.title} className="w-full h-36 object-cover rounded-xl border border-slate-100 mb-4 bg-slate-900" />
-                    )}
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider mb-3 w-fit ${b.published ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
-                      {b.published && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                      {b.published ? 'Published' : 'Draft'}
-                    </span>
-                    <h3 className="font-bold text-slate-900 text-lg mb-1 line-clamp-2 leading-snug">{b.title}</h3>
+                <div className="flex flex-col w-full mb-4">
+                    <div className="mb-3 w-full">
+                      <ArticleImage
+                        src={b.cover_image}
+                        alt={b.title}
+                        category={b.category}
+                        aspectRatio="video"
+                        containerClassName="w-full h-44 rounded-xl"
+                        showCategoryBadge
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${b.published ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                        {b.published && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                        {b.published ? 'Published' : 'Draft'}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {b.read_time || '5 min read'}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-base mb-1 line-clamp-2 leading-snug">{b.title}</h3>
                     <span className="text-xs text-slate-400 font-mono">/{b.slug}</span>
                   </div>
-                </div>
                 
                 <p className="text-sm text-slate-500 mb-6 line-clamp-3 flex-1 leading-relaxed">
                   {b.excerpt || 'No excerpt available.'}
@@ -1290,40 +1399,61 @@ export default function Blogs() {
                   
                   {/* Action Bar */}
                   <div className="flex items-center gap-1.5">
-                    <button 
-                      onClick={() => handleTogglePublish(b)} 
-                      title={b.published ? 'Hide Post' : 'Publish Post'}
-                      className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                        b.published 
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' 
-                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700'
-                      }`}
-                    >
-                      {b.published ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
-                    <a 
-                      href={`/blog/${b.slug || b.id}`} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      title="View Live Blog"
-                      className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-center cursor-pointer"
-                    >
-                      <ExternalLink size={14} />
-                    </a>
-                    <button 
-                      onClick={() => openModal(b)} 
-                      title="Edit Post"
-                      className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteClick(b)} 
-                      title="Delete Post"
-                      className="p-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {(() => {
+                      const isOwner = currentUser && (
+                        String(b.author_id) === String(currentUser.id) ||
+                        String(b.authorId) === String(currentUser.id) ||
+                        (b.author_username && b.author_username === currentUser.username) ||
+                        (b.author_name && b.author_name === currentUser.name)
+                      );
+                      const isAdmin = currentUser && (currentUser.role === 'ROLE_ADMIN' || currentUser.role === 'ADMIN');
+                      const canManage = isOwner || isAdmin;
+
+                      return (
+                        <>
+                          {canManage && (
+                            <button 
+                              onClick={() => handleTogglePublish(b)} 
+                              title={b.published ? 'Hide Post' : 'Publish Post'}
+                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                b.published 
+                                  ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' 
+                                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-700'
+                              }`}
+                            >
+                              {b.published ? <Eye size={14} /> : <EyeOff size={14} />}
+                            </button>
+                          )}
+                          <a 
+                            href={`/posts/${b.slug || b.id}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            title="View Live Blog"
+                            className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-center cursor-pointer"
+                          >
+                            <ExternalLink size={14} />
+                          </a>
+                          {canManage && (
+                            <>
+                              <button 
+                                onClick={() => openModal(b)} 
+                                title="Edit Post"
+                                className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClick(b)} 
+                                title="Delete Post"
+                                className="p-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-colors cursor-pointer"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1332,1122 +1462,17 @@ export default function Blogs() {
         </div>
       )}
 
-      {/* ═════════════════════════════════════════════════════════════════════════
-          FULL-SCREEN MODERN PUBLICATION STUDIO (MATCHING USER REFERENCE UI)
-          ═════════════════════════════════════════════════════════════════════════ */}
+      {/* Full-Screen Tiptap Editor Studio (Medium / DEV.to) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-white flex flex-col overflow-hidden font-sans">
-          
-          {/* ── TOP NAVIGATION BAR ── */}
-          <header className="h-16 border-b border-slate-200/90 bg-white px-4 sm:px-8 flex items-center justify-between shrink-0 relative z-30">
-            
-            {/* LEFT: Author Pill */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setAuthorDropdownOpen(!authorDropdownOpen)}
-                className="flex items-center gap-2.5 p-1 pr-3 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <img
-                  src={formData.author_avatar || 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png'}
-                  alt={formData.author_name}
-                  className="w-8 h-8 rounded-full object-cover border border-slate-300"
-                />
-                <div className="text-left leading-tight hidden sm:block">
-                  <div className="flex items-center gap-1 text-xs font-bold text-slate-900">
-                    <span>{formData.author_name || 'Arun Pandian P'}</span>
-                    <ChevronDown size={13} className="text-slate-500" />
-                  </div>
-                  <div className="text-[10px] text-slate-500 font-medium">Individual article</div>
-                </div>
-              </button>
-
-              {/* Author Settings Dropdown Popover */}
-              {authorDropdownOpen && (
-                <div className="absolute top-12 left-0 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 z-50 space-y-3">
-                  <div className="text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Author Settings</div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Author Display Name</label>
-                    <input
-                      type="text"
-                      value={formData.author_name}
-                      onChange={(e) => setFormData({ ...formData, author_name: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:border-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Avatar Photo URL</label>
-                    <input
-                      type="url"
-                      value={formData.author_avatar}
-                      onChange={(e) => setFormData({ ...formData, author_avatar: e.target.value })}
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs focus:border-blue-500 outline-none font-mono"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAuthorDropdownOpen(false)}
-                    className="w-full py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors"
-                  >
-                    Done
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* CENTER: Floating Pill Toolbar (Exactly matching user screenshot) */}
-            <div className="flex items-center gap-1 bg-[#f4f2ee] sm:bg-[#f3f4f6] border border-slate-200/90 rounded-full px-2.5 py-1 shadow-2xs">
-              
-              {/* Style Dropdown Button */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setStyleDropdownOpen(!styleDropdownOpen)}
-                  className="px-2.5 py-1 rounded-full text-xs font-semibold text-slate-700 hover:bg-slate-200/80 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Style</span>
-                  <ChevronDown size={13} className="text-slate-500" />
-                </button>
-
-                {/* Style Dropdown Menu */}
-                {styleDropdownOpen && (
-                  <div className="absolute top-10 left-0 w-56 bg-white rounded-2xl border border-slate-200 shadow-xl p-1.5 z-50 text-xs font-medium space-y-0.5">
-                    <button
-                      type="button"
-                      onClick={() => { wrapSelection('## ', '\n\n', 'Heading 2'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-2 text-left hover:bg-slate-100 rounded-xl flex items-center justify-between text-slate-800"
-                    >
-                      <span className="font-serif font-bold text-sm">Heading 1 (H1)</span>
-                      <span className="text-[10px] font-mono text-slate-400">##</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { wrapSelection('### ', '\n\n', 'Subsection Title'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-2 text-left hover:bg-slate-100 rounded-xl flex items-center justify-between text-slate-800"
-                    >
-                      <span className="font-sans font-bold text-xs">Heading 2 (H2)</span>
-                      <span className="text-[10px] font-mono text-slate-400">###</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { wrapSelection('#### ', '\n\n', 'Key Sub-point'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-2 text-left hover:bg-slate-100 rounded-xl flex items-center justify-between text-slate-800"
-                    >
-                      <span className="font-sans font-semibold text-xs">Heading 3 (H3)</span>
-                      <span className="text-[10px] font-mono text-slate-400">####</span>
-                    </button>
-                    <div className="border-t border-slate-100 my-1" />
-                    <button
-                      type="button"
-                      onClick={() => { insertMarkdownSnippet('> [!NOTE]\n> Key analytical takeaway or observation.'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-1.5 text-left hover:bg-blue-50 text-blue-700 rounded-xl flex items-center gap-2"
-                    >
-                      <Info size={13} />
-                      <span>Note Alert Box</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { insertMarkdownSnippet('> [!TIP]\n> Actionable optimization tip or best practice.'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-1.5 text-left hover:bg-emerald-50 text-emerald-700 rounded-xl flex items-center gap-2"
-                    >
-                      <Lightbulb size={13} />
-                      <span>Tip Alert Box</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { insertMarkdownSnippet('> [!WARNING]\n> Critical operational caveat or performance bottleneck.'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-1.5 text-left hover:bg-amber-50 text-amber-700 rounded-xl flex items-center gap-2"
-                    >
-                      <AlertTriangle size={13} />
-                      <span>Warning Alert Box</span>
-                    </button>
-                    <div className="border-t border-slate-100 my-1" />
-                    <button
-                      type="button"
-                      onClick={() => { insertMarkdownSnippet('| Dimension | Current KPI | Target KPI | Net Variance |\n|---|---|---|---|\n| Query Latency | 3.4s | 0.8s | -76% |\n| Pipeline Throughput | 82% | 98.5% | +16.5% |'); setStyleDropdownOpen(false); }}
-                      className="w-full px-3 py-1.5 text-left hover:bg-slate-100 text-slate-700 rounded-xl flex items-center gap-2"
-                    >
-                      <Table size={13} />
-                      <span>Data Table</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Bold Button */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('**', '**', 'bold text')}
-                title="Bold (Ctrl+B)"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 font-bold transition-colors cursor-pointer"
-              >
-                <Bold size={14} />
-              </button>
-
-              {/* Italic Button */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('*', '*', 'italic text')}
-                title="Italic (Ctrl+I)"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 italic transition-colors cursor-pointer"
-              >
-                <Italic size={14} />
-              </button>
-
-              {/* Bullet List */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('- ', '\n', 'List item')}
-                title="Bullet list"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer hidden sm:inline-flex"
-              >
-                <span className="font-mono text-xs font-bold leading-none">:=</span>
-              </button>
-
-              {/* Numbered List */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('1. ', '\n', 'Numbered item')}
-                title="Numbered list"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer hidden sm:inline-flex"
-              >
-                <ListOrdered size={14} />
-              </button>
-
-              {/* Quote Button */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('> ', '\n\n', 'Notable quotation or key insight here.')}
-                title="Blockquote"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 font-serif font-bold text-xs transition-colors cursor-pointer"
-              >
-                <Quote size={13} />
-              </button>
-
-              {/* Code Snippet Button */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('```sql\n-- SQL / Python Code\n', '\n```', 'SELECT * FROM analytics_table;')}
-                title="Code block"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 font-mono text-xs font-bold transition-colors cursor-pointer"
-              >
-                <span>{`{}`}</span>
-              </button>
-
-              {/* Divider / Horizontal Rule */}
-              <button
-                type="button"
-                onClick={() => insertMarkdownSnippet('---')}
-                title="Horizontal Divider"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 font-bold transition-colors cursor-pointer hidden sm:inline-flex"
-              >
-                <Minus size={14} />
-              </button>
-
-              {/* Link Button */}
-              <button
-                type="button"
-                onClick={() => wrapSelection('[', '](https://github.com/arun-pandian-p)', 'link title')}
-                title="Add link (Ctrl+K)"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer"
-              >
-                <LinkIcon size={14} />
-              </button>
-
-              {/* Embed / Code Symbol Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  const url = window.prompt('Enter Power BI or Video embed URL:');
-                  if (url) {
-                    insertMarkdownSnippet(`[Interactive Dashboard Embed](${url})`);
-                  }
-                }}
-                title="Add embed snippet"
-                className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer font-mono text-xs font-bold"
-              >
-                <span>{`</>`}</span>
-              </button>
-
-              {/* Image / Video Media Button with tooltip */}
-              <div className="relative group">
-                <button
-                  type="button"
-                  onClick={() => inlineFileInputRef.current?.click()}
-                  className="p-1.5 rounded-full hover:bg-slate-200/80 text-slate-700 transition-colors cursor-pointer"
-                  title="Add image or video"
-                >
-                  <ImageIcon size={14} />
-                </button>
-                <div className="absolute top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-medium py-1 px-2.5 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-md">
-                  Add image or video
-                </div>
-              </div>
-
-              {/* Split / Preview Toggle */}
-              <div className="h-4 w-px bg-slate-300 mx-0.5 hidden md:block" />
-              <button
-                type="button"
-                onClick={() => setEditorViewMode(editorViewMode === 'split' ? 'write' : 'split')}
-                title={editorViewMode === 'split' ? "Single Column Write Mode" : "Split Screen Live Preview"}
-                className={`p-1.5 rounded-full transition-colors cursor-pointer hidden md:inline-flex ${editorViewMode === 'split' ? 'bg-white text-blue-600 shadow-2xs font-bold' : 'text-slate-600 hover:bg-slate-200/80'}`}
-              >
-                <Columns size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditorViewMode(editorViewMode === 'preview' ? 'write' : 'preview')}
-                title="Reader Preview Mode"
-                className={`p-1.5 rounded-full transition-colors cursor-pointer hidden md:inline-flex ${editorViewMode === 'preview' ? 'bg-white text-blue-600 shadow-2xs font-bold' : 'text-slate-600 hover:bg-slate-200/80'}`}
-              >
-                <Eye size={13} />
-              </button>
-            </div>
-
-            {/* RIGHT: Notify Fans Toggle, Manage Dropdown, Publish Button, Close Button */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              
-              {/* Dedicated Custom Send Mail Button on Navbar */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (editorViewMode === 'mail') {
-                    setEditorViewMode('write');
-                  } else {
-                    openCustomMailPage();
-                  }
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shadow-xs ${
-                  editorViewMode === 'mail'
-                    ? 'border-amber-500 bg-amber-500 text-white'
-                    : 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
-                }`}
-                title="Open dedicated Custom Email Broadcast Studio"
-              >
-                <Mail size={13} className={editorViewMode === 'mail' ? 'text-white' : 'text-amber-600'} />
-                <span>{editorViewMode === 'mail' ? '← Article Editor' : 'Custom Send Mail'}</span>
-              </button>
-
-              {/* Notify Fans & Subscribers Email Toggle Button */}
-              <button
-                type="button"
-                onClick={() => setNotifySubscribers(!notifySubscribers)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                  notifySubscribers
-                    ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-xs'
-                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-600'
-                }`}
-                title={notifySubscribers ? "⚡ Email broadcast to all fans ENABLED on Update/Publish" : "Email broadcast DISABLED"}
-              >
-                <Bell size={13} className={notifySubscribers ? "text-blue-600 animate-pulse" : "text-slate-400"} />
-                <span className="hidden sm:inline">{notifySubscribers ? 'Notify Fans: ON' : 'Notify Fans: OFF'}</span>
-                <span className="sm:hidden">Notify</span>
-                <div
-                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                    notifySubscribers ? 'bg-blue-600 text-white' : 'bg-slate-300'
-                  }`}
-                >
-                  {notifySubscribers && <Check size={9} strokeWidth={3} />}
-                </div>
-              </button>
-
-              {/* Manage Dropdown Button */}
-              <button
-                type="button"
-                onClick={() => setManageDrawerOpen(!manageDrawerOpen)}
-                className="rounded-full border border-slate-300 px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Manage</span>
-                <ChevronDown size={13} className="text-slate-500" />
-              </button>
-
-              {/* Next / Publish Primary Pill Button */}
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="rounded-full bg-[#0a66c2] hover:bg-[#004182] active:scale-95 text-white font-semibold px-5 py-2 text-xs sm:text-sm shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{editingBlog ? 'Update' : 'Next'}</span>
-                    <span className="text-white/80">→</span>
-                  </>
-                )}
-              </button>
-
-              {/* Close Studio Button */}
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
-                title="Exit Editor"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </header>
-
-          {/* ── MAIN PUBLICATION CANVAS ── */}
-          <main className="flex-1 overflow-y-auto bg-white flex flex-col relative">
-            {editorViewMode === 'mail' ? (
-              <div className="max-w-6xl mx-auto w-full px-6 sm:px-10 py-8 flex-1 flex flex-col space-y-6">
-                
-                {/* Mail Studio Top Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setEditorViewMode('write')}
-                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
-                    >
-                      <ArrowLeft size={14} />
-                      <span>Back to Article Editor</span>
-                    </button>
-                    <div>
-                      <h2 className="font-serif font-bold text-xl text-slate-900">
-                        ✉️ Custom Email Broadcast Studio
-                      </h2>
-                      <p className="text-xs text-slate-500 font-mono">
-                        Personalized newsletter dispatch with <code>Hey &#123;FirstName&#125;,</code> salutations
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                      Targeting: <strong className="text-slate-900">{selectedEmails.size}</strong> verified subscribers
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleDirectSendCustomMail}
-                      disabled={sendingCustomMail || selectedEmails.size === 0}
-                      className="px-5 py-2.5 rounded-xl bg-[#b83a26] hover:bg-[#992817] text-white text-xs font-mono font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {sendingCustomMail ? (
-                        <>
-                          <Loader2 size={13} className="animate-spin" />
-                          <span>Sending Broadcast...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Mail size={13} />
-                          <span>Dispatch Custom Email ({selectedEmails.size})</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2-Column Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                  
-                  {/* LEFT: Subscribers Selector (lg:col-span-5) */}
-                  <div className="lg:col-span-5 space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-2xs">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                      <span className="text-xs font-mono font-bold text-slate-800 uppercase">
-                        Select Recipients ({selectedEmails.size} / {subscribersList.length})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={toggleSelectAllEmails}
-                        className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer"
-                      >
-                        {selectedEmails.size === subscribersList.length && subscribersList.length > 0 ? 'Deselect All' : 'Select All'}
-                      </button>
-                    </div>
-
-                    {/* Quick Add Custom Recipient Form */}
-                    <form onSubmit={handleAddNewRecipient} className="flex gap-1.5">
-                      <input
-                        type="email"
-                        placeholder="Enter email to add..."
-                        value={newRecipientInput}
-                        onChange={(e) => setNewRecipientInput(e.target.value)}
-                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-slate-900 font-mono"
-                      />
-                      <button
-                        type="submit"
-                        className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold font-mono transition-colors cursor-pointer"
-                      >
-                        + Add
-                      </button>
-                    </form>
-
-                    {/* Search Box */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search subscriber list..."
-                        value={subscriberSearch}
-                        onChange={(e) => setSubscriberSearch(e.target.value)}
-                        className="w-full pl-7 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-slate-900 font-mono"
-                      />
-                      <Search size={12} className="absolute left-2.5 top-2 text-slate-400 pointer-events-none" />
-                    </div>
-
-                    {/* Subscribers Checkbox List */}
-                    <div className="max-h-[380px] overflow-y-auto space-y-1.5 pr-1 divide-y divide-slate-100 bg-white p-2 rounded-xl border border-slate-200">
-                      {loadingSubscribers ? (
-                        <div className="flex items-center justify-center py-10 text-slate-400 text-xs gap-2">
-                          <Loader2 size={14} className="animate-spin text-blue-600" />
-                          <span>Loading all verified subscribers &amp; contacts...</span>
-                        </div>
-                      ) : subscribersList.length === 0 ? (
-                        <div className="p-4 text-center text-slate-500 text-xs bg-slate-50 rounded-xl space-y-1">
-                          <p className="font-bold">No subscribers found</p>
-                          <p className="text-[11px] text-slate-400">Use the "+ Add" box above to enter recipient emails.</p>
-                        </div>
-                      ) : (
-                        subscribersList
-                          .filter((s) => s.email.toLowerCase().includes(subscriberSearch.toLowerCase()))
-                          .map((sub) => {
-                            const isChecked = selectedEmails.has(sub.email);
-                            const cleanName = sub.email.split('@')[0].replace(/\d+$/, '').split(/[._\-+]/)[0];
-                            const capName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase() : 'Friend';
-
-                            return (
-                              <label
-                                key={sub.email}
-                                className={`flex items-start gap-2.5 p-2 rounded-lg text-xs cursor-pointer transition-colors ${
-                                  isChecked ? 'bg-blue-50/70 text-blue-950 font-medium' : 'hover:bg-slate-50 text-slate-700'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => toggleSelectEmail(sub.email)}
-                                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="block truncate font-mono text-[11px] font-bold">{sub.email}</span>
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-mono">
-                                      {sub.source || 'Subscriber'}
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] text-emerald-700 font-mono font-semibold">Salutation: Hey {capName},</span>
-                                </div>
-                              </label>
-                            );
-                          })
-                      )}
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 leading-relaxed font-mono">
-                      ✦ Every subscriber receives an individual email starting with <strong>Hey [Their Name],</strong> with an instant unsubscribe link.
-                    </div>
-                  </div>
-
-                  {/* RIGHT: Email Narrative Composer (lg:col-span-7) */}
-                  <div className="lg:col-span-7 space-y-5">
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                        Email Subject Line *
-                      </label>
-                      <input
-                        type="text"
-                        value={customMailSubject}
-                        onChange={(e) => setCustomMailSubject(e.target.value)}
-                        placeholder={`e.g. New Case Study: ${formData.title || 'Power BI DAX & SQL Pipeline'}`}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none font-medium"
-                      />
-                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                        Default: "New Case Study: {formData.title || 'Article Title'} 🚀"
-                      </span>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                        Personal Story / Newsletter Narrative (Supports Multi-Paragraphs)
-                      </label>
-                      <textarea
-                        rows={7}
-                        value={customMailMessage}
-                        onChange={(e) => setCustomMailMessage(e.target.value)}
-                        placeholder="Hey! Just published an in-depth breakdown of how we optimized query latency by 76% using partitioned parquet and dynamic DAX filters. Here are the 3 key takeaways..."
-                        className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none leading-relaxed"
-                      />
-                      <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">
-                        Separate paragraphs with double newlines. It automatically formats each with clean editorial styling.
-                      </span>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-slate-700 uppercase mb-1">
-                        CTA Button Label
-                      </label>
-                      <input
-                        type="text"
-                        value={customMailCta}
-                        onChange={(e) => setCustomMailCta(e.target.value)}
-                        placeholder="Read Complete Case Study ➔"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 focus:border-slate-900 outline-none"
-                      />
-                    </div>
-
-                    {/* Live Inbox Preview Box */}
-                    <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2 text-xs">
-                      <div className="flex items-center justify-between text-slate-400 font-mono text-[10px]">
-                        <span className="text-amber-400 font-bold">Inbox Preview</span>
-                        <span>🔥 100–129 Readers Active</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-bold text-slate-200">
-                          Subject: {customMailSubject || `New Case Study: ${formData.title || 'Title'}`}
-                        </p>
-                        <p className="text-slate-300 font-mono text-[11px]">
-                          Salutation: <span className="text-emerald-400">Hey [SubscriberName],</span>
-                        </p>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-            ) : (
-            <div className={`max-w-4xl mx-auto w-full px-6 sm:px-12 py-8 sm:py-12 flex-1 flex flex-col ${editorViewMode === 'split' ? 'max-w-7xl' : ''}`}>
-
-              {/* 1. COVER IMAGE AREA (Matches user reference card) */}
-              <div className="mb-8">
-                {formData.cover_image ? (
-                  <div className="relative group rounded-2xl overflow-hidden aspect-video bg-slate-900 border border-slate-200 shadow-xs">
-                    <img
-                      src={formData.cover_image}
-                      alt={formData.title || 'Cover'}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => coverFileInputRef.current?.click()}
-                        className="px-4 py-2 rounded-full bg-white text-slate-900 text-xs font-bold shadow-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Upload size={13} />
-                        <span>Change Cover</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, cover_image: '' })}
-                        className="px-4 py-2 rounded-full bg-red-600 text-white text-xs font-bold shadow-lg hover:bg-red-500 transition-colors flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                        <span>Remove</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-[#f4f2ee] hover:bg-[#eae7e0] border border-dashed border-slate-300 rounded-2xl p-10 sm:p-14 text-center flex flex-col items-center justify-center transition-all cursor-pointer group">
-                    
-                    {/* Minimalist Landscape SVG Illustration matching user screenshot */}
-                    <div className="w-20 h-16 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-center mb-4 overflow-hidden relative">
-                      <svg viewBox="0 0 100 80" className="w-full h-full">
-                        <rect width="100" height="80" fill="#f8fafc" />
-                        <circle cx="70" cy="25" r="8" fill="#FDBA74" />
-                        <polygon points="10,80 45,35 65,80" fill="#94A3B8" opacity="0.6" />
-                        <polygon points="40,80 70,45 95,80" fill="#64748B" opacity="0.8" />
-                      </svg>
-                    </div>
-
-                    <p className="text-xs sm:text-sm font-medium text-slate-600 mb-4">
-                      Add a cover image or video to your article.
-                    </p>
-
-                    <div className="flex flex-wrap items-center justify-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => coverFileInputRef.current?.click()}
-                        disabled={uploadingCover}
-                        className="rounded-full border border-slate-800 bg-white hover:bg-slate-900 hover:text-white px-5 py-2 text-xs font-bold text-slate-800 transition-all shadow-2xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        {uploadingCover ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                        <span>Upload from computer</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const url = window.prompt('Enter image cover URL:');
-                          if (url) setFormData({ ...formData, cover_image: url });
-                        }}
-                        className="rounded-full border border-slate-300 bg-white hover:bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 transition-colors cursor-pointer"
-                      >
-                        Paste URL
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 2. TITLE INPUT (Borderless, large Medium/Notion typography) */}
-              <div className="mb-4">
-                <input
-                  ref={titleTextareaRef}
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => {
-                    const newTitle = e.target.value;
-                    const autoSlug = !editingBlog || !formData.slug
-                      ? newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
-                      : formData.slug;
-                    setFormData({ ...formData, title: newTitle, slug: autoSlug });
-                  }}
-                  placeholder="Title"
-                  className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 placeholder:text-slate-300 outline-none w-full bg-transparent border-none py-2 leading-tight"
-                />
-              </div>
-
-              {/* 3. EXCERPT / SUBTITLE */}
-              <div className="mb-6">
-                <input
-                  type="text"
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  placeholder="Add a subtitle or executive excerpt (optional)..."
-                  className="text-slate-500 font-sans text-base sm:text-lg placeholder:text-slate-300 outline-none w-full bg-transparent border-none py-1 leading-relaxed"
-                />
-              </div>
-
-              {/* 4. EDITOR CONTENT AREA */}
-              {editorViewMode === 'write' && (
-                <div className="flex-1 flex flex-col">
-                  <textarea
-                    ref={editorTextareaRef}
-                    value={formData.content}
-                    onKeyDown={handleEditorKeyDown}
-                    onChange={(e) => updateContentWithHistory(e.target.value)}
-                    placeholder="Write here. You can also include @mentions."
-                    className="font-mono sm:font-sans text-base text-slate-800 placeholder:text-slate-300 outline-none w-full bg-transparent border-none flex-1 min-h-[500px] leading-relaxed resize-y"
-                  />
-                </div>
-              )}
-
-              {editorViewMode === 'split' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
-                  <div className="flex flex-col border-r border-slate-100 pr-4">
-                    <div className="text-[11px] font-mono font-bold uppercase text-slate-400 mb-2">
-                      Markdown Source Editor
-                    </div>
-                    <textarea
-                      ref={editorTextareaRef}
-                      value={formData.content}
-                      onKeyDown={handleEditorKeyDown}
-                      onChange={(e) => updateContentWithHistory(e.target.value)}
-                      placeholder="Write here. You can also include @mentions."
-                      className="font-mono text-xs text-slate-800 placeholder:text-slate-300 outline-none w-full bg-slate-50/50 p-4 rounded-xl border border-slate-200 flex-1 min-h-[500px] leading-relaxed resize-y"
-                    />
-                  </div>
-
-                  <div className="flex flex-col pl-2">
-                    <div className="text-[11px] font-mono font-bold uppercase text-blue-600 mb-2 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Live Formatted Reader Preview
-                    </div>
-                    <div className="p-4 bg-white rounded-xl border border-slate-200 overflow-y-auto max-h-[700px]">
-                      {renderLivePreview(formData.content)}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {editorViewMode === 'preview' && (
-                <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                  {renderLivePreview(formData.content)}
-                </div>
-              )}
-
-            </div>
-          )}
-          </main>
-
-          {/* ── FLOATING BOTTOM-RIGHT STATUS PILL (Matching user reference) ── */}
-          <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
-            <div className="bg-white/95 backdrop-blur-sm border border-slate-200 shadow-lg rounded-full px-4 py-2 text-xs font-mono text-slate-600 flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${formData.published ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-              <span className="font-semibold text-slate-800">{formData.published ? 'Published' : 'Draft'}</span>
-              <span className="text-slate-300">•</span>
-              <span>{wordCount} words</span>
-              <span className="text-slate-300">•</span>
-              <span>{estimatedReadTime}</span>
-            </div>
-          </div>
-
-          {/* ── SLIDE-OVER MANAGE DRAWER ── */}
-          {manageDrawerOpen && (
-            <div className="fixed inset-0 z-50 flex justify-end">
-              <div
-                className="absolute inset-0 bg-slate-900/30 backdrop-blur-2xs transition-opacity"
-                onClick={() => setManageDrawerOpen(false)}
-              />
-              <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden z-10 animate-in slide-in-from-right duration-200">
-                
-                {/* Drawer Header */}
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
-                  <div className="flex items-center gap-2">
-                    <Settings size={18} className="text-blue-600" />
-                    <h3 className="font-bold text-sm text-slate-900">Article Publishing Settings</h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setManageDrawerOpen(false)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Drawer Tabs */}
-                <div className="flex border-b border-slate-100 px-4 text-xs font-semibold bg-white">
-                  {[
-                    { id: 'general', label: 'General & Date' },
-                    { id: 'seo', label: 'SEO & Social' },
-                    { id: 'embeds', label: 'Links & DAX' },
-                    { id: 'templates', label: 'Templates' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setManageTab(tab.id)}
-                      className={`py-3 px-3 border-b-2 transition-colors cursor-pointer ${
-                        manageTab === tab.id
-                          ? 'border-blue-600 text-blue-600 font-bold'
-                          : 'border-transparent text-slate-500 hover:text-slate-800'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Drawer Body */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
-                  
-                  {/* TAB: GENERAL */}
-                  {manageTab === 'general' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Date Posted *</label>
-                        <input
-                          type="date"
-                          value={formData.published_at}
-                          onChange={(e) => setFormData({ ...formData, published_at: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs focus:border-blue-500 outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">URL Slug *</label>
-                        <input
-                          type="text"
-                          required
-                          value={formData.slug}
-                          onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '') })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-xs focus:border-blue-500 outline-none"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block font-bold text-slate-700 mb-1">Primary Category</label>
-                          <input
-                            type="text"
-                            value={formData.category}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:border-blue-500 outline-none"
-                            placeholder="Data Analytics"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-slate-700 mb-1">Reading Time</label>
-                          <input
-                            type="text"
-                            value={formData.read_time}
-                            onChange={(e) => setFormData({ ...formData, read_time: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:border-blue-500 outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Tags (Comma-separated)</label>
-                        <input
-                          type="text"
-                          value={formData.tags}
-                          onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:border-blue-500 outline-none"
-                          placeholder="Power BI, SQL, Statistics, DAX"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Sort Order</label>
-                        <input
-                          type="number"
-                          value={formData.sort_order}
-                          onChange={(e) => setFormData({ ...formData, sort_order: Number(e.target.value) })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:border-blue-500 outline-none"
-                        />
-                      </div>
-
-                      <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 space-y-3">
-                        <label className="flex items-center gap-2 cursor-pointer font-bold text-blue-950 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={notifySubscribers}
-                            onChange={(e) => setNotifySubscribers(e.target.checked)}
-                            className="w-4 h-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span>⚡ Broadcast Email to All Fans &amp; Subscribers</span>
-                        </label>
-                        <p className="text-[11px] text-blue-800/80 pl-6 leading-relaxed">
-                          Dispatches an instant email with your cover image, personal greeting, custom story, and verified unsubscribe footer from <code>updates@arunpandian.online</code>.
-                        </p>
-
-                        {notifySubscribers && (
-                          <div className="pt-2 pl-6 space-y-3 border-t border-blue-200/60">
-                            <div>
-                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
-                                Custom Email Subject (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={customMailSubject}
-                                onChange={(e) => setCustomMailSubject(e.target.value)}
-                                placeholder={`e.g. New Case Study: ${formData.title || 'Data Architecture'}`}
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
-                                Custom Email Story / Message (Optional)
-                              </label>
-                              <textarea
-                                rows={3}
-                                value={customMailMessage}
-                                onChange={(e) => setCustomMailMessage(e.target.value)}
-                                placeholder="Hey! Just published a breakdown of the new SQL pipeline and latency benchmarks..."
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none leading-relaxed"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-[11px] font-bold text-blue-950 uppercase mb-1">
-                                CTA Button Text (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                value={customMailCta}
-                                onChange={(e) => setCustomMailCta(e.target.value)}
-                                placeholder="e.g. Read Complete Case Study ➔"
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-blue-200 bg-white text-xs text-slate-900 focus:border-blue-500 outline-none"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-                          <input
-                            type="checkbox"
-                            checked={formData.published}
-                            onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span>Publish publicly to live site</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-                          <input
-                            type="checkbox"
-                            checked={formData.featured}
-                            onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span>Pin as Featured Article</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
-                          <input
-                            type="checkbox"
-                            checked={formData.allow_comments !== false}
-                            onChange={(e) => setFormData({ ...formData, allow_comments: e.target.checked })}
-                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          />
-                          <span>Allow Reader Comments (Auto-cleared after 15 days)</span>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TAB: SEO */}
-                  {manageTab === 'seo' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">SEO Meta Title</label>
-                        <input
-                          type="text"
-                          value={formData.seo_title}
-                          onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-blue-500 outline-none"
-                          placeholder={formData.title || 'Custom SEO Page Title'}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">SEO Meta Description</label>
-                        <textarea
-                          rows={3}
-                          value={formData.seo_description}
-                          onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-blue-500 outline-none"
-                          placeholder={formData.excerpt || 'Search engine summary...'}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Social Preview Image URL</label>
-                        <input
-                          type="url"
-                          value={formData.social_image}
-                          onChange={(e) => setFormData({ ...formData, social_image: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:border-blue-500 outline-none font-mono"
-                          placeholder={formData.cover_image || 'https://...'}
-                        />
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                        <span className="text-[10px] font-mono uppercase font-bold text-slate-400 block mb-1">
-                          Google Search Result Preview:
-                        </span>
-                        <div className="text-[11px] text-blue-800 font-mono truncate">
-                          https://arunpandian.online/blog/{formData.slug || 'article-slug'}
-                        </div>
-                        <div className="text-xs font-semibold text-blue-700 truncate">
-                          {formData.seo_title || formData.title || 'Article Title'}
-                        </div>
-                        <div className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
-                          {formData.seo_description || formData.excerpt || 'Article summary preview...'}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TAB: EMBEDS */}
-                  {manageTab === 'embeds' && (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">GitHub Repository Link</label>
-                        <input
-                          type="url"
-                          value={formData.github_link}
-                          onChange={(e) => setFormData({ ...formData, github_link: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
-                          placeholder="https://github.com/arun-pandian-p/..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Live Project / Demo Link</label>
-                        <input
-                          type="url"
-                          value={formData.live_link}
-                          onChange={(e) => setFormData({ ...formData, live_link: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
-                          placeholder="https://..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">Power BI Dashboard Embed URL</label>
-                        <input
-                          type="url"
-                          value={formData.powerbi_url}
-                          onChange={(e) => setFormData({ ...formData, powerbi_url: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
-                          placeholder="https://app.powerbi.com/view?r=..."
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-slate-700 mb-1">YouTube Walkthrough Video URL</label>
-                        <input
-                          type="url"
-                          value={formData.video_url}
-                          onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono"
-                          placeholder="https://youtube.com/watch?v=..."
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* TAB: TEMPLATES */}
-                  {manageTab === 'templates' && (
-                    <div className="space-y-3">
-                      <p className="text-slate-500 leading-relaxed text-[11px]">
-                        Apply standard structure templates tailored for data analytics and engineering articles.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => applyTemplate('medallion-architecture')}
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition-colors flex flex-col gap-1 cursor-pointer"
-                      >
-                        <span className="font-bold text-slate-800">🏗️ Medallion Lakehouse Architecture</span>
-                        <span className="text-[11px] text-slate-500">Bronze, Silver, Gold ETL pipeline with sample SQL and Python transformation code.</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => applyTemplate('case-study')}
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition-colors flex flex-col gap-1 cursor-pointer"
-                      >
-                        <span className="font-bold text-slate-800">📊 Technical Analytics Case Study</span>
-                        <span className="text-[11px] text-slate-500">Executive problem statement, hypothesis, statistical DAX KPIs, and business impact.</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => applyTemplate('powerbi-tutorial')}
-                        className="w-full p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-left transition-colors flex flex-col gap-1 cursor-pointer"
-                      >
-                        <span className="font-bold text-slate-800">⚡ Power BI & Dynamic DAX Walkthrough</span>
-                        <span className="text-[11px] text-slate-500">Star-schema modeling best practices and rolling average DAX measures.</span>
-                      </button>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Drawer Footer */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                  {editingBlog && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteClick(editingBlog)}
-                      className="px-3 py-1.5 rounded-lg text-red-600 hover:bg-red-50 text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      Delete Post
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setManageDrawerOpen(false)}
-                    className="ml-auto px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    Done
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
+        <TiptapEditor
+          initialBlog={editingBlog}
+          onBack={() => {
+            setIsModalOpen(false);
+            setEditingBlog(null);
+            fetchBlogs();
+          }}
+          onSave={handleSaveBlogFromTiptap}
+        />
       )}
 
       {/* Delete Confirmation Modal */}

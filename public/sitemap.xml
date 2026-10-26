@@ -1,36 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://arunpandian.online/</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://blog.arunpandian.online/</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://arunpandian.online/project/e36fd07b-d38c-405a-9621-dfb874fbcf5e</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/projects/y498ewkkyvl_1783701478848.png</image:loc>
-      <image:title>Data Jobs Salary Dashboard</image:title>
-    </image:image>
+    <loc>https://blog.arunpandian.online/posts/job-posting-data-hiring</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://arunpandian.online/project/9e346667-3686-488b-80ed-05add2fc3476</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
+    <loc>https://blog.arunpandian.online/posts/salary-dashboard-zero-macros</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://arunpandian.online/project/2b815041-0e3a-447e-abd6-ae6aaf9716c7</loc>
-    <lastmod>2026-07-16</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://blog.arunpandian.online/posts/inbox-local-llm-n8n</loc>
+    <lastmod>2026-10-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://blog.arunpandian.online/bookmarks</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://blog.arunpandian.online/feed.xml</loc>
+    <changefreq>daily</changefreq>
     <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/projects/7kee67u799l_1783701882465.png</image:loc>
-      <image:title>Data Science Job Market Analysis — Excel Dashboard</image:title>
-    </image:image>
   </url>
 </urlset>

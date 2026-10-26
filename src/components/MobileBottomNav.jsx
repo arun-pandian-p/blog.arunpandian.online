@@ -1,18 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Compass, Briefcase, Share2, MessageSquare, ArrowLeft, Heart, Home } from 'lucide-react';
-import { getMainDomainUrl } from '../utils/domain';
+import { BookOpen, Compass, Share2, MessageSquare, Mail } from 'lucide-react';
 
 export default function MobileBottomNav({
   mode = 'publication', // 'publication' | 'article' | 'project'
   onShareClick,
   onCommentsClick,
   commentsCount = 0,
-  onExploreClick
+  onExploreClick,
+  onSubscribeClick
 }) {
   const location = useLocation();
-  const mainPortfolioUrl = getMainDomainUrl();
-
   const isArticleView = mode === 'article' || mode === 'project';
 
   return (
@@ -65,7 +63,7 @@ export default function MobileBottomNav({
             </button>
           </>
         ) : (
-          /* ── MODE 2: PUBLICATION / BLOG INDEX FEED (3 Icons: Articles, Topics/Explore, Portfolio) ── */
+          /* ── MODE 2: PUBLICATION / BLOG INDEX FEED (3 Icons: Articles, Explore, Subscribe) ── */
           <>
             {/* 1. Articles Feed (Home) */}
             <Link
@@ -97,17 +95,20 @@ export default function MobileBottomNav({
               <span className="text-[10px] font-mono font-medium leading-none">Explore</span>
             </button>
 
-            {/* 3. Main Portfolio Link */}
-            <a
-              href={mainPortfolioUrl}
-              className="flex flex-col items-center justify-center gap-1 text-[#6E665C] hover:text-[#1C1A17] active:scale-95 transition-all p-1"
-              title="Main Portfolio"
+            {/* 3. Subscribe to Newsletter */}
+            <button
+              onClick={onSubscribeClick || (() => {
+                const el = document.querySelector('section[class*="prefooter"]') || document.querySelector('form');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              })}
+              className="flex flex-col items-center justify-center gap-1 text-[#6E665C] hover:text-[#1C1A17] active:scale-95 transition-all p-1 cursor-pointer"
+              title="Subscribe to Updates"
             >
               <div className="p-1 rounded-full">
-                <Briefcase size={20} />
+                <Mail size={20} />
               </div>
-              <span className="text-[10px] font-mono font-medium leading-none">Portfolio</span>
-            </a>
+              <span className="text-[10px] font-mono font-medium leading-none">Subscribe</span>
+            </button>
           </>
         )}
 

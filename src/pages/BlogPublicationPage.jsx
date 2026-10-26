@@ -53,12 +53,14 @@ import {
 } from 'lucide-react';
 import { FaLinkedin, FaGithub, FaXTwitter, FaWhatsapp, FaMedium } from 'react-icons/fa6';
 import BlogNavbar from '../components/BlogNavbar';
+import ArticleImage from '../components/common/ArticleImage';
 import StyleOverrides from '../editor/StyleOverrides';
 import { useContent } from '../context/ContentProvider';
 import { useThemeStore } from '../theme/store';
 import { supabase } from '../lib/supabaseClient';
+import { api } from '../services/apiClient';
 import toast from 'react-hot-toast';
-import { isBlogSubdomain, getMainDomainUrl } from '../utils/domain';
+import { isBlogSubdomain } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import ShareModal from '../components/ShareModal';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -84,7 +86,6 @@ export default function BlogPublicationPage() {
   const [shareItem, setShareItem] = useState(null);
   
   // Real-time live data states
-  const [liveDbProjects, setLiveDbProjects] = useState([]);
   const [liveDbBlogs, setLiveDbBlogs] = useState([]);
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const [clapsMap, setClapsMap] = useState({});
@@ -92,80 +93,86 @@ export default function BlogPublicationPage() {
   // Carousel index for Main News
   const [mainNewsIndex, setMainNewsIndex] = useState(0);
 
-  // Fetch directly from Supabase on mount
+  // Fetch blogs from Spring Boot backend on mount
   useEffect(() => {
     let isMounted = true;
     const fetchLiveDb = async () => {
-      if (!supabase) return;
+      // 1. Try Spring Boot API
       try {
-        const [projRes, blogRes] = await Promise.all([
-          supabase.from('projects').select('*').order('sort_order', { ascending: true }),
-          supabase.from('blogs').select('*').order('sort_order', { ascending: true }),
-        ]);
-
-        if (isMounted) {
-          if (projRes.data && projRes.data.length > 0) {
-            setLiveDbProjects(projRes.data);
-          }
-          if (blogRes.data && blogRes.data.length > 0) {
-            setLiveDbBlogs(blogRes.data);
-          }
+        const res = await api.blogs.getPublicBlogs('', 0, 50);
+        if (res?.content && res.content.length > 0 && isMounted) {
+          setLiveDbBlogs(res.content);
         }
       } catch (err) {
-        console.warn('Error fetching live data for publication page:', err);
+        console.warn('Spring Boot getPublicBlogs fallback:', err);
+      }
+
+      // 2. Fetch authenticated bookmarks
+      if (api.auth.isAuthenticated()) {
+        try {
+          const bookmarks = await api.bookmarks.getBookmarks();
+          if (Array.isArray(bookmarks) && isMounted) {
+            setBookmarkedIds(new Set(bookmarks.map((b) => b.blogId)));
+          }
+        } catch {}
+      }
+
+      // 3. Fallback to Supabase if configured
+      if (supabase && (!liveDbBlogs || liveDbBlogs.length === 0)) {
+        try {
+          const blogRes = await supabase.from('blogs').select('*').order('sort_order', { ascending: true });
+          if (blogRes.data && blogRes.data.length > 0 && isMounted) {
+            setLiveDbBlogs(blogRes.data);
+          }
+        } catch (err) {
+          console.warn('Supabase fallback error:', err);
+        }
       }
     };
 
     fetchLiveDb();
+
+    // Supabase Realtime subscription for new published articles
+    let channel = null;
+    if (supabase) {
+      channel = supabase
+        .channel('realtime:public-articles')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'blogs',
+            filter: 'published=eq.true',
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT' && payload.new) {
+              setLiveDbBlogs((prev) => [payload.new, ...prev.filter((b) => b.id !== payload.new.id)]);
+            } else if (payload.eventType === 'UPDATE' && payload.new) {
+              setLiveDbBlogs((prev) =>
+                prev.map((b) => (b.id === payload.new.id ? { ...b, ...payload.new } : b))
+              );
+            } else if (payload.eventType === 'DELETE' && payload.old) {
+              setLiveDbBlogs((prev) => prev.filter((b) => b.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       isMounted = false;
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, []);
 
-  // 1. Unified Projects
-  const allProjects = useMemo(() => {
-    const rawList = liveDbProjects.length > 0 ? liveDbProjects : contextProjects;
-    return rawList.map((p, idx) => {
-      const rawDate = p.created_at || p.published_at || p.updated_at;
-      const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
-      const dateObj = new Date(timestamp);
-      const formattedDate = dateObj.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-      const monthYear = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      return {
-        id: p.id || p._id || String(idx + 1),
-        title: p.title || 'Data Analytics Project',
-        subtitle: p.subtitle || p.problem || (Array.isArray(p.tags) ? p.tags.slice(0, 3).join(' · ') : 'SQL · Python · Power BI'),
-        tool: Array.isArray(p.tags) ? p.tags.slice(0, 4).join(' · ') : (p.tool || 'Power BI · SQL'),
-        category: p.category || (p.tags?.[0] ? `${p.tags[0]}` : 'Dashboard'),
-        problem: p.problem || p.subtitle || '',
-        insight: p.insight || 'Key statistical pattern and actionable metric discovered.',
-        description: p.problem || p.subtitle || p.description || '',
-        tags: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Power BI', 'SQL', 'Dataviz'],
-        image: p.image_url || p.imageUrl || p.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-        href: isBlogSubdomain() ? `${getMainDomainUrl()}/project/${p.id || p._id || idx + 1}?from=blog` : `/project/${p.id || p._id || idx + 1}?from=blog`,
-        timestamp,
-        date: formattedDate,
-        monthYear,
-        type: 'project',
-        readTime: '5 MIN READ',
-        claps: 484 + (idx * 47) % 500,
-        responses: 5 + idx * 2,
-        featured: true,
-      };
-    });
-  }, [liveDbProjects, contextProjects]);
-
-  // 2. Unified Blog Articles
+  // Standalone Blog Articles
   const allBlogs = useMemo(() => {
-    const onSubdomain = isBlogSubdomain();
     const rawList = liveDbBlogs.length > 0 ? liveDbBlogs : contextBlogs;
     return rawList.map((b, idx) => {
-      const rawDate = b.published_at || b.created_at || b.updated_at;
+      const rawDate = b.published_at || b.publishedAt || b.created_at || b.createdAt || b.updated_at;
       const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now() - idx * 86400000;
       const dateObj = new Date(timestamp);
       const formattedDate = dateObj.toLocaleDateString('en-US', {
@@ -174,6 +181,13 @@ export default function BlogPublicationPage() {
         year: 'numeric'
       });
       const monthYear = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const rawTags = b.tags;
+      const tagsList = Array.isArray(rawTags)
+        ? rawTags
+        : typeof rawTags === 'string' && rawTags.trim().length > 0
+          ? rawTags.split(',').map((t) => t.trim()).filter(Boolean)
+          : ['Engineering', 'Architecture'];
 
       return {
         id: b.id || b._id || String(idx + 1),
@@ -181,40 +195,43 @@ export default function BlogPublicationPage() {
         title: b.title || 'What 2023 Job-Posting Data Taught Me About Data Hiring',
         subtitle: b.excerpt || 'Answering four salary-and-skills questions with nothing but Excel, Power Query, and a Power Pivot model.',
         content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
-        tags: Array.isArray(b.tags) ? b.tags : ['Data Engineering', 'SQL', 'Power BI'],
+        tags: tagsList,
         image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
-        readTime: b.read_time || b.readTime || '4 MIN READ',
+        readTime: b.read_time || b.readTime || '4 min read',
         timestamp,
         date: formattedDate,
         monthYear,
-        category: b.category || (Array.isArray(b.tags) && b.tags[0]) || 'Newsfeed',
-        authorName: b.author_name || 'Arun Pandian',
-        publicationName: b.category ? `In ${b.category}` : 'In Towards Data Intelligence',
-        href: onSubdomain ? `/${b.slug || b.id}` : `/blog/${b.slug || b.id}`,
+        category: b.category || tagsList[0] || 'Engineering',
+        authorName: b.authorName || b.author_name || 'Arun Pandian',
+        authorUsername: b.authorUsername || 'arunpandian',
+        publicationName: b.category ? `In ${b.category}` : 'In Towards Engineering',
+        href: `/posts/${b.slug || b.id}`,
         type: 'article',
         featured: Boolean(b.featured) || idx === 0,
-        claps: 567 + (idx * 83) % 900,
+        claps: b.clapsCount !== undefined ? b.clapsCount : 567 + (idx * 83) % 900,
         responses: 8 + (idx * 3) % 15,
         shares: 3 + idx,
       };
     });
   }, [liveDbBlogs, contextBlogs]);
 
-  // Combined Items Sorted Strictly Date-Wise (Latest Update First)
+  // Combined Items Sorted Date-Wise
   const allItems = useMemo(() => {
-    const combined = [...allBlogs, ...allProjects];
-    return combined.sort((a, b) => b.timestamp - a.timestamp);
-  }, [allBlogs, allProjects]);
+    return [...allBlogs].sort((a, b) => b.timestamp - a.timestamp);
+  }, [allBlogs]);
 
   // Filter Categories
   const filterCategories = [
     'All',
-    'Power BI',
-    'SQL',
-    'Python',
-    'Data Engineering',
-    'Analytics',
-    'Dashboard'
+    'Technology',
+    'Engineering',
+    'Architecture',
+    'Design',
+    'Lifestyle',
+    'Business',
+    'Education',
+    'Tutorials',
+    'Personal'
   ];
 
   // Filtered Items (Centre Feed)
@@ -291,29 +308,44 @@ export default function BlogPublicationPage() {
     handleOpenItem(randomPost.href);
   };
 
-  const handleBookmarkToggle = (e, id) => {
+  const handleBookmarkToggle = async (e, id) => {
     e.stopPropagation();
-    setBookmarkedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        toast('Removed from reading list', { icon: '🗑️' });
-      } else {
-        next.add(id);
-        toast.success('Saved to your reading list!', { icon: '🔖' });
-      }
-      return next;
-    });
+    if (!api.auth.isAuthenticated()) {
+      toast.error('Sign in to save articles to your reading list', { icon: '🔖' });
+      return;
+    }
+    try {
+      const res = await api.bookmarks.toggle(id);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (res.bookmarked) {
+          next.add(id);
+          toast.success('Saved to your reading list!', { icon: '🔖' });
+        } else {
+          next.delete(id);
+          toast('Removed from reading list', { icon: '🗑️' });
+        }
+        return next;
+      });
+    } catch (err) {
+      toast.error('Failed to update bookmark');
+    }
   };
 
-  const handleClap = (e, id) => {
+  const handleClap = async (e, id) => {
     e.stopPropagation();
-    setClapsMap((prev) => {
-      const current = prev[id] || 0;
-      const updated = current + 1;
-      toast.success(`👏 Clapped! (${updated})`, { icon: '👏' });
-      return { ...prev, [id]: updated };
-    });
+    try {
+      const res = await api.blogs.clapBlog(id);
+      setClapsMap((prev) => ({ ...prev, [id]: res.clapsCount }));
+      toast.success(`👏 Clapped! (${res.clapsCount})`, { icon: '👏' });
+    } catch (err) {
+      setClapsMap((prev) => {
+        const current = prev[id] || 0;
+        const updated = current + 1;
+        toast.success(`👏 Clapped! (${updated})`, { icon: '👏' });
+        return { ...prev, [id]: updated };
+      });
+    }
   };
 
   const handleSubscribe = async (e) => {
@@ -601,20 +633,24 @@ export default function BlogPublicationPage() {
                 description="Get notified directly at your inbox from updates@arunpandian.online for every new publication."
               />
 
-              {/* Quick Tech Skills Cloud */}
+              {/* Trending Topics Cloud */}
               <div className="p-5 rounded-2xl bg-[#F4EFE6]/80 border border-[#E2DAD0] space-y-3">
                 <h4 className="font-sans font-bold text-xs uppercase tracking-wider text-[#4A453E] flex items-center gap-1.5">
                   <Sparkles size={13} className="text-[#B83A26]" />
-                  <span>Core Competencies</span>
+                  <span>Trending Topics</span>
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
-                  {['SQL Pipelines', 'Power BI DAX', 'Python Pandas', 'Lakehouse', 'ETL', 'Statistical Modeling'].map((tag) => (
-                    <span
+                  {['Technology', 'Engineering', 'Architecture', 'Design', 'Lifestyle', 'Business', 'Education', 'Tutorials'].map((tag) => (
+                    <button
                       key={tag}
-                      className="px-2.5 py-1 rounded-md bg-[#FFFDFB] border border-[#DDD5C7] text-[11px] font-mono text-[#4A453E] font-medium shadow-2xs"
+                      onClick={() => {
+                        setSelectedCategory(tag);
+                        document.getElementById('topics-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="px-2.5 py-1 rounded-md bg-[#FFFDFB] hover:bg-[#1C1A17] hover:text-white border border-[#DDD5C7] text-[11px] font-mono text-[#4A453E] font-medium shadow-2xs transition-colors cursor-pointer"
                     >
-                      {tag}
-                    </span>
+                      #{tag}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -713,16 +749,15 @@ export default function BlogPublicationPage() {
                             </p>
                           </div>
 
-                          {item.image && (
-                            <div className="w-24 h-18 sm:w-28 sm:h-20 rounded-lg overflow-hidden bg-[#161513] shrink-0 border border-[#DDD5C7]">
-                              <img
-                                src={item.image}
-                                alt={item.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                loading="lazy"
-                              />
-                            </div>
-                          )}
+                          <div className="w-24 h-18 sm:w-28 sm:h-20 shrink-0">
+                            <ArticleImage
+                              src={item.image}
+                              alt={item.title}
+                              category={item.category}
+                              aspectRatio="video"
+                              containerClassName="w-24 h-18 sm:w-28 sm:h-20 rounded-lg"
+                            />
+                          </div>
                         </div>
 
                         {/* Footer Row */}
@@ -995,11 +1030,15 @@ export default function BlogPublicationPage() {
         />
       )}
 
-      {/* Mobile Bottom Navigation (3 Icons) */}
+      {/* Mobile Bottom Navigation (3 Icons: Articles, Explore, Subscribe) */}
       <MobileBottomNav
         mode="publication"
         onExploreClick={() => {
           const el = document.getElementById('topics-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onSubscribeClick={() => {
+          const el = document.querySelector('section[class*="prefooter"]') || document.querySelector('form');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }}
       />

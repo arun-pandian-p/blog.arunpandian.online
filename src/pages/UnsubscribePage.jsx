@@ -36,8 +36,8 @@ export default function UnsubscribePage() {
     const finalReason = reason === 'Other reason' && customReason ? `Other: ${customReason}` : reason;
 
     try {
-      // 1. Call serverless unsubscribe endpoint
-      await fetch('/api/unsubscribe', {
+      // 1. Call Spring Boot unsubscribe endpoint
+      await fetch('/api/newsletter/unsubscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cleanEmail, reason: finalReason })

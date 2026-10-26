@@ -8,6 +8,14 @@ export default function AdminRoute({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // 1. Check Spring Boot JWT token
+    const token = localStorage.getItem('arun_admin_jwt');
+    if (token) {
+      setSession({ user: JSON.parse(localStorage.getItem('arun_admin_user') || '{}') });
+      setLoading(false);
+      return;
+    }
+
     if (!supabase) {
       setLoading(false);
       return;

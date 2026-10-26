@@ -56,7 +56,7 @@ export default function ShareModal({
   const xTweetText = `🚀 New Data Analytics Deep Dive: "${cleanTitle}"\n\n💡 Key Insight: ${cleanDesc.slice(0, 140)}...\n\n📊 Explore interactive dashboard & schema:\n${currentUrl}\n\n${hashtagsFormatted} #DataScience #BusinessIntelligence`;
 
   // 📸 Instagram Caption Text
-  const instaCaptionText = `📊 ${cleanTitle.toUpperCase()}\n\nSwipe to see the star-schema dimensional model, SQL pipeline, and Power BI interactive dashboard breakdown!\n\n💡 Summary:\n${cleanDesc}\n\n🔗 Full study, reproducible code & dataset live at the link in bio (arunpandian.online)\n\n.\n.\n.\n${hashtagsFormatted} #DataAnalytics #DataVisualisation #PowerBI #SQL #PythonCode #DataAnalyst #TechPortfolio`;
+  const instaCaptionText = `📊 ${cleanTitle.toUpperCase()}\n\nSwipe to see the star-schema dimensional model, SQL pipeline, and Power BI interactive dashboard breakdown!\n\n💡 Summary:\n${cleanDesc}\n\n🔗 Full study, reproducible code & dataset live at the link in bio (blog.arunpandian.online)\n\n.\n.\n.\n${hashtagsFormatted} #DataAnalytics #DataVisualisation #PowerBI #SQL #PythonCode #DataAnalyst #TechPortfolio`;
 
   const handleShare = (platform) => {
     if (platform === 'native' && navigator.share) {
@@ -273,7 +273,7 @@ export default function ShareModal({
                 )}
                 <div className="p-3 bg-slate-100 border-t border-slate-200 space-y-0.5">
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">
-                    ARUNPANDIAN.ONLINE
+                    BLOG.ARUNPANDIAN.ONLINE
                   </span>
                   <h4 className="font-bold text-xs text-slate-900 truncate">
                     {cleanTitle}
@@ -374,7 +374,7 @@ export default function ShareModal({
                   />
                   <div className="absolute bottom-0 left-0 right-0 p-2.5 bg-gradient-to-t from-black/90 via-black/60 to-transparent text-[11px] font-mono text-slate-300 flex items-center justify-between">
                     <span className="truncate">{cleanTitle}</span>
-                    <span className="text-blue-400 font-bold ml-2 shrink-0">arunpandian.online ↗</span>
+                    <span className="text-blue-400 font-bold ml-2 shrink-0">blog.arunpandian.online ↗</span>
                   </div>
                 </div>
               )}
@@ -424,7 +424,7 @@ export default function ShareModal({
                       className="w-full h-full rounded-full object-cover border border-white"
                     />
                   </div>
-                  <span className="font-bold text-xs tracking-tight">arunpandian.online</span>
+                  <span className="font-bold text-xs tracking-tight">blog.arunpandian.online</span>
                 </div>
                 <MoreHorizontal size={16} className="text-white/70" />
               </div>
@@ -461,7 +461,7 @@ export default function ShareModal({
               {/* Caption snippet */}
               <div className="text-xs space-y-1">
                 <p className="leading-snug">
-                  <strong className="mr-1.5">arunpandian.online</strong>
+                  <strong className="mr-1.5">blog.arunpandian.online</strong>
                   {cleanTitle} — {cleanDesc.slice(0, 80)}...
                 </p>
                 <p className="text-white/60 font-mono text-[10px]">
