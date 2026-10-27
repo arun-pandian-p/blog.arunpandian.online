@@ -6,8 +6,7 @@ import { useContent } from '../context/ContentProvider';
 import BlogNavbar from '../components/BlogNavbar';
 import StyleOverrides from '../editor/StyleOverrides';
 import { api } from '../services/apiClient';
-import arunProfile from '../assets/arun-profile.jpg';
-import { parseArticleMetadata, extractHeadings } from '../utils/blogParser';
+import { parseArticleMetadata, extractHeadings, resolveCoverImage } from '../utils/blogParser';
 import { isBlogSubdomain, getBlogDomainUrl } from '../utils/domain';
 import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import BlogComments from '../components/BlogComments';
@@ -101,6 +100,37 @@ const BlogDetails = () => {
 
   // Audio Text-to-Speech listening player state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  // Reader Typography Controls (Self-Hosted GitHub Fonts: Newsreader, Inter, JetBrains Mono)
+  const [readerFont, setReaderFont] = useState(() => {
+    return localStorage.getItem('blog_reader_font') || 'serif';
+  });
+  const [readerFontSize, setReaderFontSize] = useState(() => {
+    return localStorage.getItem('blog_reader_size') || 'base';
+  });
+
+  const handleReaderFontChange = (font) => {
+    setReaderFont(font);
+    localStorage.setItem('blog_reader_font', font);
+  };
+
+  const handleReaderFontSizeChange = (size) => {
+    setReaderFontSize(size);
+    localStorage.setItem('blog_reader_size', size);
+  };
+
+  const getReaderFontClass = () => {
+    if (readerFont === 'sans') return 'font-sans font-sans-inter';
+    if (readerFont === 'mono') return 'font-mono font-mono-jetbrains';
+    return 'font-serif font-serif-newsreader';
+  };
+
+  const getReaderSizeClass = () => {
+    if (readerFontSize === 'sm') return 'text-[15px] sm:text-[16px] leading-[1.65]';
+    if (readerFontSize === 'lg') return 'text-[17px] sm:text-[19px] leading-[1.8]';
+    if (readerFontSize === 'xl') return 'text-[19px] sm:text-[21px] leading-[1.85]';
+    return 'text-[16px] sm:text-[18px] leading-[1.75]';
+  };
 
   // Interactive In-Article Code Snippet Editor states
   const [editableCodeSnippets, setEditableCodeSnippets] = useState({});
@@ -388,53 +418,59 @@ const BlogDetails = () => {
 
   // Share Functionality
   const handleShare = (platform) => {
-    const currentUrl = window.location.href;
-    const shareTitle = blog?.title || 'Data Analytics Article & Investigation';
-    const authorHandle = 'arunpandian';
+    const shareUrl = currentCanonicalUrl || window.location.href;
+    const shareTitle = blog?.title || 'Article & Insights';
+    const authorHandle = blog?.author_username || 'arunpandian';
+    const rawTagList = Array.isArray(tags) ? tags : [];
+    const shareHashtags = rawTagList.length > 0 
+      ? rawTagList.slice(0, 3).map(t => t.replace(/[^a-zA-Z0-9]/g, '')).filter(Boolean).join(',')
+      : 'Engineering,Tech,Software';
 
     if (platform === 'native' && navigator.share) {
       navigator.share({
         title: shareTitle,
-        text: `${shareTitle} by Arun Pandian`,
-        url: currentUrl,
+        text: `${shareTitle} by ${authorName}`,
+        url: shareUrl,
       }).catch(() => {});
       return;
     }
 
     if (platform === 'linkedin') {
       window.open(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`,
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
         '_blank',
-        'width=600,height=600'
+        'width=600,height=600,noopener,noreferrer'
       );
     } else if (platform === 'twitter') {
       window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareTitle} by @${authorHandle}`)}&url=${encodeURIComponent(currentUrl)}&hashtags=DataAnalytics,SQL,PowerBI,Python`,
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${shareTitle} by @${authorHandle}`)}&url=${encodeURIComponent(shareUrl)}&hashtags=${encodeURIComponent(shareHashtags)}`,
         '_blank',
-        'width=600,height=450'
+        'width=600,height=450,noopener,noreferrer'
       );
     } else if (platform === 'whatsapp') {
       window.open(
-        `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this study: "${shareTitle}" — ${currentUrl}`)}`,
-        '_blank'
+        `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this story: "${shareTitle}" — ${shareUrl}`)}`,
+        '_blank',
+        'noopener,noreferrer'
       );
     } else if (platform === 'reddit') {
       window.open(
-        `https://reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(shareTitle)}`,
-        '_blank'
+        `https://reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareTitle)}`,
+        '_blank',
+        'noopener,noreferrer'
       );
     } else if (platform === 'facebook') {
       window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`,
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
         '_blank',
-        'width=600,height=500'
+        'width=600,height=500,noopener,noreferrer'
       );
     } else if (platform === 'email') {
-      window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`Hi,\n\nCheck out this data study:\n\n${shareTitle}\n${currentUrl}\n\nBest,`)}`;
+      window.location.href = `mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(`Hi,\n\nI thought you might enjoy reading this article:\n\n"${shareTitle}"\n${shareUrl}\n\nBest,`)}`;
     } else if (platform === 'copy') {
-      navigator.clipboard.writeText(currentUrl);
+      navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
-      toast.success('Link copied to clipboard!', { icon: '🔗' });
+      toast.success('Canonical link copied to clipboard!', { icon: '🔗' });
       setTimeout(() => setCopiedLink(false), 2000);
     }
   };
@@ -490,26 +526,27 @@ const BlogDetails = () => {
   const title = blog.title || 'The Medallion Architecture Reconsidered: What It Solved, and Where It\'s Cracking';
   const excerpt = blog.excerpt || blog.summary || 'Rethinking Bronze, Silver, and Gold for the AI era.';
   const authorName = blog.author_name || settings?.about?.name || 'Arun Pandian';
-  const authorRole = settings?.about?.role || 'Data Analyst';
+  const authorRole = blog.author_role || settings?.about?.role || 'Writer & Software Engineer';
   const authorAvatar =
     blog.author_avatar ||
     settings?.about?.profileImage ||
     arunProfile;
   const authorBio =
+    blog.author_bio ||
     settings?.about?.bio ||
-    "Hi, I'm Arun Pandian — a Data Analyst transforming complex datasets into actionable business intelligence with SQL, Python, Excel & Power BI.";
+    "Writer, engineer, and open-source contributor sharing insights on software design, systems, web technologies, and developer tooling.";
 
   const category = meta.category || 'Data Engineering';
   const tags = Array.isArray(blog.tags) && blog.tags.length > 0
     ? blog.tags
     : typeof blog.tags === 'string' && blog.tags.trim().length > 0
       ? blog.tags.split(',').map(t => t.trim()).filter(Boolean)
-      : ['statistics', 'python', 'API', 'Data Architecture'];
+      : ['Engineering', 'Technology', 'Architecture', 'WebDev'];
 
-  const coverImage = blog.cover_image || blog.image || '';
-  const imageCaption = meta.imageCaption || 'Medallion Architecture Reconsidered';
-  const readTime = blog.read_time || '7 min read';
-  const publishedDate = new Date(blog.published_at || blog.created_at || Date.now()).toLocaleDateString(
+  const coverImage = resolveCoverImage(blog);
+  const imageCaption = meta.imageCaption || (coverImage ? `${title} — Architecture & Technical Visual` : '');
+  const readTime = blog.read_time || blog.readTime || '5 min read';
+  const publishedDate = new Date(blog.published_at || blog.publishedAt || blog.created_at || blog.createdAt || Date.now()).toLocaleDateString(
     'en-US',
     { month: 'short', day: 'numeric', year: 'numeric' }
   );
@@ -521,6 +558,14 @@ const BlogDetails = () => {
   const seoTitle = meta.seoTitle || `${title} | Arun Pandian`;
   const seoDescription = meta.seoDescription || excerpt || title;
   const currentCanonicalUrl = `https://blog.arunpandian.online/posts/${blog.slug || blog.id}`;
+  const defaultSocialImage = 'https://blog.arunpandian.online/assets/arun-profile.jpg';
+  const rawCover = coverImage;
+  const absoluteCoverImage = rawCover
+    ? (rawCover.startsWith('http') ? rawCover : `https://blog.arunpandian.online${rawCover.startsWith('/') ? '' : '/'}${rawCover}`)
+    : defaultSocialImage;
+  const publishedDateIso = blog.published_at 
+    ? new Date(blog.published_at).toISOString() 
+    : (blog.created_at ? new Date(blog.created_at).toISOString() : '');
 
   // ─── Inline Text Formatter (Inline Code, Bold, Italic, Strikethrough, Links) ───
   const renderInlineText = (text) => {
@@ -638,6 +683,8 @@ const BlogDetails = () => {
           contentJson={blog.content_json || blog.contentJson}
           content={contentStr}
           className="my-6"
+          fontFamily={readerFont}
+          fontSize={readerFontSize}
         />
       );
     }
@@ -647,13 +694,16 @@ const BlogDetails = () => {
           contentJson={contentStr}
           content={contentStr}
           className="my-6"
+          fontFamily={readerFont}
+          fontSize={readerFontSize}
         />
       );
     }
     if (!contentStr) return null;
 
-    // 1. Normalize unicode smart quotes, smart backticks, and H-prefixes
+    // 1. Normalize unicode smart quotes, smart backticks, literal \n, and H-prefixes
     let normalized = contentStr
+      .replace(/\\n/g, '\n') // Unescape literal \n into real newlines
       .replace(/[‘’`]/g, '`') // Normalize backtick variations
       .replace(/[“”]/g, '"')
       .replace(/^(?:H1|h1):\s*/gm, '# ')
@@ -1061,24 +1111,25 @@ const BlogDetails = () => {
         <title>{seoTitle}</title>
         <meta name="description" content={seoDescription} />
         <link rel="canonical" href={currentCanonicalUrl} />
-        <meta property="og:site_name" content="Arun Pandian Data Intelligence" />
+        <meta name="author" content={authorName} />
+        <meta property="og:site_name" content="BLOG.ARUNPANDIAN.ONLINE" />
         <meta property="og:title" content={seoTitle} />
         <meta property="og:description" content={seoDescription} />
         <meta property="og:url" content={currentCanonicalUrl} />
         <meta property="og:type" content="article" />
-        {coverImage && (
-          <>
-            <meta property="og:image" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
-            <meta property="og:image:secure_url" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
-            <meta property="og:image:width" content="1200" />
-            <meta property="og:image:height" content="630" />
-            <meta name="twitter:image" content={coverImage.startsWith('http') ? coverImage : `https://blog.arunpandian.online${coverImage.startsWith('/') ? '' : '/'}${coverImage}`} />
-          </>
+        {publishedDateIso && (
+          <meta property="article:published_time" content={publishedDateIso} />
         )}
+        <meta property="article:author" content={authorName} />
+        <meta property="og:image" content={absoluteCoverImage} />
+        <meta property="og:image:secure_url" content={absoluteCoverImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@arunpandian" />
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={absoluteCoverImage} />
       </Helmet>
 
       <StyleOverrides />
@@ -1097,7 +1148,7 @@ const BlogDetails = () => {
           TOP EDITORIAL PROMO BAR
           ═════════════════════════════════════════════════════════════════ */}
       <div className="pt-20 sm:pt-24 bg-[#F2ECE1] text-[#2B2723] border-b border-[#DDD5C7] px-4 py-2 text-center text-xs font-semibold flex items-center justify-center gap-2 font-mono">
-        <span>Verified Data Analytics Case Studies &amp; Architecture Guides.</span>
+        <span>Verified Engineering Insights &amp; Architecture Guides.</span>
         <button
           onClick={() => setIsShareModalOpen(true)}
           className="underline font-bold text-[#B83A26] hover:text-[#8F2819] cursor-pointer"
@@ -1202,11 +1253,67 @@ const BlogDetails = () => {
           {excerpt}
         </p>
 
-        {/* Reading Time & Published Date */}
-        <div className="text-xs text-slate-500 font-mono mb-4 flex items-center gap-2">
-          <span>{readTime}</span>
-          <span>·</span>
-          <span>{publishedDate}</span>
+        {/* Reading Time & Published Date with Reader Typography Controls */}
+        <div className="text-xs text-slate-500 font-mono mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span>{readTime}</span>
+            <span>·</span>
+            <span>{publishedDate}</span>
+          </div>
+
+          {/* Reader Typography Controls (Serif: Newsreader, Sans: Inter, Mono: JetBrains Mono) */}
+          <div className="flex items-center gap-2">
+            <div className="inline-flex items-center rounded-lg bg-[#EFE9DD] p-0.5 border border-[#DDD5C7] text-xs">
+              <button
+                onClick={() => handleReaderFontChange('serif')}
+                className={`px-2 py-0.5 rounded transition font-serif ${readerFont === 'serif' ? 'bg-white text-stone-900 shadow-2xs font-bold' : 'text-stone-600 hover:text-stone-900'}`}
+                title="Serif: Newsreader (SIL OFL 1.1 from GitHub)"
+              >
+                Serif
+              </button>
+              <button
+                onClick={() => handleReaderFontChange('sans')}
+                className={`px-2 py-0.5 rounded transition font-sans ${readerFont === 'sans' ? 'bg-white text-stone-900 shadow-2xs font-bold' : 'text-stone-600 hover:text-stone-900'}`}
+                title="Sans: Inter (SIL OFL 1.1 from GitHub)"
+              >
+                Sans
+              </button>
+              <button
+                onClick={() => handleReaderFontChange('mono')}
+                className={`px-2 py-0.5 rounded transition font-mono ${readerFont === 'mono' ? 'bg-white text-stone-900 shadow-2xs font-bold' : 'text-stone-600 hover:text-stone-900'}`}
+                title="Mono: JetBrains Mono (SIL OFL 1.1 from GitHub)"
+              >
+                Mono
+              </button>
+            </div>
+
+            <div className="inline-flex items-center rounded-lg bg-[#EFE9DD] p-0.5 border border-[#DDD5C7] text-xs font-mono">
+              <button
+                onClick={() => {
+                  const sizes = ['sm', 'base', 'lg', 'xl'];
+                  const curIdx = sizes.indexOf(readerFontSize);
+                  if (curIdx > 0) handleReaderFontSizeChange(sizes[curIdx - 1]);
+                }}
+                disabled={readerFontSize === 'sm'}
+                className="px-1.5 py-0.5 rounded text-stone-600 hover:text-stone-900 disabled:opacity-30 transition cursor-pointer"
+                title="Smaller text"
+              >
+                A-
+              </button>
+              <button
+                onClick={() => {
+                  const sizes = ['sm', 'base', 'lg', 'xl'];
+                  const curIdx = sizes.indexOf(readerFontSize);
+                  if (curIdx < sizes.length - 1) handleReaderFontSizeChange(sizes[curIdx + 1]);
+                }}
+                disabled={readerFontSize === 'xl'}
+                className="px-1.5 py-0.5 rounded text-stone-600 hover:text-stone-900 disabled:opacity-30 transition cursor-pointer"
+                title="Larger text"
+              >
+                A+
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Author Bar (Avatar, Name, Follow button) - Matching Image 1 */}
@@ -1237,22 +1344,20 @@ const BlogDetails = () => {
         </div>
 
         {/* Primary Graphic / Banner Figure */}
-        {coverImage && (
-          <figure className="my-6">
-            <ArticleImage
-              src={coverImage}
-              alt={title}
-              aspectRatio="video"
-              category={category}
-              containerClassName="rounded-2xl shadow-xs"
-            />
-            {imageCaption && (
-              <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2">
-                {imageCaption}
-              </figcaption>
-            )}
-          </figure>
-        )}
+        <figure className="my-6">
+          <ArticleImage
+            src={coverImage || null}
+            alt={title}
+            aspectRatio="video"
+            category={category}
+            containerClassName="rounded-2xl shadow-xs overflow-hidden"
+          />
+          {coverImage && imageCaption && (
+            <figcaption className="text-center text-xs font-serif italic text-slate-500 mt-2">
+              {imageCaption}
+            </figcaption>
+          )}
+        </figure>
 
         {/* GitHub Code Repository Notice Banner */}
         {githubLink && (
@@ -1289,8 +1394,8 @@ const BlogDetails = () => {
           </div>
         )}
 
-        {/* Main Formatted Article Content */}
-        <div className="article-body">
+        {/* Main Formatted Article Content with Dynamic Reader Typography */}
+        <div className={`article-body transition-all duration-150 ${getReaderFontClass()} ${getReaderSizeClass()}`}>
           {renderFormattedArticle(cleanContent)}
         </div>
 
@@ -1376,8 +1481,8 @@ const BlogDetails = () => {
           <NewsletterSubscribe
             variant="inline"
             source="blog_details_article"
-            title="Enjoyed this Data Analytics Deep Dive?"
-            description="Subscribe with your email to receive direct notifications from updates@blogupdates.arunpandian.online whenever new SQL pipelines, Power BI architectures, and portfolio projects are published."
+            title="Enjoyed this Story?"
+            description="Subscribe with your email to receive direct notifications from updates@blogupdates.arunpandian.online whenever new engineering articles, architectural deep dives, and system tutorials are published."
           />
         </div>
 
@@ -1415,7 +1520,20 @@ const BlogDetails = () => {
         url={currentCanonicalUrl}
         image={coverImage}
         tags={tags}
+        category={category}
         type="Article"
+        publishedAt={blog?.published_at || blog?.created_at}
+        author={{
+          name: authorName,
+          username: blog?.author_username || (authorName ? authorName.toLowerCase().replace(/[^a-z0-9]/g, '') : 'author'),
+          avatar: authorAvatar,
+          headline: authorRole,
+          bio: authorBio
+        }}
+        stats={{
+          claps: likesCount,
+          comments: blog?.comments_count || 0
+        }}
       />
 
       {/* ── 15-DAY VERIFIED BLOG COMMENTS & RESPONSES MODAL ── */}

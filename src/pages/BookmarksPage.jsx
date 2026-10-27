@@ -17,6 +17,7 @@ import { api } from '../services/apiClient';
 import toast from 'react-hot-toast';
 import ArticleImage from '../components/common/ArticleImage';
 import { supabase } from '../lib/supabaseClient';
+import { resolveCoverImage } from '../utils/blogParser';
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
@@ -182,7 +183,7 @@ export default function BookmarksPage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <Link to={`/posts/${item.blogSlug || item.blogId}`} className="w-20 h-20 shrink-0 hidden sm:block">
                     <ArticleImage
-                      src={item.coverImage}
+                      src={resolveCoverImage({ ...item, slug: item.blogSlug, title: item.blogTitle, coverImage: item.coverImage })}
                       alt={item.blogTitle}
                       aspectRatio="square"
                       containerClassName="w-20 h-20 rounded-xl"

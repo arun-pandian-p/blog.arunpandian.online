@@ -87,3 +87,36 @@ export function extractHeadings(markdownText) {
 
   return headings;
 }
+
+// Consistent, topic-accurate cover image resolver across listings and article details
+export function resolveCoverImage(b) {
+  if (!b) return '';
+  const explicit = b.cover_image || b.coverImage || b.image_url || b.imageUrl || b.image;
+  if (explicit && typeof explicit === 'string' && explicit.trim()) {
+    const trimmed = explicit.trim();
+    if (trimmed !== '/assets/projects/amazon_delivery.png') {
+      return trimmed;
+    }
+  }
+
+  const slug = String(b.slug || b.id || '').toLowerCase();
+  const title = String(b.title || '').toLowerCase();
+
+  if (slug.includes('java-21') || title.includes('java 21') || title.includes('spring boot')) {
+    return '/assets/blogs/java_spring_cover.jpg';
+  }
+  if (slug.includes('ap-desktop') || title.includes('ap desktop')) {
+    return '/assets/blogs/ap_desktop_cover.jpg';
+  }
+  if (slug.includes('inbox') || title.includes('inbox') || title.includes('ollama') || title.includes('n8n')) {
+    return 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/bl6o93ym18c_1784188015054.png';
+  }
+  if (slug.includes('salary') || title.includes('salary dashboard')) {
+    return 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/t8bk7q5eg7g_1784188043415.png';
+  }
+  if (slug.includes('job-posting') || title.includes('job-posting')) {
+    return 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png';
+  }
+
+  return '';
+}

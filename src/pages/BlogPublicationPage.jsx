@@ -65,12 +65,7 @@ import NewsletterSubscribe from '../components/NewsletterSubscribe';
 import ShareModal from '../components/ShareModal';
 import MobileBottomNav from '../components/MobileBottomNav';
 import { sendWelcomeEmail } from '../services/newsletterService';
-
-const VERIFIED_FALLBACK_IMAGES = [
-  'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/4bzfqm82kmd_1784187994669.png',
-  'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/t8bk7q5eg7g_1784188043415.png',
-  'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/blogs/bl6o93ym18c_1784188015054.png',
-];
+import { resolveCoverImage } from '../utils/blogParser';
 
 export default function BlogPublicationPage() {
   const navigate = useNavigate();
@@ -196,7 +191,7 @@ export default function BlogPublicationPage() {
         subtitle: b.excerpt || 'Answering four salary-and-skills questions with nothing but Excel, Power Query, and a Power Pivot model.',
         content: b.content || b.description || 'Full methodology breakdown and analysis notes.',
         tags: tagsList,
-        image: b.cover_image || b.coverImage || b.image_url || b.image || VERIFIED_FALLBACK_IMAGES[idx % VERIFIED_FALLBACK_IMAGES.length],
+        image: resolveCoverImage(b),
         readTime: b.read_time || b.readTime || '4 min read',
         timestamp,
         date: formattedDate,
@@ -399,7 +394,7 @@ export default function BlogPublicationPage() {
         <title>Publications & Case Studies | {authorName}</title>
         <meta
           name="description"
-          content="Explore data analytics case studies, Power BI architecture, SQL transformations, and statistical modeling articles."
+          content="Discover in-depth engineering articles, system architecture breakdowns, full-stack development tutorials, and software craftsmanship insights."
         />
       </Helmet>
 
@@ -825,10 +820,10 @@ export default function BlogPublicationPage() {
                 </div>
                 <div>
                   <h4 className="font-serif font-bold text-base text-[#1C1A17]">Arun Pandian</h4>
-                  <p className="text-xs text-[#8C8479] font-mono">Data Analyst &amp; BI Engineer</p>
+                  <p className="text-xs text-[#8C8479] font-mono">Staff Writer &amp; Engineering Contributor</p>
                 </div>
                 <p className="text-[11px] text-[#6E665C] leading-relaxed font-sans">
-                  Crafting end-to-end data analytics solutions, Power BI dashboards, and high-throughput SQL pipelines.
+                  Exploring software architecture, cloud platforms, modern web development, and resilient systems design.
                 </p>
                 <div className="flex items-center justify-center gap-2 pt-2 border-t border-[#EFE9DF]">
                   <a
@@ -1023,10 +1018,22 @@ export default function BlogPublicationPage() {
           onClose={() => setShareItem(null)}
           title={shareItem?.title}
           description={shareItem?.subtitle || shareItem?.description}
-          url={shareItem?.href ? `${window.location.origin}${shareItem.href}` : ''}
+          url={shareItem?.href ? (shareItem.href.startsWith('http') ? shareItem.href : `https://blog.arunpandian.online${shareItem.href}`) : ''}
           image={shareItem?.image}
-          tags={shareItem?.tags || [shareItem?.category || 'Analytics']}
-          type="Publication"
+          tags={shareItem?.tags || (shareItem?.category ? [shareItem.category] : [])}
+          category={shareItem?.category || 'Engineering'}
+          type="Article"
+          publishedAt={shareItem?.date || shareItem?.timestamp}
+          author={{
+            name: shareItem?.authorName || 'Arun Pandian',
+            username: shareItem?.authorUsername || 'arunpandian',
+            avatar: shareItem?.authorAvatar || '/assets/arun-profile.jpg',
+            headline: shareItem?.category ? `Writer in ${shareItem.category}` : 'Writer & Software Engineer'
+          }}
+          stats={{
+            claps: shareItem?.claps || 0,
+            comments: shareItem?.responses || 0
+          }}
         />
       )}
 

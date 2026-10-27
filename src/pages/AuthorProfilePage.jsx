@@ -19,6 +19,7 @@ import MobileBottomNav from '../components/MobileBottomNav';
 import ArticleImage from '../components/common/ArticleImage';
 import { api } from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { resolveCoverImage } from '../utils/blogParser';
 
 export default function AuthorProfilePage() {
   const { username } = useParams();
@@ -241,7 +242,7 @@ export default function AuthorProfilePage() {
 
                         <Link to={`/posts/${article.slug}`} className="sm:w-44 w-full h-32 shrink-0">
                           <ArticleImage
-                            src={article.coverImage}
+                            src={resolveCoverImage(article)}
                             alt={article.title}
                             category={article.category}
                             aspectRatio="video"

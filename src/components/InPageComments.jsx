@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
+import { api } from '../services/apiClient';
 
 // Cookie helpers
 function getCookie(name) {
@@ -32,7 +33,16 @@ export default function InPageComments({
   const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'top'
 
-  // User details state (persisted via cookies & localStorage)
+  // Logged-in user state
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      return api.auth.getUser();
+    } catch {
+      return null;
+    }
+  });
+
+  // User details state (persisted via cookies & localStorage for guests)
   const [authorName, setAuthorName] = useState('');
   const [authorDomain, setAuthorDomain] = useState('');
   const [isProfileSaved, setIsProfileSaved] = useState(false);
@@ -53,7 +63,15 @@ export default function InPageComments({
   const targetSlug = itemSlug || (itemId ? `${entityType}_${itemId}` : targetId);
   const targetTitle = itemTitle || `${entityType === 'project' ? 'Project' : 'Blog'} Discussion`;
 
-  // Load saved identity on mount
+  // Resolved identity fields
+  const isLoggedIn = Boolean(currentUser && (currentUser.username || currentUser.email || currentUser.fullName));
+  // User instruction: "name from username and email takeup"
+  const loggedInUsername = currentUser?.username || currentUser?.fullName || currentUser?.name || (currentUser?.email ? currentUser.email.split('@')[0] : '');
+  const loggedInEmail = currentUser?.email || '';
+  const loggedInDomain = currentUser?.website || currentUser?.github || '';
+  const effectiveAuthorName = isLoggedIn ? loggedInUsername : authorName;
+
+  // Load saved identity on mount + sync logged-in account
   useEffect(() => {
     const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
     const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
@@ -66,6 +84,48 @@ export default function InPageComments({
     if (savedDomain) {
       setAuthorDomain(savedDomain);
     }
+
+    // Check existing session
+    if (api.auth.isAuthenticated()) {
+      const u = api.auth.getUser();
+      if (u) setCurrentUser(u);
+      api.auth.me().then((meUser) => {
+        if (meUser) setCurrentUser(meUser);
+      }).catch(() => {});
+    } else if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          setCurrentUser({
+            email: session.user.email,
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            fullName: session.user.user_metadata?.full_name || 'User',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+        }
+      }).catch(() => {});
+    }
+
+    let authSub = null;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const stored = api.auth.getUser();
+          setCurrentUser(stored || {
+            email: session.user.email,
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            fullName: session.user.user_metadata?.full_name || 'User',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+        } else if (!api.auth.isAuthenticated()) {
+          setCurrentUser(null);
+        }
+      });
+      authSub = data?.subscription;
+    }
+
+    return () => {
+      if (authSub) authSub.unsubscribe();
+    };
   }, []);
 
   // Fetch all comments (both from API endpoint and Supabase fallback)
@@ -165,13 +225,14 @@ export default function InPageComments({
   // Handle Comment Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanName = authorName.trim();
-    const cleanDomain = authorDomain.trim().replace(/^https?:\/\//, '');
+    const cleanName = (isLoggedIn ? loggedInUsername : authorName).trim();
+    const cleanDomain = (isLoggedIn ? (loggedInDomain || authorDomain) : authorDomain).trim().replace(/^https?:\/\//, '');
+    const cleanEmail = (isLoggedIn ? loggedInEmail : '').trim();
     const cleanText = commentText.trim();
 
     if (!cleanName) {
       toast.error('Please enter your name');
-      setShowEditDetails(true);
+      if (!isLoggedIn) setShowEditDetails(true);
       return;
     }
     if (!cleanText) {
@@ -179,15 +240,17 @@ export default function InPageComments({
       return;
     }
 
-    // Save identity in Cookie & LocalStorage
-    localStorage.setItem('commenter_name', cleanName);
-    setCookie('commenter_name', cleanName, 365);
-    if (cleanDomain) {
-      localStorage.setItem('commenter_domain', cleanDomain);
-      setCookie('commenter_domain', cleanDomain, 365);
+    // Save identity in Cookie & LocalStorage only for guest commenters
+    if (!isLoggedIn) {
+      localStorage.setItem('commenter_name', cleanName);
+      setCookie('commenter_name', cleanName, 365);
+      if (cleanDomain) {
+        localStorage.setItem('commenter_domain', cleanDomain);
+        setCookie('commenter_domain', cleanDomain, 365);
+      }
+      setIsProfileSaved(true);
+      setShowEditDetails(false);
     }
-    setIsProfileSaved(true);
-    setShowEditDetails(false);
 
     setSubmitting(true);
 
@@ -210,15 +273,26 @@ export default function InPageComments({
 
     try {
       // 1. Try POST to /api/comments
+      const token = api.auth.getToken();
       const response = await fetch('/api/comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
-          blog_slug: targetSlug,
+          targetSlug: targetSlug,
+          target_slug: targetSlug,
+          blogId: targetId ? targetId : undefined,
           blog_id: targetId,
+          blog_slug: targetSlug,
           blog_title: targetTitle,
+          authorName: cleanName,
           author_name: cleanName,
-          author_domain: cleanDomain,
+          authorEmail: cleanEmail || undefined,
+          author_email: cleanEmail || undefined,
+          authorDomain: cleanDomain || undefined,
+          author_domain: cleanDomain || undefined,
           content: cleanText,
           entityType: entityType
         })
@@ -237,7 +311,7 @@ export default function InPageComments({
         if (supabase) {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
-            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            email: cleanEmail || (cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online'),
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
             message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
             read: false
@@ -251,7 +325,7 @@ export default function InPageComments({
         try {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
-            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            email: cleanEmail || (cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online'),
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
             message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
             read: false
@@ -368,29 +442,54 @@ export default function InPageComments({
         <div className="space-y-6">
           {/* ── YouTube-Style Input Box ── */}
           <div className="flex gap-3 sm:gap-4 items-start">
-            <div className="w-10 h-10 rounded-full bg-slate-900 text-white font-bold text-sm flex items-center justify-center font-mono shrink-0 shadow-xs">
-              {authorName ? authorName.charAt(0).toUpperCase() : <User size={16} />}
+            <div className="w-10 h-10 rounded-full bg-slate-900 text-white font-bold text-sm flex items-center justify-center font-mono shrink-0 shadow-xs overflow-hidden">
+              {currentUser?.avatarUrl || currentUser?.avatar_url ? (
+                <img
+                  src={currentUser.avatarUrl || currentUser.avatar_url}
+                  alt={loggedInUsername}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                effectiveAuthorName ? effectiveAuthorName.charAt(0).toUpperCase() : <User size={16} />
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 space-y-3">
-              {/* Remembered Identity Badge */}
-              {isProfileSaved && authorName && (
+              {/* Identity Badge: shows verified logged-in account or remembered guest */}
+              {isLoggedIn ? (
                 <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
-                    {authorDomain && (
-                      <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
-                    )}
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="truncate">
+                      Commenting as <strong className="text-slate-900 font-bold">@{loggedInUsername}</strong>
+                      {loggedInEmail && (
+                        <span className="text-slate-400 font-mono text-[11px] ml-1.5 hidden sm:inline">({loggedInEmail})</span>
+                      )}
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditDetails(!showEditDetails)}
-                    className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
-                  >
-                    {showEditDetails ? 'Done' : 'Change Name'}
-                  </button>
+                  <span className="text-[10px] font-mono font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                    Logged In
+                  </span>
                 </div>
+              ) : (
+                isProfileSaved && authorName && (
+                  <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
+                      {authorDomain && (
+                        <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowEditDetails(!showEditDetails)}
+                      className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
+                    >
+                      {showEditDetails ? 'Done' : 'Change Name'}
+                    </button>
+                  </div>
+                )
               )}
 
               <div className="space-y-2">
@@ -401,15 +500,17 @@ export default function InPageComments({
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder={
-                    authorName 
-                      ? `Add a comment as ${authorName}...` 
-                      : "Add a comment or analytical thought..."
+                    isLoggedIn
+                      ? `Add a comment as @${loggedInUsername}...`
+                      : (authorName 
+                          ? `Add a comment as ${authorName}...` 
+                          : "Add a comment or analytical thought...")
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 outline-none leading-relaxed transition-all resize-y shadow-2xs"
                 />
 
-                {/* Name & Details Inputs (Shown on 1st visit or when clicking "Change Name") */}
-                {(showEditDetails || (!isProfileSaved && isInputFocused)) && (
+                {/* Name & Details Inputs (Shown ONLY for guests when NOT logged in; completely removed after login) */}
+                {!isLoggedIn && (showEditDetails || (!isProfileSaved && isInputFocused)) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-blue-50/60 border border-blue-200/70 animate-in fade-in duration-150">
                     <div>
                       <label className="block text-[10px] font-mono font-bold uppercase text-slate-600 mb-1">
@@ -567,13 +668,15 @@ export default function InPageComments({
                       {/* Nested Reply Box */}
                       {replyingToId === commentId && (
                         <div className="mt-3 pl-3 sm:pl-4 border-l-2 border-blue-300 space-y-2 pt-1 animate-in fade-in duration-150">
-                          <input
-                            type="text"
-                            placeholder="Your Name *"
-                            value={replyAuthor || authorName}
-                            onChange={(e) => setReplyAuthor(e.target.value)}
-                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none"
-                          />
+                          {!isLoggedIn && (
+                            <input
+                              type="text"
+                              placeholder="Your Name *"
+                              value={replyAuthor || authorName}
+                              onChange={(e) => setReplyAuthor(e.target.value)}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 outline-none"
+                            />
+                          )}
                           <div className="flex gap-2">
                             <input
                               type="text"
@@ -585,23 +688,33 @@ export default function InPageComments({
                             <button
                               type="button"
                               onClick={async () => {
-                                const sender = (replyAuthor || authorName).trim();
+                                const sender = (isLoggedIn ? loggedInUsername : (replyAuthor || authorName)).trim();
                                 if (!replyText.trim() || !sender) {
-                                  toast.error('Please enter your name and reply');
+                                  toast.error(isLoggedIn ? 'Please enter a reply' : 'Please enter your name and reply');
                                   return;
                                 }
                                 
                                 const replyContent = `@${comment.author_name} ${replyText.trim()}`;
+                                const token = api.auth.getToken();
                                 
                                 try {
                                   await fetch('/api/comments', {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: { 
+                                      'Content-Type': 'application/json',
+                                      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                                    },
                                     body: JSON.stringify({
+                                      targetSlug: targetSlug,
+                                      target_slug: targetSlug,
                                       blog_slug: targetSlug,
                                       blog_id: targetId,
+                                      blogId: targetId ? targetId : undefined,
                                       blog_title: targetTitle,
+                                      authorName: sender,
                                       author_name: sender,
+                                      authorEmail: (isLoggedIn ? loggedInEmail : undefined),
+                                      author_email: (isLoggedIn ? loggedInEmail : undefined),
                                       content: replyContent,
                                       entityType: entityType
                                     })

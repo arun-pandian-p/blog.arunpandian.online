@@ -98,20 +98,32 @@ export default function WritePage() {
 
   const handleSave = async (blogPayload: any, isPublish: boolean) => {
     try {
+      let parsedContentJson = null;
+      if (blogPayload.content_json) {
+        parsedContentJson = blogPayload.content_json;
+      } else if (blogPayload.contentJson) {
+        parsedContentJson = typeof blogPayload.contentJson === 'string' 
+          ? JSON.parse(blogPayload.contentJson) 
+          : blogPayload.contentJson;
+      }
+
       const payload: any = {
         title: blogPayload.title || 'Untitled Story',
         slug: blogPayload.slug || (blogPayload.title || 'story').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
         excerpt: blogPayload.excerpt || '',
         content: blogPayload.content || '',
-        content_json: blogPayload.content_json || null,
-        category: blogPayload.category || 'Technology',
-        tags: Array.isArray(blogPayload.tags) ? blogPayload.tags : [blogPayload.category || 'Technology'],
+        content_json: parsedContentJson,
+        category: blogPayload.category || 'Engineering',
+        tags: Array.isArray(blogPayload.tags) 
+          ? blogPayload.tags.join(',') 
+          : (blogPayload.tags || blogPayload.category || 'Engineering'),
         cover_image: blogPayload.cover_image || '',
         cover_video_url: blogPayload.cover_video_url || '',
-        published: Boolean(blogPayload.published),
+        published: Boolean(blogPayload.published || isPublish),
+        status: blogPayload.status || (isPublish ? 'PUBLISHED' : 'DRAFT'),
         scheduled_at: blogPayload.scheduled_at || null,
         read_time: blogPayload.read_time || '5 min read',
-        author_id: currentUser?.id,
+        author_id: currentUser?.id || undefined,
         author_name: currentUser?.name || currentUser?.username || 'Author',
         author_username: currentUser?.username || 'author',
         author_avatar: currentUser?.avatarUrl || '',
@@ -122,30 +134,42 @@ export default function WritePage() {
 
       if (initialBlog?.id) {
         // Update existing story
-        if (supabase) {
-          const { data, error } = await supabase
-            .from('blogs')
-            .update(payload)
-            .eq('id', initialBlog.id)
-            .select()
-            .single();
-          if (error) throw error;
-          result = data;
-        } else {
+        try {
+          if (supabase) {
+            const { data, error } = await supabase
+              .from('blogs')
+              .update(payload)
+              .eq('id', initialBlog.id)
+              .select()
+              .single();
+            if (!error && data) {
+              result = data;
+            } else {
+              result = await api.blogs.updateBlog(initialBlog.id, payload);
+            }
+          } else {
+            result = await api.blogs.updateBlog(initialBlog.id, payload);
+          }
+        } catch {
           result = await api.blogs.updateBlog(initialBlog.id, payload);
         }
       } else {
         // Create new story
         payload.created_at = new Date().toISOString();
+        let created = false;
         if (supabase) {
           const { data, error } = await supabase
             .from('blogs')
             .insert([payload])
             .select()
             .single();
-          if (error) throw error;
-          result = data;
-        } else {
+          if (!error && data) {
+            result = data;
+            created = true;
+          }
+        }
+        
+        if (!created) {
           result = await api.blogs.createBlog(payload);
         }
         setInitialBlog(result);

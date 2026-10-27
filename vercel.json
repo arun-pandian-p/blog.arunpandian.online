@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/project/:id",
+      "source": "/posts/:slug",
       "has": [
         {
           "type": "header",
@@ -9,10 +9,21 @@
           "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|SkypeUriPreview|Applebot).*"
         }
       ],
-      "destination": "/api/og?type=project&id=:id"
+      "destination": "/api/og?type=blog&slug=:slug"
     },
     {
       "source": "/blog/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|SkypeUriPreview|Applebot).*"
+        }
+      ],
+      "destination": "/api/og?type=blog&slug=:slug"
+    },
+    {
+      "source": "/blogs/:slug",
       "has": [
         {
           "type": "header",

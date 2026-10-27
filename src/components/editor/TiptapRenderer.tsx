@@ -14,13 +14,32 @@ interface TiptapRendererProps {
   content?: string;
   contentJson?: any;
   className?: string;
+  fontFamily?: 'serif' | 'sans' | 'mono';
+  fontSize?: 'sm' | 'base' | 'lg' | 'xl';
 }
 
 export const TiptapRenderer: React.FC<TiptapRendererProps> = ({
   content = '',
   contentJson = null,
-  className = ''
+  className = '',
+  fontFamily = 'serif',
+  fontSize = 'base'
 }) => {
+  // Determine typography classes based on self-hosted Google/GitHub fonts
+  const fontClass = fontFamily === 'sans'
+    ? 'font-sans font-sans-inter'
+    : fontFamily === 'mono'
+      ? 'font-mono font-mono-jetbrains'
+      : 'font-serif font-serif-newsreader';
+
+  const sizeClass = fontSize === 'sm'
+    ? 'text-[15px] sm:text-[16px] leading-[1.65]'
+    : fontSize === 'lg'
+      ? 'text-[17px] sm:text-[19px] leading-[1.8]'
+      : fontSize === 'xl'
+        ? 'text-[19px] sm:text-[21px] leading-[1.85]'
+        : 'text-[16px] sm:text-[18px] leading-[1.75]';
+
   // Parse JSON if passed as string
   const parsedJson = useMemo(() => {
     if (!contentJson) return null;
@@ -65,7 +84,7 @@ export const TiptapRenderer: React.FC<TiptapRendererProps> = ({
   // If valid Tiptap JSON is available, render via Tiptap
   if (parsedJson && editor) {
     return (
-      <div className={`prose prose-lg max-w-none text-stone-800 leading-relaxed font-serif ${className}`}>
+      <div className={`prose prose-lg max-w-none text-stone-800 transition-all duration-150 ${fontClass} ${sizeClass} ${className}`}>
         <EditorContent editor={editor} />
       </div>
     );
@@ -82,7 +101,7 @@ export const TiptapRenderer: React.FC<TiptapRendererProps> = ({
 
   return (
     <div
-      className={`prose prose-lg max-w-none text-stone-800 leading-relaxed font-serif tiptap ${className}`}
+      className={`prose prose-lg max-w-none text-stone-800 transition-all duration-150 ${fontClass} ${sizeClass} tiptap ${className}`}
       dangerouslySetInnerHTML={{ __html: cleanHtml }}
     />
   );

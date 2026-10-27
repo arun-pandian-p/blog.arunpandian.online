@@ -12,17 +12,19 @@ import {
   Settings, Globe, Share2, Layers, BookOpen, Undo, Redo, Bell, Send, Mail
 } from 'lucide-react';
 import ConfirmModal from '../../components/admin/ConfirmModal';
-import { parseArticleMetadata, serializeBlogContent } from '../../utils/blogParser';
+import { parseArticleMetadata, serializeBlogContent, resolveCoverImage } from '../../utils/blogParser';
 import { sendSubscriberBroadcast } from '../../services/newsletterService';
 import toast from 'react-hot-toast';
 import TiptapEditor from '../../components/editor/TiptapEditor';
 import ArticleImage from '../../components/common/ArticleImage';
+import ShareModal from '../../components/ShareModal';
 import { api } from '../../services/apiClient';
 
 export default function Blogs() {
   const [searchParams] = useSearchParams();
   const [blogs, setBlogs] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [shareBlog, setShareBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('Latest Published');
@@ -65,8 +67,8 @@ export default function Blogs() {
     slug: '',
     excerpt: '',
     content: '',
-    category: 'Data Analytics',
-    tags: 'Power BI, SQL, Data Analytics, Python',
+    category: 'Engineering',
+    tags: 'Architecture, Systems, Web, TypeScript',
     read_time: '5 min read',
     author_name: 'Arun Pandian P',
     author_avatar: 'https://secxgzharggytkevlvmx.supabase.co/storage/v1/object/public/assets/about/lpb0j8p0xp7_1784136525170.png',
@@ -1261,7 +1263,7 @@ export default function Blogs() {
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 shrink-0">
                             <ArticleImage
-                              src={b.cover_image}
+                              src={resolveCoverImage(b)}
                               alt={b.title}
                               aspectRatio="square"
                               containerClassName="w-12 h-12 rounded-lg"
@@ -1320,6 +1322,13 @@ export default function Blogs() {
                               >
                                 <ExternalLink size={15} />
                               </a>
+                              <button
+                                onClick={() => setShareBlog(b)}
+                                title="Share Story"
+                                className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-[#0077B5] hover:border-blue-300 hover:bg-blue-50 transition-colors inline-flex cursor-pointer"
+                              >
+                                <Share2 size={15} />
+                              </button>
                               {canManage && (
                                 <>
                                   <button 
@@ -1361,7 +1370,7 @@ export default function Blogs() {
                 <div className="flex flex-col w-full mb-4">
                     <div className="mb-3 w-full">
                       <ArticleImage
-                        src={b.cover_image}
+                        src={resolveCoverImage(b)}
                         alt={b.title}
                         category={b.category}
                         aspectRatio="video"
@@ -1433,6 +1442,13 @@ export default function Blogs() {
                           >
                             <ExternalLink size={14} />
                           </a>
+                          <button
+                            onClick={() => setShareBlog(b)}
+                            title="Share Story"
+                            className="p-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 hover:text-[#0077B5] hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-center cursor-pointer"
+                          >
+                            <Share2 size={14} />
+                          </button>
                           {canManage && (
                             <>
                               <button 
@@ -1472,6 +1488,32 @@ export default function Blogs() {
             fetchBlogs();
           }}
           onSave={handleSaveBlogFromTiptap}
+        />
+      )}
+
+      {/* Share Publication Modal */}
+      {shareBlog && (
+        <ShareModal
+          isOpen={Boolean(shareBlog)}
+          onClose={() => setShareBlog(null)}
+          title={shareBlog.title}
+          description={shareBlog.excerpt || shareBlog.summary}
+          url={`https://blog.arunpandian.online/posts/${shareBlog.slug || shareBlog.id}`}
+          image={shareBlog.cover_image || shareBlog.image}
+          tags={shareBlog.tags}
+          category={shareBlog.category || 'Engineering'}
+          type="Article"
+          publishedAt={shareBlog.published_at || shareBlog.created_at}
+          author={{
+            name: shareBlog.author_name || (currentUser?.user_metadata?.display_name || 'Author'),
+            username: shareBlog.author_username || 'author',
+            avatar: shareBlog.author_avatar || currentUser?.user_metadata?.avatar_url,
+            headline: shareBlog.category ? `Writer in ${shareBlog.category}` : undefined
+          }}
+          stats={{
+            claps: shareBlog.claps_count || 0,
+            comments: shareBlog.comments_count || 0
+          }}
         />
       )}
 

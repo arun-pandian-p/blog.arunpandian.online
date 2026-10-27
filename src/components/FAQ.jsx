@@ -6,20 +6,20 @@ import DoodleGuide from './DoodleGuide';
 
 const faqs = [
   {
-    question: "What tools do you use for Data Analysis?",
-    answer: "My core stack includes SQL (PostgreSQL, MySQL) for data extraction, Python (Pandas, NumPy, scikit-learn) for transformation and modeling, and Power BI or Excel for visualization and dashboarding."
+    question: "What topics does blog.arunpandian.online cover?",
+    answer: "We publish in-depth technical articles covering modern software engineering, distributed systems, web architectures, cloud infrastructure, and developer tooling."
   },
   {
-    question: "What is your approach to solving business problems with data?",
-    answer: "I start by understanding the core business question. Then, I gather and clean the relevant data, perform exploratory data analysis (EDA) to uncover trends, and finally, build interactive dashboards or reports that provide clear, actionable insights for stakeholders."
+    question: "Can other writers publish stories on this platform?",
+    answer: "Yes! Any registered user can write, draft with the rich Tiptap editor, autosave, preview, and publish their own articles with full author profile attribution."
   },
   {
-    question: "Do you have experience with data cleaning and ETL pipelines?",
-    answer: "Yes, I regularly build ETL pipelines using Python and Power Query. I'm experienced in handling missing values, normalizing data, joining complex datasets, and automating workflows using tools like n8n."
+    question: "How does the editorial and review workflow work?",
+    answer: "Authors maintain full ownership of their articles with draft protection, custom tags, cover images, and instant publishing without requiring third-party approval."
   },
   {
-    question: "Are you open to full-time Data Analyst roles?",
-    answer: "Yes, I am actively seeking entry-level and junior Data Analyst positions where I can contribute to data-driven decision-making and continue growing my analytical skill set."
+    question: "How do I subscribe to future publications?",
+    answer: "You can enter your email in the newsletter form on any publication page or feed to receive new article notifications, or follow specific authors directly."
   }
 ];
 

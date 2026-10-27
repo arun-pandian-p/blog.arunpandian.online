@@ -1,0 +1,7 @@
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is available with a FAQ at: https://openfontlicense.org
+
+Included Font Families from the official Google Fonts repository (https://github.com/google/fonts):
+- Inter (by Rasmus Andersson, SIL Open Font License 1.1)
+- Newsreader (by Production Type, SIL Open Font License 1.1)
+- JetBrains Mono (by JetBrains, SIL Open Font License 1.1)

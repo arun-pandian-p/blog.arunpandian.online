@@ -13,7 +13,7 @@ import {
   Heading1, Heading2, Heading3, List, ListOrdered, Quote,
   Code, FileCode, Link as LinkIcon, Image as ImageIcon,
   Minus, Undo, Redo, Eye, Check, Loader2, ArrowLeft,
-  Settings, X, Upload, Globe, AlertCircle, Calendar
+  Settings, X, Upload, Globe, AlertCircle, Calendar, Type
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabaseClient';
@@ -62,6 +62,37 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isSavingAction, setIsSavingAction] = useState(false);
+
+  // Typography controls (Self-hosted GitHub / Google Fonts: Newsreader, Inter, JetBrains Mono)
+  const [editorFont, setEditorFont] = useState<'serif' | 'sans' | 'mono'>(() => {
+    return (localStorage.getItem('studio_editor_font') as any) || 'serif';
+  });
+  const [editorFontSize, setEditorFontSize] = useState<'sm' | 'base' | 'lg' | 'xl'>(() => {
+    return (localStorage.getItem('studio_editor_size') as any) || 'lg';
+  });
+
+  const handleFontChange = (font: 'serif' | 'sans' | 'mono') => {
+    setEditorFont(font);
+    localStorage.setItem('studio_editor_font', font);
+  };
+
+  const handleFontSizeChange = (size: 'sm' | 'base' | 'lg' | 'xl') => {
+    setEditorFontSize(size);
+    localStorage.setItem('studio_editor_size', size);
+  };
+
+  const getFontClass = () => {
+    if (editorFont === 'sans') return 'font-sans font-sans-inter';
+    if (editorFont === 'mono') return 'font-mono font-mono-jetbrains';
+    return 'font-serif font-serif-newsreader';
+  };
+
+  const getSizeClass = () => {
+    if (editorFontSize === 'sm') return 'text-[16px] leading-[1.65]';
+    if (editorFontSize === 'base') return 'text-[18px] leading-[1.75]';
+    if (editorFontSize === 'xl') return 'text-[22px] leading-[1.9]';
+    return 'text-[20px] leading-[1.8]';
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +272,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           slug: slug || undefined,
           excerpt,
           content: htmlContent,
+          content_json: jsonContent,
           contentJson: JSON.stringify(jsonContent),
           tags: tags.join(','),
           category,
@@ -283,6 +315,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         slug: slug.trim() || undefined,
         excerpt: excerpt.trim(),
         content: htmlContent,
+        content_json: jsonContent,
         contentJson: JSON.stringify(jsonContent),
         tags: tags.join(','),
         category,
@@ -534,6 +567,64 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           >
             <Redo size={16} />
           </button>
+
+          {/* Typography Controls: Font Family (GitHub / Google Fonts: Newsreader Serif, Inter Sans, JetBrains Mono) */}
+          <div className="h-4 w-px bg-stone-200 mx-1" />
+
+          <div className="inline-flex items-center rounded-lg bg-stone-100 p-0.5 border border-stone-200/60 text-xs">
+            <button
+              onClick={() => handleFontChange('serif')}
+              className={`px-2 py-1 rounded transition font-serif ${editorFont === 'serif' ? 'bg-white text-stone-900 shadow-2xs font-semibold' : 'text-stone-500 hover:text-stone-800'}`}
+              title="Serif Font: Newsreader (SIL OFL 1.1 from GitHub/Google Fonts)"
+            >
+              Serif
+            </button>
+            <button
+              onClick={() => handleFontChange('sans')}
+              className={`px-2 py-1 rounded transition font-sans ${editorFont === 'sans' ? 'bg-white text-stone-900 shadow-2xs font-semibold' : 'text-stone-500 hover:text-stone-800'}`}
+              title="Sans-serif Font: Inter (SIL OFL 1.1 from GitHub/Google Fonts)"
+            >
+              Sans
+            </button>
+            <button
+              onClick={() => handleFontChange('mono')}
+              className={`px-2 py-1 rounded transition font-mono ${editorFont === 'mono' ? 'bg-white text-stone-900 shadow-2xs font-semibold' : 'text-stone-500 hover:text-stone-800'}`}
+              title="Monospace Font: JetBrains Mono (SIL OFL 1.1 from GitHub)"
+            >
+              Mono
+            </button>
+          </div>
+
+          {/* Font Size Adjuster (A- / A+) */}
+          <div className="inline-flex items-center rounded-lg bg-stone-100 p-0.5 border border-stone-200/60 text-xs font-mono">
+            <button
+              onClick={() => {
+                const sizes: ('sm' | 'base' | 'lg' | 'xl')[] = ['sm', 'base', 'lg', 'xl'];
+                const curIdx = sizes.indexOf(editorFontSize);
+                if (curIdx > 0) handleFontSizeChange(sizes[curIdx - 1]);
+              }}
+              disabled={editorFontSize === 'sm'}
+              className="px-2 py-1 rounded text-stone-600 hover:text-stone-900 disabled:opacity-30 disabled:hover:text-stone-600 transition"
+              title="Decrease Font Size"
+            >
+              A-
+            </button>
+            <span className="px-1 text-[11px] text-stone-400 font-semibold uppercase">
+              {editorFontSize}
+            </span>
+            <button
+              onClick={() => {
+                const sizes: ('sm' | 'base' | 'lg' | 'xl')[] = ['sm', 'base', 'lg', 'xl'];
+                const curIdx = sizes.indexOf(editorFontSize);
+                if (curIdx < sizes.length - 1) handleFontSizeChange(sizes[curIdx + 1]);
+              }}
+              disabled={editorFontSize === 'xl'}
+              className="px-2 py-1 rounded text-stone-600 hover:text-stone-900 disabled:opacity-30 disabled:hover:text-stone-600 transition"
+              title="Increase Font Size"
+            >
+              A+
+            </button>
+          </div>
         </div>
       )}
 
@@ -584,12 +675,12 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
         {/* Title & Subtitle */}
         {isPreview ? (
-          <div className="mb-8">
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold text-stone-950 tracking-tight leading-tight">
+          <div className={`mb-8 ${getFontClass()}`}>
+            <h1 className="text-4xl sm:text-5xl font-bold text-stone-950 tracking-tight leading-tight">
               {title || 'Untitled Story'}
             </h1>
             {excerpt && (
-              <p className="mt-3 text-xl text-stone-500 font-serif leading-relaxed italic">
+              <p className="mt-3 text-xl text-stone-500 leading-relaxed italic">
                 {excerpt}
               </p>
             )}
@@ -602,7 +693,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               value={title}
               onChange={handleTitleChange}
               placeholder="Title"
-              className="w-full resize-none overflow-hidden bg-transparent font-serif text-4xl sm:text-5xl font-bold text-stone-950 placeholder-stone-300 focus:outline-none tracking-tight leading-tight"
+              className={`w-full resize-none overflow-hidden bg-transparent text-4xl sm:text-5xl font-bold text-stone-950 placeholder-stone-300 focus:outline-none tracking-tight leading-tight ${getFontClass()}`}
             />
             <input
               type="text"
@@ -612,13 +703,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 setSaveStatus('unsaved');
               }}
               placeholder="Add a subtitle or summary..."
-              className="w-full bg-transparent font-serif text-xl text-stone-600 placeholder-stone-300 focus:outline-none leading-relaxed"
+              className={`w-full bg-transparent text-xl text-stone-600 placeholder-stone-300 focus:outline-none leading-relaxed ${getFontClass()}`}
             />
           </div>
         )}
 
-        {/* Tiptap Editor Canvas */}
-        <div className={`prose prose-lg max-w-none font-serif text-stone-800 ${isPreview ? 'pointer-events-none' : ''}`}>
+        {/* Tiptap Editor Canvas with dynamic font & size */}
+        <div className={`prose prose-lg max-w-none text-stone-800 transition-all duration-150 ${getFontClass()} ${getSizeClass()} ${isPreview ? 'pointer-events-none' : ''}`}>
           <EditorContent editor={editor} />
         </div>
       </main>

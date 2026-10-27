@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import toast from 'react-hot-toast';
+import { api } from '../services/apiClient';
 
 // Cookie helpers
 function getCookie(name) {
@@ -39,6 +40,15 @@ export default function BlogComments({
   const targetSlug = blogSlug || (projectId ? `project_${projectId}` : targetId);
   const targetTitle = projectTitle || blogTitle || (entityType === 'project' ? 'Data Analytics Project' : 'Data Publication');
 
+  // Logged-in user state
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      return api.auth.getUser();
+    } catch {
+      return null;
+    }
+  });
+
   // Form state
   const [authorName, setAuthorName] = useState('');
   const [authorDomain, setAuthorDomain] = useState('');
@@ -46,7 +56,14 @@ export default function BlogComments({
   const [isProfileSaved, setIsProfileSaved] = useState(false);
   const [showEditDetails, setShowEditDetails] = useState(false);
 
-  // Load saved identity on mount
+  // Resolved identity fields
+  const isLoggedIn = Boolean(currentUser && (currentUser.username || currentUser.email || currentUser.fullName));
+  // User instruction: "name from username and email takeup"
+  const loggedInUsername = currentUser?.username || currentUser?.fullName || currentUser?.name || (currentUser?.email ? currentUser.email.split('@')[0] : '');
+  const loggedInEmail = currentUser?.email || '';
+  const loggedInDomain = currentUser?.website || currentUser?.github || '';
+
+  // Load saved identity on mount + sync authenticated account
   useEffect(() => {
     const savedName = localStorage.getItem('commenter_name') || getCookie('commenter_name');
     const savedDomain = localStorage.getItem('commenter_domain') || getCookie('commenter_domain');
@@ -58,6 +75,47 @@ export default function BlogComments({
     if (savedDomain) {
       setAuthorDomain(savedDomain);
     }
+
+    if (api.auth.isAuthenticated()) {
+      const u = api.auth.getUser();
+      if (u) setCurrentUser(u);
+      api.auth.me().then((meUser) => {
+        if (meUser) setCurrentUser(meUser);
+      }).catch(() => {});
+    } else if (supabase) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          setCurrentUser({
+            email: session.user.email,
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            fullName: session.user.user_metadata?.full_name || 'User',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+        }
+      }).catch(() => {});
+    }
+
+    let authSub = null;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const stored = api.auth.getUser();
+          setCurrentUser(stored || {
+            email: session.user.email,
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            fullName: session.user.user_metadata?.full_name || 'User',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+        } else if (!api.auth.isAuthenticated()) {
+          setCurrentUser(null);
+        }
+      });
+      authSub = data?.subscription;
+    }
+
+    return () => {
+      if (authSub) authSub.unsubscribe();
+    };
   }, []);
 
   // Fetch all comments
@@ -128,13 +186,14 @@ export default function BlogComments({
   // Submit comment
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const cleanName = authorName.trim();
-    const cleanDomain = authorDomain.trim().replace(/^https?:\/\//, '');
+    const cleanName = (isLoggedIn ? loggedInUsername : authorName).trim();
+    const cleanDomain = (isLoggedIn ? (loggedInDomain || authorDomain) : authorDomain).trim().replace(/^https?:\/\//, '');
+    const cleanEmail = (isLoggedIn ? loggedInEmail : '').trim();
     const cleanText = commentText.trim();
 
     if (!cleanName) {
       toast.error('Please enter your name');
-      setShowEditDetails(true);
+      if (!isLoggedIn) setShowEditDetails(true);
       return;
     }
     if (!cleanText) {
@@ -142,15 +201,17 @@ export default function BlogComments({
       return;
     }
 
-    // Save in Cookie & localStorage
-    localStorage.setItem('commenter_name', cleanName);
-    setCookie('commenter_name', cleanName, 365);
-    if (cleanDomain) {
-      localStorage.setItem('commenter_domain', cleanDomain);
-      setCookie('commenter_domain', cleanDomain, 365);
+    // Save in Cookie & localStorage only for guests
+    if (!isLoggedIn) {
+      localStorage.setItem('commenter_name', cleanName);
+      setCookie('commenter_name', cleanName, 365);
+      if (cleanDomain) {
+        localStorage.setItem('commenter_domain', cleanDomain);
+        setCookie('commenter_domain', cleanDomain, 365);
+      }
+      setIsProfileSaved(true);
+      setShowEditDetails(false);
     }
-    setIsProfileSaved(true);
-    setShowEditDetails(false);
 
     setSubmitting(true);
 
@@ -170,15 +231,26 @@ export default function BlogComments({
 
     try {
       // 1. Try POST to /api/comments
+      const token = api.auth.getToken();
       const response = await fetch('/api/comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
-          blog_slug: targetSlug,
+          targetSlug: targetSlug,
+          target_slug: targetSlug,
+          blogId: targetId ? targetId : undefined,
           blog_id: targetId,
+          blog_slug: targetSlug,
           blog_title: targetTitle,
+          authorName: cleanName,
           author_name: cleanName,
-          author_domain: cleanDomain,
+          authorEmail: cleanEmail || undefined,
+          author_email: cleanEmail || undefined,
+          authorDomain: cleanDomain || undefined,
+          author_domain: cleanDomain || undefined,
           content: cleanText,
           entityType: entityType
         })
@@ -196,7 +268,7 @@ export default function BlogComments({
         if (supabase) {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
-            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            email: cleanEmail || (cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online'),
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
             message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
             read: false
@@ -210,7 +282,7 @@ export default function BlogComments({
         try {
           await supabase.from('contact_messages').insert([{
             name: cleanName,
-            email: cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online',
+            email: cleanEmail || (cleanDomain ? `user@${cleanDomain}` : 'reader@arunpandian.online'),
             subject: `[${entityType === 'project' ? 'Project' : 'Blog'} Comment - ${targetSlug}]`,
             message: `${cleanDomain ? `Domain: ${cleanDomain}\n` : ''}${cleanText}`,
             read: false
@@ -266,28 +338,45 @@ export default function BlogComments({
             <>
               {/* Comment Input Form */}
               <form onSubmit={handleSubmit} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-                {/* Remembered Identity Badge */}
-                {isProfileSaved && authorName && (
+                {/* Identity Badge: shows verified logged-in account or remembered guest */}
+                {isLoggedIn ? (
                   <div className="flex items-center justify-between text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
-                      {authorDomain && (
-                        <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
-                      )}
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="truncate">
+                        Commenting as <strong className="text-slate-900 font-bold">@{loggedInUsername}</strong>
+                        {loggedInEmail && (
+                          <span className="text-slate-400 font-mono text-[11px] ml-1.5 hidden sm:inline">({loggedInEmail})</span>
+                        )}
+                      </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowEditDetails(!showEditDetails)}
-                      className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
-                    >
-                      {showEditDetails ? 'Done' : 'Change Name'}
-                    </button>
+                    <span className="text-[10px] font-mono font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                      Logged In
+                    </span>
                   </div>
+                ) : (
+                  isProfileSaved && authorName && (
+                    <div className="flex items-center justify-between text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg">
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Commenting as <strong className="text-slate-900 font-bold">{authorName}</strong></span>
+                        {authorDomain && (
+                          <span className="text-slate-400 font-mono text-[11px] hidden sm:inline">({authorDomain})</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowEditDetails(!showEditDetails)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold text-[11px] font-mono hover:underline cursor-pointer shrink-0 ml-2"
+                      >
+                        {showEditDetails ? 'Done' : 'Change Name'}
+                      </button>
+                    </div>
+                  )
                 )}
 
-                {/* Show name fields on first visit or when user clicks Change Name */}
-                {(showEditDetails || (!isProfileSaved)) && (
+                {/* Show name fields on first visit or when user clicks Change Name - ONLY for guests when NOT logged in */}
+                {!isLoggedIn && (showEditDetails || (!isProfileSaved)) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 animate-in fade-in duration-150">
                     <div>
                       <label className="block text-[10px] font-mono uppercase font-bold text-slate-600 mb-1">
@@ -321,7 +410,13 @@ export default function BlogComments({
                   <textarea
                     required
                     rows={3}
-                    placeholder={authorName ? `Share your thoughts as ${authorName}...` : "Share your analysis, question, or feedback..."}
+                    placeholder={
+                      isLoggedIn
+                        ? `Share your thoughts as @${loggedInUsername}...`
+                        : (authorName 
+                            ? `Share your thoughts as ${authorName}...` 
+                            : "Share your analysis, question, or feedback...")
+                    }
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:border-blue-500 outline-none leading-relaxed"
