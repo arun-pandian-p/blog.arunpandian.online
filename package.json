@@ -1,5 +1,15 @@
 {
-  "dependencies": {
-    "@supabase/server": "^1.9.2"
+  "name": "apstories",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Apstories - Developer Engineering Journal & Blogging Platform",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev",
+    "preview": "npm --prefix frontend run preview",
+    "frontend:install": "npm --prefix frontend install",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "backend:build": "cd backend && mvn clean package -DskipTests"
   }
 }
